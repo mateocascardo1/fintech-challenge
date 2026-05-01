@@ -8,6 +8,7 @@ import type {
   HistoryPoint,
   Range,
   SearchResult,
+  EarningsEvent,
 } from "@/lib/types";
 
 type LibQuote = {
@@ -184,6 +185,71 @@ export async function getFundamentals(symbol: string): Promise<Fundamentals> {
     employees: ap?.fullTimeEmployees,
     website: ap?.website,
   };
+}
+
+type CalendarSummary = {
+  calendarEvents?: {
+    earnings?: {
+      earningsDate?: Array<Date | string | number>;
+    };
+  };
+  price?: {
+    shortName?: string;
+    longName?: string;
+    regularMarketPrice?: number;
+    regularMarketChangePercent?: number;
+  };
+};
+
+export async function getEarningsCalendar(symbols: string[]): Promise<EarningsEvent[]> {
+  if (symbols.length === 0) return [];
+
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  const results: EarningsEvent[] = [];
+
+  const batchSize = 5;
+  for (let i = 0; i < symbols.length; i += batchSize) {
+    const batch = symbols.slice(i, i + batchSize);
+    const promises = batch.map(async (sym) => {
+      try {
+        const data = (await yahooFinance.quoteSummary(sym, {
+          modules: ["calendarEvents", "price"] as const,
+        })) as CalendarSummary;
+
+        const dates = data.calendarEvents?.earnings?.earningsDate;
+        if (!dates || dates.length === 0) return null;
+
+        const earningsDate = new Date(dates[0] as string | number);
+        if (earningsDate >= startOfWeek && earningsDate <= endOfWeek) {
+          const p = data.price;
+          return {
+            symbol: sym,
+            name: p?.shortName ?? p?.longName ?? sym,
+            earningsDate: earningsDate.toISOString(),
+            price: p?.regularMarketPrice ?? 0,
+            changePercent: p?.regularMarketChangePercent ?? 0,
+          } satisfies EarningsEvent;
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    });
+    const batchResults = await Promise.all(promises);
+    for (const r of batchResults) {
+      if (r) results.push(r);
+    }
+  }
+
+  results.sort((a, b) => new Date(a.earningsDate).getTime() - new Date(b.earningsDate).getTime());
+  return results;
 }
 
 type SearchResponse = {

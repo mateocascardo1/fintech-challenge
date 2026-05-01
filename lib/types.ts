@@ -66,5 +66,13 @@ export type NewsItem = {
   source: string | null;
 };
 
+export type EarningsEvent = {
+  symbol: string;
+  name: string;
+  earningsDate: string;
+  price: number;
+  changePercent: number;
+};
+
 export const RANGES = ["5d", "1mo", "3mo", "6mo", "1y", "5y", "max"] as const;
 export type Range = (typeof RANGES)[number];

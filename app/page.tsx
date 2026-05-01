@@ -4,6 +4,7 @@ import { TickerTape } from "@/components/ticker-tape";
 import { MarketMood } from "@/components/market-mood";
 import { MarketOverview } from "@/components/market-overview";
 import { WatchlistGrid } from "@/components/watchlist-grid";
+import { EarningsCard } from "@/components/earnings-card";
 import { useQuotes } from "@/lib/hooks/use-quotes";
 import { useWatchlist } from "@/lib/hooks/use-watchlist";
 import { computeMarketMood } from "@/lib/hooks/use-market-mood";
@@ -29,6 +30,8 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           {!tapeLoading && <MarketMood mood={mood} />}
         </div>
+
+        <EarningsCard />
 
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
