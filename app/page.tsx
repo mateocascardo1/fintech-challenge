@@ -5,6 +5,7 @@ import { MarketMood } from "@/components/market-mood";
 import { MarketOverview } from "@/components/market-overview";
 import { WatchlistGrid } from "@/components/watchlist-grid";
 import { EarningsCard } from "@/components/earnings-card";
+import { HeroBanner } from "@/components/hero-banner";
 import { useQuotes } from "@/lib/hooks/use-quotes";
 import { useWatchlist } from "@/lib/hooks/use-watchlist";
 import { computeMarketMood } from "@/lib/hooks/use-market-mood";
@@ -27,6 +28,8 @@ export default function Home() {
     <>
       <TickerTape quotes={tapeQuotes} />
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-6">
+        <HeroBanner />
+
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           {!tapeLoading && <MarketMood mood={mood} />}
         </div>
