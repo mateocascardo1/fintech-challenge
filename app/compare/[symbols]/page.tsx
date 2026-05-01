@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { redirect } from "next/navigation";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, ScaleIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useStockData } from "@/lib/hooks/use-stock-data";
@@ -38,34 +38,43 @@ export default function ComparePage({
   const dataB = useStockData(symbolB);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 space-y-8">
-      <div className="flex items-center gap-4">
-        <Link href="/">
-          <Button variant="ghost" size="icon">
-            <ArrowLeftIcon className="size-4" />
-          </Button>
-        </Link>
-        <h1 className="text-xl font-bold">
-          <Link href={`/stock/${symbolA}`} className="hover:underline font-mono">{symbolA}</Link>
-          <span className="text-muted-foreground mx-2">vs</span>
-          <Link href={`/stock/${symbolB}`} className="hover:underline font-mono">{symbolB}</Link>
-        </h1>
+    <>
+      <div className="mx-auto max-w-5xl px-4 pt-6 pb-[60vh] space-y-8">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="rounded-xl">
+              <ArrowLeftIcon className="size-4" />
+            </Button>
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10">
+              <ScaleIcon className="size-4 text-primary" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">
+              <Link href={`/stock/${symbolA}`} className="hover:text-primary transition-colors font-mono">
+                {symbolA}
+              </Link>
+              <span className="text-muted-foreground/50 mx-2 text-sm font-normal">vs</span>
+              <Link href={`/stock/${symbolB}`} className="hover:text-primary transition-colors font-mono">
+                {symbolB}
+              </Link>
+            </h1>
+          </div>
+        </div>
+
+        {/* Comparison data */}
+        <CompareColumns
+          quoteA={dataA.quote}
+          quoteB={dataB.quote}
+          fundamentalsA={dataA.fundamentals}
+          fundamentalsB={dataB.fundamentals}
+          isLoading={dataA.isLoading || dataB.isLoading}
+        />
       </div>
 
-      <CompareColumns
-        quoteA={dataA.quote}
-        quoteB={dataB.quote}
-        fundamentalsA={dataA.fundamentals}
-        fundamentalsB={dataB.fundamentals}
-        isLoading={dataA.isLoading || dataB.isLoading}
-      />
-
-      <section>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Analista IA
-        </h2>
-        <CompareChat symbolA={symbolA} symbolB={symbolB} />
-      </section>
-    </div>
+      {/* Fixed bottom chat */}
+      <CompareChat symbolA={symbolA} symbolB={symbolB} />
+    </>
   );
 }
