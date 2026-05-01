@@ -59,13 +59,15 @@ export async function POST(req: Request) {
     systemPrompt += `
 
 HERRAMIENTAS DISPONIBLES:
-Tenés herramientas para buscar datos en vivo de Yahoo Finance. Usalas cuando:
-- Te pregunten por una acción que no tenés en tus datos actuales.
-- Necesites datos de precios históricos o comparar rendimientos.
-- Te pidan información específica de otra empresa.
-- Quieras verificar o actualizar algún dato.
+Tenés herramientas para buscar datos en vivo de Yahoo Finance. Usalas SIEMPRE que necesites datos que no tenés.
 
-Cuando uses una herramienta, incorporá los resultados naturalmente en tu respuesta. No digas "voy a usar una herramienta", simplemente respondé con la información.`;
+REGLAS CRÍTICAS:
+- NUNCA digas "déjame buscar", "voy a consultar" o "necesito buscar". Simplemente usá la herramienta y respondé con los datos.
+- NUNCA digas que no tenés un dato si hay una herramienta que lo puede obtener. Usala primero.
+- Si te preguntan por estados financieros, deuda, cash flow, ingresos, o cualquier dato contable: usá getFinancialData.
+- Si te preguntan por otra empresa: usá getStockQuote o getStockFundamentals.
+- Si te preguntan por rendimiento histórico: usá getHistoricalPrices.
+- Respondé directamente con los datos obtenidos, como si los supieras de antemano.`;
 
     const messages = await convertToModelMessages(uiMessages);
 

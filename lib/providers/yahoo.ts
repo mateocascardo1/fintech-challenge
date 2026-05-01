@@ -252,42 +252,32 @@ export async function getEarningsCalendar(symbols: string[]): Promise<EarningsEv
   return results;
 }
 
-type FinancialStatement = Record<string, unknown> & {
-  endDate?: Date | string;
+type FTSRow = Record<string, unknown> & {
+  date?: Date | string;
+  periodType?: string;
 };
 
-type FinancialStatements = {
-  incomeStatementHistory?: { incomeStatementHistory: FinancialStatement[] };
-  incomeStatementHistoryQuarterly?: { incomeStatementHistory: FinancialStatement[] };
-  cashflowStatementHistory?: { cashflowStatements: FinancialStatement[] };
-  cashflowStatementHistoryQuarterly?: { cashflowStatements: FinancialStatement[] };
-  balanceSheetHistory?: { balanceSheetStatements: FinancialStatement[] };
-  balanceSheetHistoryQuarterly?: { balanceSheetStatements: FinancialStatement[] };
-};
-
-function formatStatementNumber(val: unknown): string | null {
+function fmtNum(val: unknown): string | null {
   if (val == null) return null;
   const n = Number(val);
   if (isNaN(n)) return null;
   const abs = Math.abs(n);
   const sign = n < 0 ? "-" : "";
-  if (abs >= 1e12) return `${sign}${(abs / 1e12).toFixed(2)}T`;
-  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B`;
-  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M`;
-  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(0)}K`;
-  return n.toFixed(0);
+  if (abs >= 1e12) return `${sign}US$ ${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${sign}US$ ${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${sign}US$ ${(abs / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}US$ ${(abs / 1e3).toFixed(0)}K`;
+  return `US$ ${n.toFixed(0)}`;
 }
 
-function extractStatementData(stmt: FinancialStatement, fields: string[]): Record<string, string | null> {
+function pickFields(row: FTSRow, fields: string[]): Record<string, string | null> {
   const result: Record<string, string | null> = {};
-  const endDate = stmt.endDate;
-  result.period = endDate instanceof Date
-    ? endDate.toISOString().slice(0, 10)
-    : typeof endDate === "string"
-      ? endDate.slice(0, 10)
-      : "N/A";
-  for (const field of fields) {
-    result[field] = formatStatementNumber(stmt[field]);
+  const d = row.date;
+  result.period = d instanceof Date
+    ? d.toISOString().slice(0, 10)
+    : typeof d === "string" ? d.slice(0, 10) : "N/A";
+  for (const f of fields) {
+    result[f] = fmtNum(row[f]);
   }
   return result;
 }
@@ -297,49 +287,51 @@ export async function getFinancialStatements(symbol: string): Promise<{
   cashFlow: Record<string, string | null>[];
   balanceSheet: Record<string, string | null>[];
 }> {
-  const data = (await yahooFinance.quoteSummary(symbol, {
-    modules: [
-      "incomeStatementHistory",
-      "cashflowStatementHistory",
-      "balanceSheetHistory",
-    ] as const,
-  })) as FinancialStatements;
+  const rows = (await yahooFinance.fundamentalsTimeSeries(symbol, {
+    period1: new Date(Date.now() - 4 * 365 * 86_400_000),
+    type: "annual",
+    module: "all",
+  })) as FTSRow[];
 
   const incomeFields = [
     "totalRevenue", "costOfRevenue", "grossProfit",
-    "totalOperatingExpenses", "operatingIncome", "ebit",
-    "interestExpense", "incomeBeforeTax", "incomeTaxExpense",
-    "netIncome", "netIncomeFromContinuingOps",
-    "researchDevelopment", "sellingGeneralAdministrative",
+    "operatingExpense", "operatingIncome", "EBITDA", "EBIT",
+    "interestExpense", "pretaxIncome", "taxProvision",
+    "netIncome", "netIncomeFromContinuingOperations",
+    "researchAndDevelopment", "sellingGeneralAndAdministration",
+    "basicEPS", "dilutedEPS",
   ];
 
   const cashFlowFields = [
-    "netIncome", "depreciation", "changeToNetincome",
-    "changeToOperatingActivities", "totalCashFromOperatingActivities",
-    "capitalExpenditures", "investments",
-    "totalCashflowsFromInvestingActivities",
-    "dividendsPaid", "netBorrowings",
-    "totalCashFromFinancingActivities",
-    "changeInCash", "repurchaseOfStock",
+    "operatingCashFlow", "capitalExpenditure", "freeCashFlow",
+    "investingCashFlow", "financingCashFlow",
+    "cashFlowFromContinuingOperatingActivities",
+    "cashFlowFromContinuingInvestingActivities",
+    "cashFlowFromContinuingFinancingActivities",
+    "depreciationAndAmortization", "stockBasedCompensation",
+    "changeInWorkingCapital", "changesInAccountReceivables",
+    "changeInInventory", "changeInPayable",
+    "repaymentOfDebt", "repurchaseOfStock",
+    "beginningCashPosition", "endCashPosition", "changesInCash",
   ];
 
   const balanceFields = [
-    "cash", "totalCurrentAssets", "totalAssets",
-    "totalCurrentLiabilities", "totalLiab",
-    "totalStockholderEquity", "netTangibleAssets",
-    "shortLongTermDebt", "longTermDebt",
-    "propertyPlantEquipment", "goodWill", "intangibleAssets",
-    "retainedEarnings", "commonStock",
+    "totalAssets", "currentAssets", "totalNonCurrentAssets",
+    "cashAndCashEquivalents", "cashCashEquivalentsAndShortTermInvestments",
+    "inventory", "receivables", "accountsPayable",
+    "currentLiabilities", "totalLiabilitiesNetMinorityInterest",
+    "currentDebt", "longTermDebt", "totalDebt",
+    "longTermDebtAndCapitalLeaseObligation",
+    "stockholdersEquity", "commonStockEquity",
+    "retainedEarnings", "netTangibleAssets",
+    "netPPE", "goodwill", "goodwillAndOtherIntangibleAssets",
+    "workingCapital", "investedCapital",
   ];
 
-  const incomeStatements = data.incomeStatementHistory?.incomeStatementHistory ?? [];
-  const cashFlowStatements = data.cashflowStatementHistory?.cashflowStatements ?? [];
-  const balanceSheetStatements = data.balanceSheetHistory?.balanceSheetStatements ?? [];
-
   return {
-    incomeStatement: incomeStatements.map((s) => extractStatementData(s, incomeFields)),
-    cashFlow: cashFlowStatements.map((s) => extractStatementData(s, cashFlowFields)),
-    balanceSheet: balanceSheetStatements.map((s) => extractStatementData(s, balanceFields)),
+    incomeStatement: rows.map((r) => pickFields(r, incomeFields)),
+    cashFlow: rows.map((r) => pickFields(r, cashFlowFields)),
+    balanceSheet: rows.map((r) => pickFields(r, balanceFields)),
   };
 }
 

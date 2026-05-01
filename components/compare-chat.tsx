@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { SendIcon, SparklesIcon, ChevronUpIcon, ChevronDownIcon } from "lucide-react";
+import { SendIcon, SparklesIcon, ChevronUpIcon, ChevronDownIcon, Loader2Icon, DatabaseIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/chat-message";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,10 @@ function extractTextContent(parts: Array<{ type: string; text?: string }>): stri
     .join("");
 }
 
+function hasToolCalls(parts: Array<{ type: string }>): boolean {
+  return parts.some((p) => p.type === "tool-invocation");
+}
+
 const COMPARE_QUICK_QUESTIONS = [
   "Cuál tiene mejor margen?",
   "Comparar valuación",
@@ -24,17 +28,22 @@ const COMPARE_QUICK_QUESTIONS = [
   "Análisis técnico",
 ];
 
-function TypingIndicator() {
+function ThinkingIndicator({ hasTools }: { hasTools: boolean }) {
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15">
-        <SparklesIcon className="size-3.5 text-primary" />
+        {hasTools ? (
+          <DatabaseIcon className="size-3.5 text-primary animate-pulse" />
+        ) : (
+          <SparklesIcon className="size-3.5 text-primary" />
+        )}
       </div>
-      <div className="bg-white/[0.04] rounded-lg px-3 py-3">
-        <div className="flex gap-1">
-          <span className="size-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]" />
-          <span className="size-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:150ms]" />
-          <span className="size-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:300ms]" />
+      <div className="bg-white/[0.04] rounded-xl px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <Loader2Icon className="size-3.5 text-primary animate-spin" />
+          <span className="text-xs text-muted-foreground">
+            {hasTools ? "Consultando datos financieros..." : "Analizando..."}
+          </span>
         </div>
       </div>
     </div>
@@ -51,7 +60,6 @@ export function CompareChat({
   const [input, setInput] = useState("");
   const [expanded, setExpanded] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const transport = useMemo(
     () => new DefaultChatTransport({ body: { symbol: symbolA, compareSymbol: symbolB } }),
     [symbolA, symbolB],
@@ -61,6 +69,14 @@ export function CompareChat({
   const isLoading = status === "submitted" || status === "streaming";
   const hasMessages = messages.length > 0;
 
+  const lastMessage = messages[messages.length - 1];
+  const isWaitingForResponse = isLoading && (
+    !lastMessage ||
+    lastMessage.role === "user" ||
+    (lastMessage.role === "assistant" && !extractTextContent(lastMessage.parts).trim())
+  );
+  const isUsingTools = isLoading && lastMessage?.role === "assistant" && hasToolCalls(lastMessage.parts) && !extractTextContent(lastMessage.parts).trim();
+
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -69,7 +85,7 @@ export function CompareChat({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messages, isLoading, scrollToBottom]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -92,27 +108,34 @@ export function CompareChat({
         expanded ? "h-[55vh] max-h-[600px]" : "h-auto",
       )}
     >
-      {/* Gradient fade above the chat */}
       {expanded && (
         <div className="absolute -top-12 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none" />
       )}
 
       <div className="h-full flex flex-col bg-background border-t border-white/[0.06]">
-        {/* Header bar — always visible */}
         <button
           onClick={() => setExpanded(!expanded)}
           className="flex items-center justify-between px-6 py-3 shrink-0 cursor-pointer hover:bg-white/[0.02] transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-7 rounded-lg bg-primary/15">
-              <SparklesIcon className="size-3.5 text-primary" />
+            <div className={cn(
+              "flex items-center justify-center size-7 rounded-lg transition-colors",
+              isLoading ? "bg-primary/25" : "bg-primary/15",
+            )}>
+              {isLoading ? (
+                <Loader2Icon className="size-3.5 text-primary animate-spin" />
+              ) : (
+                <SparklesIcon className="size-3.5 text-primary" />
+              )}
             </div>
             <div className="text-left">
-              <h3 className="text-sm font-semibold leading-tight">
-                Analista IA
-              </h3>
+              <h3 className="text-sm font-semibold leading-tight">Analista IA</h3>
               <p className="text-[11px] text-muted-foreground">
-                {symbolA} vs {symbolB} — preguntale lo que quieras
+                {isUsingTools
+                  ? "Consultando Yahoo Finance..."
+                  : isLoading
+                    ? "Escribiendo..."
+                    : `${symbolA} vs ${symbolB} — preguntale lo que quieras`}
               </p>
             </div>
           </div>
@@ -132,20 +155,17 @@ export function CompareChat({
 
         {expanded && (
           <>
-            {/* Messages area */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-6">
               <div className="max-w-3xl mx-auto py-4 space-y-1">
-                {!hasMessages && (
+                {!hasMessages && !isLoading && (
                   <div className="flex flex-col items-center gap-5 py-6">
                     <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center">
                       <SparklesIcon className="size-7 text-primary" />
                     </div>
                     <div className="text-center space-y-1.5">
-                      <p className="text-sm font-semibold">
-                        Analista comparativo con IA
-                      </p>
+                      <p className="text-sm font-semibold">Analista comparativo con IA</p>
                       <p className="text-xs text-muted-foreground max-w-sm">
-                        Preguntale lo que quieras sobre {symbolA} y {symbolB}. Te ayuda a decidir con análisis fundamentales, técnicos y de mercado.
+                        Preguntale lo que quieras sobre {symbolA} y {symbolB}. Puede consultar datos en vivo.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center max-w-lg">
@@ -168,8 +188,8 @@ export function CompareChat({
                     content={extractTextContent(m.parts)}
                   />
                 ))}
-                {isLoading && messages[messages.length - 1]?.role === "user" && (
-                  <TypingIndicator />
+                {isWaitingForResponse && (
+                  <ThinkingIndicator hasTools={isUsingTools} />
                 )}
                 {error && (
                   <p className="text-sm text-destructive py-2">Error: {error.message}</p>
@@ -177,14 +197,12 @@ export function CompareChat({
               </div>
             </div>
 
-            {/* Input */}
             <div className="shrink-0 border-t border-white/[0.04] bg-background">
               <form
                 onSubmit={handleSubmit}
                 className="max-w-3xl mx-auto flex items-center gap-3 px-6 py-3"
               >
                 <input
-                  ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={`Preguntá sobre ${symbolA} vs ${symbolB}...`}

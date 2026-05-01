@@ -3,9 +3,10 @@
 import { useRef, useEffect, useState, useMemo, useCallback, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { SparklesIcon, SendIcon } from "lucide-react";
+import { SparklesIcon, SendIcon, DatabaseIcon, Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/chat-message";
+import { cn } from "@/lib/utils";
 
 function extractTextContent(parts: Array<{ type: string; text?: string }>): string {
   return parts
@@ -14,26 +15,35 @@ function extractTextContent(parts: Array<{ type: string; text?: string }>): stri
     .join("");
 }
 
+function hasToolCalls(parts: Array<{ type: string }>): boolean {
+  return parts.some((p) => p.type === "tool-invocation");
+}
+
 const QUICK_QUESTIONS = [
   "Cómo estuvo el último trimestre?",
   "Análisis de valuación",
   "Competidores principales",
   "Fortalezas y riesgos",
-  "Perspectiva a futuro",
-  "Qué opinan los analistas?",
+  "De dónde viene el cash flow?",
+  "Estructura de deuda",
 ];
 
-function TypingIndicator() {
+function ThinkingIndicator({ hasTools }: { hasTools: boolean }) {
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15">
-        <SparklesIcon className="size-3.5 text-primary" />
+        {hasTools ? (
+          <DatabaseIcon className="size-3.5 text-primary animate-pulse" />
+        ) : (
+          <SparklesIcon className="size-3.5 text-primary" />
+        )}
       </div>
-      <div className="bg-white/[0.04] rounded-lg px-3 py-3">
-        <div className="flex gap-1">
-          <span className="size-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]" />
-          <span className="size-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:150ms]" />
-          <span className="size-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:300ms]" />
+      <div className="bg-white/[0.04] rounded-xl px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <Loader2Icon className="size-3.5 text-primary animate-spin" />
+          <span className="text-xs text-muted-foreground">
+            {hasTools ? "Consultando datos financieros..." : "Analizando..."}
+          </span>
         </div>
       </div>
     </div>
@@ -59,6 +69,14 @@ export function CfoChat({
   const isLoading = status === "submitted" || status === "streaming";
   const hasMessages = messages.length > 0;
 
+  const lastMessage = messages[messages.length - 1];
+  const isWaitingForResponse = isLoading && (
+    !lastMessage ||
+    lastMessage.role === "user" ||
+    (lastMessage.role === "assistant" && !extractTextContent(lastMessage.parts).trim())
+  );
+  const isUsingTools = isLoading && lastMessage?.role === "assistant" && hasToolCalls(lastMessage.parts) && !extractTextContent(lastMessage.parts).trim();
+
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -67,7 +85,7 @@ export function CfoChat({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messages, isLoading, scrollToBottom]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -87,12 +105,25 @@ export function CfoChat({
       {/* Header */}
       <div className="px-5 py-4 border-b border-white/[0.04] shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center size-9 rounded-xl bg-primary/15 shrink-0">
-            <SparklesIcon className="size-4.5 text-primary" />
+          <div className={cn(
+            "flex items-center justify-center size-9 rounded-xl shrink-0 transition-colors",
+            isLoading ? "bg-primary/25" : "bg-primary/15",
+          )}>
+            {isLoading ? (
+              <Loader2Icon className="size-4 text-primary animate-spin" />
+            ) : (
+              <SparklesIcon className="size-4 text-primary" />
+            )}
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold leading-tight">CFO de {companyName}</h3>
-            <p className="text-[11px] text-muted-foreground">Preguntale lo que quieras</p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {isUsingTools
+                ? "Consultando Yahoo Finance..."
+                : isLoading
+                  ? "Escribiendo..."
+                  : "Preguntale lo que quieras"}
+            </p>
           </div>
         </div>
       </div>
@@ -100,7 +131,7 @@ export function CfoChat({
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4">
         <div className="py-4 space-y-1">
-          {!hasMessages && (
+          {!hasMessages && !isLoading && (
             <div className="flex flex-col items-center gap-4 py-8">
               <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <SparklesIcon className="size-6 text-primary" />
@@ -108,7 +139,7 @@ export function CfoChat({
               <div className="text-center space-y-1.5">
                 <p className="text-sm font-semibold">Analista IA</p>
                 <p className="text-xs text-muted-foreground max-w-[260px]">
-                  Preguntale sobre resultados, valuación, competidores y más.
+                  Preguntale sobre resultados, valuación, competidores y más. Puede consultar datos en vivo.
                 </p>
               </div>
               <div className="flex flex-col gap-1.5 w-full">
@@ -131,8 +162,8 @@ export function CfoChat({
               content={extractTextContent(m.parts)}
             />
           ))}
-          {isLoading && messages[messages.length - 1]?.role === "user" && (
-            <TypingIndicator />
+          {isWaitingForResponse && (
+            <ThinkingIndicator hasTools={isUsingTools} />
           )}
           {error && (
             <p className="text-sm text-destructive py-2">

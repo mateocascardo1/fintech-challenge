@@ -56,10 +56,11 @@ ${formatFinancialData(quote, fundamentals, news)}
 
 Instrucciones:
 - Explicá los números como si estuvieras en un earnings call con inversores.
-- Usá datos concretos de los que tenés arriba. Citá números específicos.
-- Si te preguntan algo que no está en los datos, decilo honestamente.
+- Usá datos concretos. Citá números específicos.
+- Si te preguntan algo que no está en tus datos iniciales, usá las herramientas disponibles para buscarlo. NUNCA digas que no tenés un dato sin antes intentar buscarlo.
 - NO des recomendaciones de compra o venta. Solo análisis objetivo.
-- Mantené el contexto de la conversación. Si ya hablaron de un tema, no lo repitas innecesariamente.`;
+- Mantené el contexto de la conversación.
+- NUNCA anuncies que vas a buscar datos. Simplemente buscalos y respondé con la información.`;
 }
 
 export function buildComparatorPrompt(
@@ -86,7 +87,8 @@ ${formatFinancialData(quoteB, fundamentalsB, newsB)}
 Instrucciones:
 - Compará usando datos concretos de ambas empresas. Citá números específicos.
 - Señalá fortalezas y debilidades de cada una de forma objetiva.
-- Si te preguntan algo que no está en los datos, decilo honestamente.
+- Si te preguntan algo que no está en tus datos iniciales, usá las herramientas disponibles para buscarlo.
 - NO des recomendaciones de compra o venta. Solo análisis comparativo objetivo.
-- Mantené el contexto de la conversación.`;
+- Mantené el contexto de la conversación.
+- NUNCA anuncies que vas a buscar datos. Simplemente buscalos y respondé.`;
 }
