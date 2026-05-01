@@ -13,8 +13,8 @@ import { CfoChat } from "@/components/cfo-chat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 import {
   CommandDialog,
   CommandInput,
@@ -35,9 +35,46 @@ export default function StockPage({
   const { quote, fundamentals, news, isLoading, error } = useStockData(symbol);
   const { has, add, remove } = useWatchlist();
   const isFavorite = has(symbol);
+  const router = useRouter();
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareQuery, setCompareQuery] = useState("");
   const [compareResults, setCompareResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (compareQuery.length < 1) {
+      setCompareResults([]);
+      return;
+    }
+    const controller = new AbortController();
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(compareQuery)}`,
+          { signal: controller.signal },
+        );
+        const data = await res.json();
+        setCompareResults(data.results ?? []);
+      } catch {}
+      finally {
+        setIsSearching(false);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [compareQuery]);
+
+  const handleCompareSelect = useCallback(
+    (targetSymbol: string) => {
+      setCompareOpen(false);
+      setCompareQuery("");
+      router.push(`/compare/${symbol}-vs-${targetSymbol}`);
+    },
+    [router, symbol],
+  );
 
   const handleToggleFavorite = () => {
     if (isFavorite) {
@@ -103,35 +140,38 @@ export default function StockPage({
       <CommandDialog
         open={compareOpen}
         onOpenChange={setCompareOpen}
-        title="Comparar con"
-        description="Elegí la segunda acción para comparar"
+        title={`¿Con quién querés comparar ${symbol}?`}
+        description="Buscá por símbolo o nombre de empresa"
+        shouldFilter={false}
       >
         <CommandInput
-          placeholder="Buscá una acción..."
+          placeholder="MSFT, Google, Tesla..."
           value={compareQuery}
-          onValueChange={(val) => {
-            setCompareQuery(val);
-            if (val.length > 0) {
-              fetch(`/api/search?q=${encodeURIComponent(val)}`)
-                .then((r) => r.json())
-                .then((d) => setCompareResults(d.results ?? []));
-            } else {
-              setCompareResults([]);
-            }
-          }}
+          onValueChange={setCompareQuery}
         />
         <CommandList>
-          <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+          <CommandEmpty>
+            {isSearching
+              ? "Buscando..."
+              : compareQuery.length > 0
+                ? "No se encontraron resultados."
+                : "Escribí el nombre o símbolo de la acción a comparar."}
+          </CommandEmpty>
           {compareResults.length > 0 && (
             <CommandGroup heading="Resultados">
               {compareResults
                 .filter((r) => r.symbol !== symbol)
                 .map((r) => (
-                  <CommandItem key={r.symbol} asChild>
-                    <Link href={`/compare/${symbol}-vs-${r.symbol}`}>
-                      <span className="font-mono font-semibold">{r.symbol}</span>
-                      <span className="text-muted-foreground truncate">{r.name}</span>
-                    </Link>
+                  <CommandItem
+                    key={r.symbol}
+                    value={r.symbol}
+                    onSelect={handleCompareSelect}
+                  >
+                    <span className="font-mono font-semibold">{r.symbol}</span>
+                    <span className="text-muted-foreground truncate">{r.name}</span>
+                    {r.exchange && (
+                      <span className="ml-auto text-xs text-muted-foreground">{r.exchange}</span>
+                    )}
                   </CommandItem>
                 ))}
             </CommandGroup>
