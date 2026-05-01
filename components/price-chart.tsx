@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, type IChartApi, type CandlestickData, type Time } from "lightweight-charts";
+import { createChart, CandlestickSeries, type IChartApi, type CandlestickData, type Time } from "lightweight-charts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RangeSelector } from "@/components/range-selector";
 import type { Range, HistoryPoint } from "@/lib/types";
@@ -69,7 +69,7 @@ export function PriceChart({ symbol }: { symbol: string }) {
     fetch(`/api/history/${symbol}?range=${range}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
-        const series = chart.addCandlestickSeries({
+        const series = chart.addSeries(CandlestickSeries, {
           upColor: "oklch(0.74 0.17 152)",
           downColor: "oklch(0.66 0.21 20)",
           borderUpColor: "oklch(0.74 0.17 152)",

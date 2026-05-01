@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { getQuote } from "@/lib/providers/yahoo";
 import { getFundamentals } from "@/lib/providers/yahoo";
@@ -18,8 +18,8 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { messages, symbol, compareSymbol } = body as {
-    messages: Array<{ role: string; content: string }>;
+  const { messages: uiMessages, symbol, compareSymbol } = body as {
+    messages: Array<UIMessage>;
     symbol: string;
     compareSymbol?: string;
   };
@@ -54,13 +54,15 @@ export async function POST(req: Request) {
       systemPrompt = buildCfoPrompt(quoteA, fundamentalsA, newsA);
     }
 
+    const messages = await convertToModelMessages(uiMessages);
+
     const result = streamText({
       model: anthropic("claude-sonnet-4-20250514"),
       system: systemPrompt,
       messages,
     });
 
-    return result.toDataStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (e) {
     console.error("chat route error:", e);
     return new Response(

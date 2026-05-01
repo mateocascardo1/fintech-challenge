@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState, useMemo, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { MessageSquareIcon, SendIcon, Loader2Icon } from "lucide-react";
 import {
   Sheet,
@@ -15,6 +16,13 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "@/components/chat-message";
 
+function extractTextContent(parts: Array<{ type: string; text?: string }>): string {
+  return parts
+    .filter((p) => p.type === "text" && p.text)
+    .map((p) => p.text!)
+    .join("");
+}
+
 export function CfoChat({
   symbol,
   companyName,
@@ -24,12 +32,14 @@ export function CfoChat({
   companyName: string;
   compareSymbol?: string;
 }) {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } =
-    useChat({
-      api: "/api/chat",
-      body: { symbol, compareSymbol },
-    });
+  const [input, setInput] = useState("");
+  const transport = useMemo(
+    () => new DefaultChatTransport({ body: { symbol, compareSymbol } }),
+    [symbol, compareSymbol],
+  );
+  const { messages, sendMessage, status, error } = useChat({ transport });
 
+  const isLoading = status === "submitted" || status === "streaming";
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,6 +51,14 @@ export function CfoChat({
   const title = compareSymbol
     ? `Analista comparativo`
     : `CFO de ${companyName}`;
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || isLoading) return;
+    setInput("");
+    sendMessage({ text });
+  }
 
   return (
     <Sheet>
@@ -65,7 +83,7 @@ export function CfoChat({
               <ChatMessage
                 key={m.id}
                 role={m.role as "user" | "assistant"}
-                content={m.content}
+                content={extractTextContent(m.parts)}
               />
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
@@ -87,7 +105,7 @@ export function CfoChat({
         >
           <Input
             value={input}
-            onChange={handleInputChange}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Escribí tu pregunta..."
             className="flex-1"
             disabled={isLoading}
