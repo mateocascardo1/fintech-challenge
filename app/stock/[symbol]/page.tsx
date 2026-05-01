@@ -106,56 +106,63 @@ export default function StockPage({
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-16 space-y-6">
-      {isLoading || !quote ? (
-        <Skeleton className="h-32 w-full mt-4 rounded-2xl" />
-      ) : (
-        <StockHeader
-          quote={quote}
-          isFavorite={isFavorite}
-          onToggleFavorite={handleToggleFavorite}
-          onCompare={() => setCompareOpen(true)}
-        />
-      )}
+    <div className="mx-auto max-w-[1600px] px-4 pb-16">
+      <div className="flex gap-6 items-start">
+        {/* Left column — data */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {isLoading || !quote ? (
+            <Skeleton className="h-32 w-full mt-4 rounded-2xl" />
+          ) : (
+            <StockHeader
+              quote={quote}
+              isFavorite={isFavorite}
+              onToggleFavorite={handleToggleFavorite}
+              onCompare={() => setCompareOpen(true)}
+            />
+          )}
 
-      <PriceChart symbol={symbol} />
+          <PriceChart symbol={symbol} />
 
-      {/* CTA banner */}
-      {quote && (
-        <CfoChat symbol={symbol} companyName={quote.name} />
-      )}
+          {/* Tabs */}
+          <div className="space-y-5">
+            <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1 w-fit">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium rounded-lg transition-all cursor-pointer",
+                    activeTab === tab.id
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-      {/* Tabs */}
-      <div className="space-y-5">
-        <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1 w-fit">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "px-4 py-2 text-sm font-medium rounded-lg transition-all cursor-pointer",
-                activeTab === tab.id
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]",
+            <div>
+              {activeTab === "general" && <CompanyInfo data={fundamentals} />}
+              {activeTab === "fundamentals" && (
+                <FundamentalsPanel fundamentals={fundamentals} isLoading={isLoading} />
               )}
-            >
-              {tab.label}
-            </button>
-          ))}
+              {activeTab === "financials" && (
+                <FinancialsPanel fundamentals={fundamentals} isLoading={isLoading} />
+              )}
+              {activeTab === "noticias" && (
+                <NewsPanel items={news} isLoading={isLoading} />
+              )}
+            </div>
+          </div>
         </div>
 
-        <div>
-          {activeTab === "general" && <CompanyInfo data={fundamentals} />}
-          {activeTab === "fundamentals" && (
-            <FundamentalsPanel fundamentals={fundamentals} isLoading={isLoading} />
-          )}
-          {activeTab === "financials" && (
-            <FinancialsPanel fundamentals={fundamentals} isLoading={isLoading} />
-          )}
-          {activeTab === "noticias" && (
-            <NewsPanel items={news} isLoading={isLoading} />
-          )}
-        </div>
+        {/* Right column — AI chat, sticky */}
+        {quote && (
+          <div className="w-[380px] shrink-0 sticky top-[72px] h-[calc(100vh-88px)] mt-4">
+            <CfoChat symbol={symbol} companyName={quote.name} />
+          </div>
+        )}
       </div>
 
       <CommandDialog
