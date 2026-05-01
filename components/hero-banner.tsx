@@ -1,18 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StarIcon, MessageSquareIcon, ArrowRightLeftIcon, XIcon } from "lucide-react";
 
 const STORAGE_KEY = "mp:hero-dismissed";
-
-function wasDismissed(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return localStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 const FEATURES = [
   {
@@ -36,9 +27,17 @@ const FEATURES = [
 ];
 
 export function HeroBanner() {
-  const [dismissed, setDismissed] = useState(wasDismissed);
+  const [dismissed, setDismissed] = useState<boolean | null>(null);
 
-  if (dismissed) return null;
+  useEffect(() => {
+    try {
+      setDismissed(localStorage.getItem(STORAGE_KEY) === "1");
+    } catch {
+      setDismissed(false);
+    }
+  }, []);
+
+  if (dismissed === null || dismissed) return null;
 
   function handleDismiss() {
     setDismissed(true);
