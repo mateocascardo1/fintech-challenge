@@ -10,11 +10,11 @@ import { NewsPanel } from "@/components/news-panel";
 import { CompanyInfo } from "@/components/company-info";
 import { FinancialsPanel } from "@/components/financials-panel";
 import { CfoChat } from "@/components/cfo-chat";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
+import { cn } from "@/lib/utils";
 import {
   CommandDialog,
   CommandInput,
@@ -24,6 +24,15 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import type { SearchResult } from "@/lib/types";
+
+const TABS = [
+  { id: "general", label: "General" },
+  { id: "fundamentals", label: "Fundamentals" },
+  { id: "financials", label: "Financials" },
+  { id: "noticias", label: "Noticias" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
 
 export default function StockPage({
   params,
@@ -40,6 +49,7 @@ export default function StockPage({
   const [compareQuery, setCompareQuery] = useState("");
   const [compareResults, setCompareResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>("general");
 
   useEffect(() => {
     if (compareQuery.length < 1) {
@@ -96,46 +106,57 @@ export default function StockPage({
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-16">
+    <div className="mx-auto max-w-7xl px-4 pb-16 space-y-6">
       {isLoading || !quote ? (
-        <Skeleton className="h-24 w-full mt-4 rounded-lg" />
+        <Skeleton className="h-32 w-full mt-4 rounded-2xl" />
       ) : (
-        <>
-          <StockHeader
-            quote={quote}
-            isFavorite={isFavorite}
-            onToggleFavorite={handleToggleFavorite}
-            onCompare={() => setCompareOpen(true)}
-          />
-        </>
+        <StockHeader
+          quote={quote}
+          isFavorite={isFavorite}
+          onToggleFavorite={handleToggleFavorite}
+          onCompare={() => setCompareOpen(true)}
+        />
       )}
 
       <PriceChart symbol={symbol} />
 
-      <Tabs defaultValue="general" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="fundamentals">Fundamentals</TabsTrigger>
-          <TabsTrigger value="financials">Financials</TabsTrigger>
-          <TabsTrigger value="noticias">Noticias</TabsTrigger>
-        </TabsList>
-        <TabsContent value="general" className="mt-4">
-          <CompanyInfo data={fundamentals} />
-        </TabsContent>
-        <TabsContent value="fundamentals" className="mt-4">
-          <FundamentalsPanel fundamentals={fundamentals} isLoading={isLoading} />
-        </TabsContent>
-        <TabsContent value="financials" className="mt-4">
-          <FinancialsPanel fundamentals={fundamentals} isLoading={isLoading} />
-        </TabsContent>
-        <TabsContent value="noticias" className="mt-4">
-          <NewsPanel items={news} isLoading={isLoading} />
-        </TabsContent>
-      </Tabs>
-
+      {/* CTA banner */}
       {quote && (
         <CfoChat symbol={symbol} companyName={quote.name} />
       )}
+
+      {/* Tabs */}
+      <div className="space-y-5">
+        <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1 w-fit">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "px-4 py-2 text-sm font-medium rounded-lg transition-all cursor-pointer",
+                activeTab === tab.id
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]",
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div>
+          {activeTab === "general" && <CompanyInfo data={fundamentals} />}
+          {activeTab === "fundamentals" && (
+            <FundamentalsPanel fundamentals={fundamentals} isLoading={isLoading} />
+          )}
+          {activeTab === "financials" && (
+            <FinancialsPanel fundamentals={fundamentals} isLoading={isLoading} />
+          )}
+          {activeTab === "noticias" && (
+            <NewsPanel items={news} isLoading={isLoading} />
+          )}
+        </div>
+      </div>
 
       <CommandDialog
         open={compareOpen}

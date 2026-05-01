@@ -63,27 +63,27 @@ export function PriceChart({ symbol }: { symbol: string }) {
     const chart = createChart(containerRef.current, {
       layout: {
         background: { color: "transparent" },
-        textColor: "rgba(255, 255, 255, 0.45)",
+        textColor: "rgba(255, 255, 255, 0.35)",
         fontFamily: "'SF Mono', 'JetBrains Mono', 'Fira Code', monospace",
         fontSize: 11,
       },
       grid: {
         vertLines: { visible: false },
-        horzLines: { color: "rgba(255, 255, 255, 0.04)", style: 2 },
+        horzLines: { color: "rgba(255, 255, 255, 0.03)", style: 2 },
       },
       crosshair: {
         vertLine: {
-          color: "rgba(255, 255, 255, 0.15)",
-          labelBackgroundColor: "#1e1e2e",
+          color: "rgba(255, 255, 255, 0.12)",
+          labelBackgroundColor: "#1a1a2e",
         },
         horzLine: {
-          color: "rgba(255, 255, 255, 0.15)",
-          labelBackgroundColor: "#1e1e2e",
+          color: "rgba(255, 255, 255, 0.12)",
+          labelBackgroundColor: "#1a1a2e",
         },
       },
       rightPriceScale: {
         borderVisible: false,
-        scaleMargins: { top: 0.1, bottom: 0.08 },
+        scaleMargins: { top: 0.08, bottom: 0.06 },
       },
       timeScale: {
         borderVisible: false,
@@ -175,15 +175,15 @@ export function PriceChart({ symbol }: { symbol: string }) {
   }, [mode, applySeries]);
 
   return (
-    <div className="space-y-3">
+    <div className="mt-6 space-y-3">
       <div className="flex items-center justify-between">
         <RangeSelector value={range} onChange={setRange} />
-        <div className="flex gap-0.5 rounded-lg border p-0.5">
+        <div className="flex gap-0.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-0.5">
           <button
             onClick={() => setMode("area")}
             className={cn(
-              "p-1.5 rounded-md transition-colors",
-              mode === "area" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
+              "p-2 rounded-lg transition-all",
+              mode === "area" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground",
             )}
             title="Gráfico de área"
           >
@@ -192,8 +192,8 @@ export function PriceChart({ symbol }: { symbol: string }) {
           <button
             onClick={() => setMode("candle")}
             className={cn(
-              "p-1.5 rounded-md transition-colors",
-              mode === "candle" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
+              "p-2 rounded-lg transition-all",
+              mode === "candle" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground",
             )}
             title="Gráfico de velas"
           >
@@ -201,7 +201,7 @@ export function PriceChart({ symbol }: { symbol: string }) {
           </button>
         </div>
       </div>
-      <div className="relative rounded-xl border bg-card overflow-hidden" style={{ height: "55vh" }}>
+      <div className="relative rounded-2xl surface-elevated overflow-hidden" style={{ height: "55vh" }}>
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center">
             <Skeleton className="w-full h-full" />

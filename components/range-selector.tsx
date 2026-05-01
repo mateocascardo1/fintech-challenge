@@ -21,16 +21,16 @@ export function RangeSelector({
   onChange: (range: Range) => void;
 }) {
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-0.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-0.5">
       {RANGES.map((range) => (
         <button
           key={range}
           onClick={() => onChange(range)}
           className={cn(
-            "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+            "px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer",
             value === range
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-accent",
+              ? "bg-primary/15 text-primary font-semibold"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]",
           )}
         >
           {RANGE_LABELS[range]}
