@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AppHeader } from "@/components/app-header";
+import { MobileGate } from "@/components/mobile-gate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,22 +31,16 @@ export default function RootLayout({
   return (
     <html
       lang="es-AR"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground" suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <MobileGate>
           <TooltipProvider delayDuration={200}>
             <AppHeader />
             <main className="flex-1">{children}</main>
             <Toaster richColors position="top-right" />
           </TooltipProvider>
-        </ThemeProvider>
+        </MobileGate>
         <Analytics />
       </body>
     </html>
