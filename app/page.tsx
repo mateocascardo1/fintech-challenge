@@ -44,6 +44,18 @@ export default function Home() {
           {!tapeLoading && <MarketMood mood={mood} />}
         </div>
 
+        {hasWatchlistItems && (
+          <section>
+            <h2 className="section-label mb-4">Tu Watchlist</h2>
+            <WatchlistGrid
+              quotes={watchlistQuotes}
+              isLoading={watchlistLoading}
+              onRemove={remove}
+              onAdd={openSearch}
+            />
+          </section>
+        )}
+
         <section>
           <h2 className="section-label mb-4">Índices</h2>
           <MarketOverview quotes={indexQuotes} isLoading={tapeLoading} />
@@ -76,18 +88,6 @@ export default function Home() {
             </div>
           </section>
         </div>
-
-        {hasWatchlistItems && (
-          <section>
-            <h2 className="section-label mb-4">Watchlist</h2>
-            <WatchlistGrid
-              quotes={watchlistQuotes}
-              isLoading={watchlistLoading}
-              onRemove={remove}
-              onAdd={openSearch}
-            />
-          </section>
-        )}
 
         <EarningsCard />
 

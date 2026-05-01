@@ -33,11 +33,11 @@ export function WatchlistGrid({
       <EmptyState
         icon={<StarIcon className="size-10" />}
         title="Tu watchlist está vacía"
-        description="Agregá acciones para seguir sus precios en tiempo real."
+        description="Seguí tus acciones favoritas en tiempo real. Buscá con ⌘K o hacé click abajo."
         action={
           <Button variant="outline" size="sm" onClick={onAdd}>
             <PlusIcon className="size-4 mr-1" />
-            Agregar acción
+            Poné tu primera acción en watchlist
           </Button>
         }
       />
