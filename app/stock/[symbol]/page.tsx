@@ -11,8 +11,6 @@ import { CompanyInfo } from "@/components/company-info";
 import { CfoChat } from "@/components/cfo-chat";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { ArrowRightLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -68,13 +66,8 @@ export default function StockPage({
             quote={quote}
             isFavorite={isFavorite}
             onToggleFavorite={handleToggleFavorite}
+            onCompare={() => setCompareOpen(true)}
           />
-          <div className="flex gap-2 mb-4">
-            <Button variant="outline" size="sm" onClick={() => setCompareOpen(true)}>
-              <ArrowRightLeftIcon className="size-4 mr-1" />
-              Comparar con...
-            </Button>
-          </div>
         </>
       )}
 

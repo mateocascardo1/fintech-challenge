@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, CandlestickSeries, type IChartApi, type CandlestickData, type Time } from "lightweight-charts";
+import { createChart, CandlestickSeries, type IChartApi, type ISeriesApi, type CandlestickData, type Time } from "lightweight-charts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RangeSelector } from "@/components/range-selector";
 import type { Range, HistoryPoint } from "@/lib/types";
@@ -19,6 +19,7 @@ function toChartData(points: HistoryPoint[]): CandlestickData<Time>[] {
 export function PriceChart({ symbol }: { symbol: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [range, setRange] = useState<Range>("6mo");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -69,14 +70,18 @@ export function PriceChart({ symbol }: { symbol: string }) {
     fetch(`/api/history/${symbol}?range=${range}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
+        if (seriesRef.current) {
+          chart.removeSeries(seriesRef.current);
+        }
         const series = chart.addSeries(CandlestickSeries, {
-          upColor: "oklch(0.74 0.17 152)",
-          downColor: "oklch(0.66 0.21 20)",
-          borderUpColor: "oklch(0.74 0.17 152)",
-          borderDownColor: "oklch(0.66 0.21 20)",
-          wickUpColor: "oklch(0.74 0.17 152)",
-          wickDownColor: "oklch(0.66 0.21 20)",
+          upColor: "#26a69a",
+          downColor: "#ef5350",
+          borderUpColor: "#26a69a",
+          borderDownColor: "#ef5350",
+          wickUpColor: "#26a69a",
+          wickDownColor: "#ef5350",
         });
+        seriesRef.current = series;
         series.setData(toChartData(data.points ?? []));
         chart.timeScale().fitContent();
         setIsLoading(false);

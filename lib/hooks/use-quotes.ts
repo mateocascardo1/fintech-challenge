@@ -17,7 +17,7 @@ export function useQuotes(
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const symbolsKey = symbols.sort().join(",");
+  const symbolsKey = [...symbols].sort().join(",");
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchQuotes = useCallback(async () => {

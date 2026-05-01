@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftIcon, StarIcon } from "lucide-react";
+import { ArrowLeftIcon, StarIcon, ArrowRightLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatPrice, formatPercent, changeSign } from "@/lib/format";
@@ -11,10 +11,12 @@ export function StockHeader({
   quote,
   isFavorite,
   onToggleFavorite,
+  onCompare,
 }: {
   quote: Quote;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onCompare?: () => void;
 }) {
   const sign = changeSign(quote.change);
   return (
@@ -48,11 +50,18 @@ export function StockHeader({
           </span>
         </div>
       </div>
-      <Button variant="ghost" size="icon" onClick={onToggleFavorite} className="shrink-0">
-        <StarIcon
-          className={cn("size-5", isFavorite ? "fill-yellow-500 text-yellow-500" : "")}
-        />
-      </Button>
+      <div className="flex items-center gap-1 shrink-0">
+        {onCompare && (
+          <Button variant="ghost" size="icon" onClick={onCompare} title="Comparar con otra acción">
+            <ArrowRightLeftIcon className="size-4" />
+          </Button>
+        )}
+        <Button variant="ghost" size="icon" onClick={onToggleFavorite}>
+          <StarIcon
+            className={cn("size-5", isFavorite ? "fill-yellow-500 text-yellow-500" : "")}
+          />
+        </Button>
+      </div>
     </div>
   );
 }

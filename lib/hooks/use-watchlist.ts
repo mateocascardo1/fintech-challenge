@@ -4,6 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import { MAX_WATCHLIST, isValidSymbol } from "@/lib/tickers";
 
 const STORAGE_KEY = "mp:watchlist";
+const EMPTY: string[] = [];
 
 let listeners: Array<() => void> = [];
 
@@ -11,18 +12,25 @@ function emitChange() {
   for (const l of listeners) l();
 }
 
+let cachedRaw: string | null = null;
+let cachedSnapshot: string[] = EMPTY;
+
 function getSnapshot(): string[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
+    if (raw !== cachedRaw) {
+      cachedRaw = raw;
+      cachedSnapshot = raw ? (JSON.parse(raw) as string[]) : EMPTY;
+    }
+    return cachedSnapshot;
   } catch {
-    return [];
+    return EMPTY;
   }
 }
 
 function getServerSnapshot(): string[] {
-  return [];
+  return EMPTY;
 }
 
 function subscribe(listener: () => void) {
