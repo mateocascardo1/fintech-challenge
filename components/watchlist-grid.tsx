@@ -20,9 +20,9 @@ export function WatchlistGrid({
 }) {
   if (isLoading && quotes.length === 0) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[100px] rounded-lg" />
+          <Skeleton key={i} className="h-[140px] rounded-xl" />
         ))}
       </div>
     );
@@ -45,13 +45,13 @@ export function WatchlistGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {quotes.map((q) => (
         <StockCard key={q.symbol} quote={q} onRemove={onRemove} />
       ))}
       <button
         onClick={onAdd}
-        className="flex items-center justify-center rounded-lg border border-dashed p-4 text-muted-foreground hover:bg-accent/50 transition-colors min-h-[100px]"
+        className="flex items-center justify-center rounded-xl border border-dashed border-border/50 p-4 text-muted-foreground hover:bg-white/[0.03] transition-colors min-h-[140px] cursor-pointer"
       >
         <PlusIcon className="size-5" />
       </button>

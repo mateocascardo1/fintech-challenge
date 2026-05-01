@@ -40,37 +40,35 @@ function IndexCard({ quote }: { quote: Quote }) {
     <Link
       href={`/stock/${encodeURIComponent(quote.symbol)}`}
       className={cn(
-        "group relative flex flex-col gap-2 rounded-2xl p-4 min-w-[170px] transition-all duration-200 overflow-hidden noise-overlay",
-        "surface-elevated hover:scale-[1.02] hover:-translate-y-0.5",
+        "group flex flex-col justify-between rounded-xl p-4 min-w-[170px] transition-all duration-200",
+        "surface-elevated",
         isPositive && "hover:surface-glow-positive",
         isNegative && "hover:surface-glow-negative",
       )}
     >
-      <div className="relative z-10">
-        <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-medium">{label}</span>
-        <div className="font-mono font-bold text-lg tabular-nums mt-1 tracking-tight">
-          {formatPrice(quote.price, quote.currency)}
-        </div>
-        <div className="flex items-center gap-1.5 mt-1">
-          <div
-            className={cn(
-              "h-[3px] w-6 rounded-full",
-              isPositive && "bg-positive",
-              isNegative && "bg-negative",
-              sign === "neutral" && "bg-muted-foreground/30",
-            )}
-          />
-          <span
-            className={cn(
-              "font-mono text-xs tabular-nums font-semibold",
-              isPositive && "text-positive",
-              isNegative && "text-negative",
-              sign === "neutral" && "text-muted-foreground",
-            )}
-          >
-            {formatPercent(quote.changePercent, { withSign: true })}
-          </span>
-        </div>
+      <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-medium">{label}</span>
+      <div className="font-mono font-bold text-lg tabular-nums mt-2 tracking-tight">
+        {formatPrice(quote.price, quote.currency)}
+      </div>
+      <div className="flex items-center gap-1.5 mt-1.5">
+        <div
+          className={cn(
+            "h-[3px] w-5 rounded-full",
+            isPositive && "bg-positive",
+            isNegative && "bg-negative",
+            sign === "neutral" && "bg-muted-foreground/30",
+          )}
+        />
+        <span
+          className={cn(
+            "font-mono text-xs tabular-nums font-semibold",
+            isPositive && "text-positive",
+            isNegative && "text-negative",
+            sign === "neutral" && "text-muted-foreground",
+          )}
+        >
+          {formatPercent(quote.changePercent, { withSign: true })}
+        </span>
       </div>
     </Link>
   );
@@ -81,7 +79,7 @@ export function MarketOverview({ quotes, isLoading }: { quotes: Quote[]; isLoadi
     return (
       <div className="flex gap-3 overflow-x-auto pb-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-[96px] min-w-[170px] rounded-2xl" />
+          <Skeleton key={i} className="h-[100px] min-w-[170px] rounded-xl" />
         ))}
       </div>
     );
