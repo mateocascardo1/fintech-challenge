@@ -23,6 +23,16 @@ export default function Home() {
   const mood = computeMarketMood(poolQuotes);
 
   const { quotes: watchlistQuotes, isLoading: watchlistLoading } = useQuotes(watchlistSymbols);
+  const hasWatchlistItems = watchlistSymbols.length > 0;
+
+  const openSearch = () => {
+    const event = new KeyboardEvent("keydown", {
+      key: "k",
+      metaKey: true,
+      bubbles: true,
+    });
+    document.dispatchEvent(event);
+  };
 
   return (
     <>
@@ -33,8 +43,6 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           {!tapeLoading && <MarketMood mood={mood} />}
         </div>
-
-        <EarningsCard />
 
         <section>
           <h2 className="section-label mb-4">Índices</h2>
@@ -69,22 +77,31 @@ export default function Home() {
           </section>
         </div>
 
-        <section>
-          <h2 className="section-label mb-4">Watchlist</h2>
-          <WatchlistGrid
-            quotes={watchlistQuotes}
-            isLoading={watchlistLoading}
-            onRemove={remove}
-            onAdd={() => {
-              const event = new KeyboardEvent("keydown", {
-                key: "k",
-                metaKey: true,
-                bubbles: true,
-              });
-              document.dispatchEvent(event);
-            }}
-          />
-        </section>
+        {hasWatchlistItems && (
+          <section>
+            <h2 className="section-label mb-4">Watchlist</h2>
+            <WatchlistGrid
+              quotes={watchlistQuotes}
+              isLoading={watchlistLoading}
+              onRemove={remove}
+              onAdd={openSearch}
+            />
+          </section>
+        )}
+
+        <EarningsCard />
+
+        {!hasWatchlistItems && (
+          <section>
+            <h2 className="section-label mb-4">Watchlist</h2>
+            <WatchlistGrid
+              quotes={watchlistQuotes}
+              isLoading={watchlistLoading}
+              onRemove={remove}
+              onAdd={openSearch}
+            />
+          </section>
+        )}
       </div>
     </>
   );
