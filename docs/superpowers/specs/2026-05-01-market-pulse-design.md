@@ -2,7 +2,11 @@
 
 ## Overview
 
-Market Pulse is a fintech demo/challenge platform that integrates real-time financial data, visualization, and AI-powered analysis to support investment decisions. The core differentiator is the "Talk to the CFO" feature: a conversational AI chat where users can discuss a company's financials as if speaking with its Chief Financial Officer.
+Market Pulse is a fintech demo/challenge platform that integrates real-time financial data, visualization, and AI-powered analysis to support investment decisions. Key differentiators:
+
+- **"Talk to the CFO"**: Conversational AI chat where users discuss a company's financials as if speaking with its Chief Financial Officer.
+- **Stock Comparator**: Side-by-side financial comparison of two companies with an AI-powered analysis chat.
+- **Market Mood**: At-a-glance market sentiment indicator derived from real price data (no AI cost).
 
 ## Target
 
@@ -48,11 +52,19 @@ Layout top to bottom:
    - Click any ticker navigates to `/stock/[symbol]`
    - Subtle LED-screen effect (slight glow, monospace font)
 
-3. **Market Overview**
+3. **Market Mood**
+   - Visual sentiment indicator (semaphore: green / yellow / red)
+   - Calculated from real data: take the top stocks from `POOL_US`, look at the sign of their price change over the last 3 trading days, compute the percentage of positive vs negative movers
+   - Thresholds: >65% positive = green (bullish), 35-65% = yellow (neutral), <35% = red (bearish)
+   - Displays the percentage and a short label ("Mercado alcista", "Mercado neutro", "Mercado bajista")
+   - No AI involved, pure data-driven. Updates with ticker tape refresh.
+   - Placed prominently on the home page, gives an instant read on market conditions
+
+4. **Market Overview**
    - Row of larger cards for major indices: S&P 500, NASDAQ, DOW, Russell 2000, VIX
    - Each card: name, current value, change %, mini visual indicator
 
-4. **Watchlist**
+5. **Watchlist**
    - Grid of cards for user's saved stocks (persisted in localStorage)
    - Each card: symbol, company name, price, change %, mini sparkline (optional)
    - "+" button to add via search
@@ -86,12 +98,41 @@ Layout top to bottom:
    - **Conversational**: Multi-turn with full session memory. `useChat` from `@ai-sdk/react` manages the message array. Each request sends full conversation history.
    - **Streaming**: Responses stream in real-time via the Vercel AI SDK.
 
+### `/compare/[symbols]` - Stock Comparator
+
+Route format: `/compare/AAPL-vs-MSFT` (two symbols separated by `-vs-`)
+
+1. **Header**
+   - Back to home
+   - Both symbols displayed: "{SYMBOL A} vs {SYMBOL B}"
+   - Each symbol is a link to its individual detail page
+
+2. **Side-by-Side Financials (top section)**
+   - Two-column layout, one company per column
+   - Each column shows:
+     - Company name + current price + change %
+     - Key fundamentals: P/E, Market Cap, 52-Week Range, Dividend Yield, Profit Margin, Revenue Growth, Sector
+   - Metrics that are "better" (higher revenue growth, lower P/E, etc.) get a subtle highlight to make comparison easy
+   - Data from `/api/fundamentals/[symbol]` and `/api/quote`
+
+3. **Comparison Chat (bottom section)**
+   - Full-width chat panel (not a bottom sheet, since this page is dedicated to comparison)
+   - System prompt receives data from BOTH companies
+   - User can ask things like "cuál tiene mejor margen?", "comparame el crecimiento", "cuál es más riesgosa?"
+   - Claude acts as a neutral financial analyst comparing both companies
+
+4. **Navigation to Comparator**
+   - From stock detail page: button "Comparar con..." opens a search to pick the second stock
+   - From home: can be accessed via URL directly or from a future "compare" button
+
 ## Chat / CFO AI
 
 ### API Route: `POST /api/chat`
 
-- Receives: `{ messages: Message[], symbol: string }`
-- On first message (or when symbol context is missing): fetches fundamentals, current quote, and recent news for the symbol
+- Receives: `{ messages: Message[], symbol: string, compareSymbol?: string }`
+- On first message: fetches fundamentals, current quote, and recent news for the symbol(s)
+- If `compareSymbol` is provided, fetches data for both and uses the comparator system prompt
+- Otherwise uses the CFO system prompt for the single symbol
 - Injects financial data into the system prompt
 - Calls Anthropic Claude via Vercel AI SDK `streamText`
 - Returns streaming response
@@ -134,6 +175,28 @@ Instrucciones:
 - Mantené el contexto de la conversación. Si ya hablaron de un tema, no lo repitas innecesariamente.
 ```
 
+### Comparator System Prompt (concept)
+
+```
+Sos un analista financiero senior especializado en análisis comparativo.
+Respondé siempre en español rioplatense, de forma directa y profesional.
+
+Estás comparando dos empresas:
+
+EMPRESA A: {company_a_name} ({symbol_a})
+{...same data block as CFO prompt: quote, fundamentals, news...}
+
+EMPRESA B: {company_b_name} ({symbol_b})
+{...same data block as CFO prompt: quote, fundamentals, news...}
+
+Instrucciones:
+- Compará usando datos concretos de ambas empresas. Citá números específicos.
+- Señalá fortalezas y debilidades de cada una de forma objetiva.
+- Si te preguntan algo que no está en los datos, decilo honestamente.
+- NO des recomendaciones de compra o venta. Solo análisis comparativo objetivo.
+- Mantené el contexto de la conversación.
+```
+
 ### Rate Limiting
 
 - Use existing `lib/rate-limit.ts` on the chat endpoint
@@ -157,6 +220,9 @@ Instrucciones:
 - `CfoChat` - Bottom sheet with chat interface
 - `ChatMessage` - Individual message bubble
 - `EmptyState` - Reusable empty state with suggestions
+- `MarketMood` - Sentiment semaphore (green/yellow/red) with percentage
+- `CompareColumns` - Side-by-side fundamentals for two stocks
+- `CompareChat` - Full-width chat for comparator page
 
 ### Existing Components (from shadcn, already installed)
 - `Button`, `Card`, `Badge`, `Tabs`, `Input`, `Sheet`, `Command`, `Dialog`
@@ -168,11 +234,14 @@ Instrucciones:
 - `useWatchlist` - localStorage CRUD for watchlist symbols
 - `useQuotes` - Polling fetch for batch quotes (30s interval)
 - `useStockData` - Fetch quote + fundamentals + news for a symbol
+- `useMarketMood` - Compute mood from batch quotes (positive/negative ratio over recent days)
 
 ## Error Handling
 
 - **API failures**: Skeleton loaders during fetch, Sonner toast on error with retry option
 - **Invalid symbol in URL**: Redirect to home with toast "Símbolo no encontrado"
+- **Compare with same symbol**: Prevent, show toast "Elegí dos empresas diferentes"
+- **Compare with invalid symbol**: Redirect to home with toast
 - **Chat failures**: Inline error message in chat, retry button
 - **Chat rate limit**: Toast "Demasiados mensajes, esperá un momento"
 - **Watchlist full**: Toast "Máximo 20 acciones en la watchlist"
