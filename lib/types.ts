@@ -38,6 +38,18 @@ export type Fundamentals = {
   description?: string;
   employees?: number;
   website?: string;
+  debtToEquity?: number;
+  currentRatio?: number;
+  returnOnEquity?: number;
+  returnOnAssets?: number;
+  operatingMargin?: number;
+  grossMargin?: number;
+  ebitda?: number;
+  totalDebt?: number;
+  totalCash?: number;
+  bookValue?: number;
+  earningsGrowth?: number;
+  freeCashflow?: number;
 };
 
 export type SearchResult = {

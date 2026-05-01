@@ -8,7 +8,9 @@ import { PriceChart } from "@/components/price-chart";
 import { FundamentalsPanel } from "@/components/fundamentals-panel";
 import { NewsPanel } from "@/components/news-panel";
 import { CompanyInfo } from "@/components/company-info";
+import { FinancialsPanel } from "@/components/financials-panel";
 import { CfoChat } from "@/components/cfo-chat";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -73,26 +75,26 @@ export default function StockPage({
 
       <PriceChart symbol={symbol} />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Fundamentals
-          </h3>
-          <FundamentalsPanel fundamentals={fundamentals} isLoading={isLoading} />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Empresa
-          </h3>
+      <Tabs defaultValue="general" className="mt-6">
+        <TabsList>
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="fundamentals">Fundamentals</TabsTrigger>
+          <TabsTrigger value="financials">Financials</TabsTrigger>
+          <TabsTrigger value="noticias">Noticias</TabsTrigger>
+        </TabsList>
+        <TabsContent value="general" className="mt-4">
           <CompanyInfo data={fundamentals} />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Noticias
-          </h3>
+        </TabsContent>
+        <TabsContent value="fundamentals" className="mt-4">
+          <FundamentalsPanel fundamentals={fundamentals} isLoading={isLoading} />
+        </TabsContent>
+        <TabsContent value="financials" className="mt-4">
+          <FinancialsPanel fundamentals={fundamentals} isLoading={isLoading} />
+        </TabsContent>
+        <TabsContent value="noticias" className="mt-4">
           <NewsPanel items={news} isLoading={isLoading} />
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
 
       {quote && (
         <CfoChat symbol={symbol} companyName={quote.name} />

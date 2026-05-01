@@ -117,6 +117,20 @@ type QuoteSummary = {
   financialData?: {
     profitMargins?: number;
     revenueGrowth?: number;
+    debtToEquity?: number;
+    currentRatio?: number;
+    returnOnEquity?: number;
+    returnOnAssets?: number;
+    operatingMargins?: number;
+    grossMargins?: number;
+    ebitda?: number;
+    totalDebt?: number;
+    totalCash?: number;
+    freeCashflow?: number;
+    earningsGrowth?: number;
+  };
+  defaultKeyStatistics?: {
+    bookValue?: number;
   };
   assetProfile?: {
     sector?: string;
@@ -140,6 +154,7 @@ export async function getFundamentals(symbol: string): Promise<Fundamentals> {
   const sd = data.summaryDetail;
   const fd = data.financialData;
   const ap = data.assetProfile;
+  const dks = data.defaultKeyStatistics;
   return {
     marketCap: sd?.marketCap,
     peRatio: sd?.trailingPE,
@@ -151,6 +166,18 @@ export async function getFundamentals(symbol: string): Promise<Fundamentals> {
     dividendYield: sd?.dividendYield,
     profitMargin: fd?.profitMargins ?? undefined,
     revenueGrowth: fd?.revenueGrowth ?? undefined,
+    debtToEquity: fd?.debtToEquity ?? undefined,
+    currentRatio: fd?.currentRatio ?? undefined,
+    returnOnEquity: fd?.returnOnEquity ?? undefined,
+    returnOnAssets: fd?.returnOnAssets ?? undefined,
+    operatingMargin: fd?.operatingMargins ?? undefined,
+    grossMargin: fd?.grossMargins ?? undefined,
+    ebitda: fd?.ebitda ?? undefined,
+    totalDebt: fd?.totalDebt ?? undefined,
+    totalCash: fd?.totalCash ?? undefined,
+    freeCashflow: fd?.freeCashflow ?? undefined,
+    earningsGrowth: fd?.earningsGrowth ?? undefined,
+    bookValue: dks?.bookValue ?? undefined,
     sector: ap?.sector,
     industry: ap?.industry,
     description: ap?.longBusinessSummary,
