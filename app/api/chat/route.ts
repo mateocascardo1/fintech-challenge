@@ -27,8 +27,9 @@ export async function POST(req: Request) {
   };
 
   if (!symbol || !isValidSymbol(symbol.toUpperCase())) {
+    console.error("chat: invalid symbol", { symbol, bodyKeys: Object.keys(body) });
     return new Response(
-      JSON.stringify({ error: "Invalid symbol" }),
+      JSON.stringify({ error: "Invalid symbol", debug: { symbol: symbol ?? null, keys: Object.keys(body) } }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
