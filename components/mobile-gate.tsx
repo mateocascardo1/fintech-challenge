@@ -12,7 +12,7 @@ export function MobileGate({ children }: { children: React.ReactNode }) {
             <ActivityIcon className="size-8 text-primary" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">Market Pulse</h1>
+            <h1 className="text-2xl font-bold tracking-tight">SignalAI</h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Esta plataforma está optimizada para escritorio. Abrila desde tu computadora para la mejor experiencia.
             </p>

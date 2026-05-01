@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Market Pulse — Datos y análisis de acciones",
+  title: "SignalAI — Datos y análisis de acciones con IA",
   description:
     "Plataforma de market data y análisis con IA. Buscá acciones, visualizá charts y conversá con tus inversiones.",
 };

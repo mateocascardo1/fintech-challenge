@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignalAI — Technical Deck</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #ffffff;
+    --bg-card: #f7f7f8;
+    --bg-card-alt: #f0f0f2;
+    --text: #111118;
+    --text-muted: #6b6b80;
+    --primary: #16a34a;
+    --primary-dim: rgba(22,163,74,0.08);
+    --primary-glow: rgba(22,163,74,0.05);
+    --negative: #dc2626;
+    --accent: #6366f1;
+    --accent-dim: rgba(99,102,241,0.08);
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.14);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 0.9em;
+    background: var(--bg-card);
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .page {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 60px 48px;
+    min-height: 100vh;
+    position: relative;
+    page-break-after: always;
+  }
+
+  /* ─── Cover ─── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh;
+  }
+
+  .cover-logo {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--primary), #0ea5e9);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 36px;
+    box-shadow: 0 8px 32px rgba(22,163,74,0.18);
+  }
+
+  .cover-logo svg { width: 36px; height: 36px; fill: #fff; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .cover h1 {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .cover .subtitle {
+    font-size: 18px;
+    color: var(--text-muted);
+    margin-bottom: 48px;
+    max-width: 500px;
+  }
+
+  .cover-meta {
+    display: flex;
+    gap: 32px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+  }
+
+  .cover-meta span { display: flex; align-items: center; gap: 8px; }
+
+  .cover-meta .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--primary);
+  }
+
+  /* ─── Section headers ─── */
+  .section-num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-num::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--primary-dim), transparent);
+  }
+
+  h2 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    max-width: 700px;
+  }
+
+  /* ─── Cards ─── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .card .icon-box {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+    font-size: 20px;
+  }
+
+  .card .icon-box.green { background: var(--primary-dim); }
+  .card .icon-box.purple { background: var(--accent-dim); }
+  .card .icon-box.red { background: rgba(220,38,38,0.08); }
+  .card .icon-box.blue { background: rgba(14,165,233,0.08); }
+  .card .icon-box.amber { background: rgba(217,119,6,0.08); }
+  .card .icon-box.pink { background: rgba(219,39,119,0.08); }
+
+  .card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  /* ─── Flow diagrams ─── */
+  .flow-diagram {
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 40px 32px;
+    margin-bottom: 32px;
+  }
+
+  .flow-title {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 28px;
+    text-align: center;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .flow-node {
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    min-width: 130px;
+  }
+
+  .flow-node small {
+    font-weight: 400;
+    opacity: 0.7;
+  }
+
+  .flow-node.user {
+    background: rgba(99,102,241,0.07);
+    border: 1px solid rgba(99,102,241,0.2);
+    color: #4f46e5;
+  }
+
+  .flow-node.api {
+    background: rgba(14,165,233,0.07);
+    border: 1px solid rgba(14,165,233,0.2);
+    color: #0284c7;
+  }
+
+  .flow-node.llm {
+    background: var(--primary-dim);
+    border: 1px solid rgba(22,163,74,0.2);
+    color: var(--primary);
+  }
+
+  .flow-node.tool {
+    background: rgba(217,119,6,0.07);
+    border: 1px solid rgba(217,119,6,0.2);
+    color: #b45309;
+  }
+
+  .flow-node.data {
+    background: rgba(219,39,119,0.06);
+    border: 1px solid rgba(219,39,119,0.18);
+    color: #be185d;
+  }
+
+  .flow-arrow {
+    font-size: 18px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .flow-arrow-down {
+    text-align: center;
+    font-size: 18px;
+    color: var(--text-muted);
+    margin: 4px 0;
+  }
+
+  .flow-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+    margin-top: -8px;
+    margin-bottom: 12px;
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .tool-chip {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    text-align: center;
+    background: rgba(217,119,6,0.06);
+    border: 1px solid rgba(217,119,6,0.15);
+    color: #b45309;
+  }
+
+  .tool-chip.green-chip {
+    background: var(--primary-dim);
+    border-color: rgba(22,163,74,0.15);
+    color: var(--primary);
+  }
+
+  /* ─── Page mockups ─── */
+  .page-showcase {
+    margin-bottom: 32px;
+  }
+
+  .page-showcase .page-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 12px;
+  }
+
+  .page-mockup {
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    padding: 32px;
+    overflow: hidden;
+  }
+
+  .page-mockup .browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .browser-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .browser-dot.r { background: #ef4444; }
+  .browser-dot.y { background: #f59e0b; }
+  .browser-dot.g { background: #22c55e; }
+
+  .browser-url {
+    flex: 1;
+    margin-left: 12px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .mockup-content { min-height: 180px; }
+
+  .mockup-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .mockup-block {
+    border-radius: 10px;
+    padding: 16px;
+    flex: 1;
+  }
+
+  .mockup-block.hero {
+    background: linear-gradient(135deg, var(--primary-dim), rgba(14,165,233,0.06));
+    border: 1px solid rgba(22,163,74,0.15);
+    text-align: center;
+    padding: 24px;
+  }
+
+  .mockup-block.surface {
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+
+  .mockup-block.chart {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    min-height: 80px;
+  }
+
+  .mockup-block.chat {
+    background: var(--primary-dim);
+    border: 1px solid rgba(22,163,74,0.18);
+  }
+
+  .mockup-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .mockup-text {
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .mockup-text-sm {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ─── Tech stack ─── */
+  .tech-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .tech-chip {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* ─── Table ─── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  table td {
+    padding: 10px 16px;
+  }
+
+  /* ─── Footer ─── */
+  .page-footer {
+    position: absolute;
+    bottom: 32px;
+    left: 48px;
+    right: 48px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  /* ─── Print ─── */
+  @media print {
+    body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { padding: 40px 36px; min-height: auto; page-break-inside: avoid; }
+    .page-footer { position: relative; bottom: auto; left: auto; right: auto; margin-top: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ PAGE 1: COVER ════════════════════ -->
+<div class="page cover">
+  <div class="cover-logo">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <h1>SignalAI</h1>
+  <p class="subtitle">
+    Plataforma de market data y análisis financiero con inteligencia artificial.
+    Datos en vivo, charts interactivos y agentes IA especializados.
+  </p>
+  <div class="cover-meta">
+    <span><span class="dot"></span> Next.js 16</span>
+    <span><span class="dot"></span> React 19</span>
+    <span><span class="dot"></span> AI SDK v6</span>
+    <span><span class="dot"></span> Yahoo Finance</span>
+  </div>
+  <div class="page-footer">
+    <span>SignalAI — Technical Deck</span>
+    <span>Mayo 2026</span>
+  </div>
+</div>
+
+<!-- ════════════════════ PAGE 2: FUNCIONALIDADES ════════════════════ -->
+<div class="page">
+  <div class="section-num">01 — Funcionalidades</div>
+  <h2>Funcionalidades principales</h2>
+  <p class="section-desc">
+    SignalAI es una plataforma de análisis financiero que combina datos en tiempo real con agentes de IA especializados para ofrecer insights accionables.
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="icon-box green">📈</div>
+      <h4>Watchlist personalizada</h4>
+      <p>Hasta 20 acciones con precios en tiempo real, cambio porcentual, market cap, exchange y variación diaria. Persistencia en localStorage.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box purple">🤖</div>
+      <h4>Agente CFO con IA</h4>
+      <p>Chat con el "CFO" de cualquier empresa. El agente consulta datos en vivo de Yahoo Finance mediante 7 herramientas especializadas para responder cualquier pregunta financiera.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box blue">⚖️</div>
+      <h4>Comparador con IA</h4>
+      <p>Comparación lado a lado de dos empresas con métricas fundamentales, scoreboard VS, y un analista IA que compara valuación, márgenes, riesgo y crecimiento.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box amber">📊</div>
+      <h4>Charts interactivos</h4>
+      <p>Gráficos de velas y área con rangos de 5 días a máximo histórico. Powered by Lightweight Charts con colores dinámicos según tendencia.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box red">📰</div>
+      <h4>Noticias en vivo</h4>
+      <p>Feed de noticias de Google News para cada empresa con source, fecha y diseño editorial. Accesible desde la página de detalle.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box pink">🌐</div>
+      <h4>Ticker tape & Market Mood</h4>
+      <p>Cinta de cotizaciones en tiempo real con índices, commodities y divisas. Indicador de sentimiento del mercado basado en el pool de acciones US.</p>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="icon-box green">🔍</div>
+      <h4>Búsqueda global</h4>
+      <p>Command palette (⌘K) con búsqueda en tiempo real usando Yahoo Finance API. Navega a detalle de cualquier acción del mundo.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box purple">📋</div>
+      <h4>Earnings Calendar</h4>
+      <p>Eventos de earnings de la semana con fecha, hora y si es antes/después del cierre. Indica si alguna empresa de tu watchlist tiene reporte próximo.</p>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>SignalAI — Technical Deck</span>
+    <span>01 / Funcionalidades</span>
+  </div>
+</div>
+
+<!-- ════════════════════ PAGE 3: AGENTE CFO ════════════════════ -->
+<div class="page">
+  <div class="section-num">02 — Agente CFO</div>
+  <h2>Arquitectura del agente CFO</h2>
+  <p class="section-desc">
+    El CFO es un agente IA que actúa como director financiero de la empresa seleccionada. Tiene acceso a datos pre-cargados y puede consultar datos adicionales en vivo mediante herramientas.
+  </p>
+
+  <div class="flow-diagram">
+    <div class="flow-title">Flujo de consulta del agente CFO</div>
+
+    <div class="flow-row">
+      <div class="flow-node user">👤 Usuario<br><small>pregunta al CFO</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node api">🔌 /api/chat<br><small>API Route</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node data">📦 Pre-fetch<br><small>Quote + Fundamentals + News</small></div>
+    </div>
+
+    <div class="flow-arrow-down">↓</div>
+    <div class="flow-label">System prompt con datos reales + instrucciones de rol</div>
+
+    <div class="flow-row">
+      <div class="flow-node llm">🧠 Claude Sonnet 4<br><small>LLM con tool-use</small></div>
+    </div>
+
+    <div class="flow-arrow-down">↓</div>
+    <div class="flow-label">Si necesita más datos, invoca herramientas automáticamente</div>
+
+    <div class="tools-grid">
+      <div class="tool-chip">getStockQuote</div>
+      <div class="tool-chip">getStockFundamentals</div>
+      <div class="tool-chip">getHistoricalPrices</div>
+      <div class="tool-chip">searchStocks</div>
+      <div class="tool-chip">compareStocks</div>
+      <div class="tool-chip">getFinancialData</div>
+      <div class="tool-chip">getStockNews</div>
+      <div class="tool-chip green-chip">Yahoo Finance API</div>
+    </div>
+
+    <div class="flow-arrow-down" style="margin-top: 16px;">↓</div>
+
+    <div class="flow-row">
+      <div class="flow-node llm">✨ Respuesta streaming<br><small>Markdown con datos reales</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node user">👤 Usuario<br><small>ve la respuesta en el chat</small></div>
+    </div>
+  </div>
+
+  <h3>Capacidades del agente CFO</h3>
+  <div class="card-grid" style="margin-top: 16px;">
+    <div class="card">
+      <h4>🎯 Datos pre-cargados</h4>
+      <p>Al iniciar la conversación, el API route busca cotización actual, fundamentals completos y noticias recientes. Estos datos se inyectan en el system prompt para que el agente ya tenga contexto.</p>
+    </div>
+    <div class="card">
+      <h4>🔧 Tool-use dinámico</h4>
+      <p>Si el usuario pregunta algo que no está en los datos pre-cargados (ej: "cómo está el cash flow?"), el agente invoca automáticamente <code>getFinancialData</code> y responde con datos de <code>fundamentalsTimeSeries</code>.</p>
+    </div>
+    <div class="card">
+      <h4>📊 Estados financieros</h4>
+      <p>Accede a income statement, balance sheet y cash flow statement con 4 años de historia y 60+ campos vía Yahoo Finance <code>fundamentalsTimeSeries</code> API.</p>
+    </div>
+    <div class="card">
+      <h4>🔄 Multi-step (hasta 5)</h4>
+      <p>El agente puede encadenar hasta 5 tool calls en una sola respuesta. Puede buscar datos, compararlos y sintetizar todo antes de responder al usuario.</p>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>SignalAI — Technical Deck</span>
+    <span>02 / Agente CFO</span>
+  </div>
+</div>
+
+<!-- ════════════════════ PAGE 4: AGENTE COMPARADOR ════════════════════ -->
+<div class="page">
+  <div class="section-num">03 — Agente Comparador</div>
+  <h2>Arquitectura del agente comparador</h2>
+  <p class="section-desc">
+    El comparador es un analista financiero senior que recibe datos de dos empresas y las compara de forma objetiva, con acceso a las mismas herramientas que el CFO.
+  </p>
+
+  <div class="flow-diagram">
+    <div class="flow-title">Flujo de consulta del agente comparador</div>
+
+    <div class="flow-row">
+      <div class="flow-node user">👤 Usuario<br><small>AAPL vs MSFT</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node api">🔌 /api/chat<br><small>API Route</small></div>
+    </div>
+
+    <div class="flow-arrow-down">↓</div>
+
+    <div class="flow-row">
+      <div class="flow-node data">📦 Empresa A<br><small>Quote + Fund. + News</small></div>
+      <div class="flow-node data" style="margin-left: 12px;">📦 Empresa B<br><small>Quote + Fund. + News</small></div>
+    </div>
+
+    <div class="flow-arrow-down">↓</div>
+    <div class="flow-label">System prompt comparativo con datos de ambas empresas</div>
+
+    <div class="flow-row">
+      <div class="flow-node llm">🧠 Claude Sonnet 4<br><small>Rol: Analista Senior</small></div>
+    </div>
+
+    <div class="flow-arrow-down">↓</div>
+    <div class="flow-label">Mismas 7 herramientas disponibles para ambas empresas</div>
+
+    <div class="flow-row">
+      <div class="flow-node tool">🔧 Tools<br><small>Quote, Fundamentals, History,<br>Search, Compare, Financial, News</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node llm">✨ Análisis comparativo<br><small>Streaming con markdown</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node user">👤 Usuario</div>
+    </div>
+  </div>
+
+  <h3>Diferencias entre ambos agentes</h3>
+  <div style="margin-top: 16px; overflow-x: auto;">
+    <table>
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border-strong);">
+          <th style="color: var(--text-muted);"></th>
+          <th style="color: var(--primary);">Agente CFO</th>
+          <th style="color: var(--accent);">Agente Comparador</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="color: var(--text-muted);">Rol</td>
+          <td>CFO de la empresa</td>
+          <td>Analista financiero senior</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="color: var(--text-muted);">Datos iniciales</td>
+          <td>1 empresa</td>
+          <td>2 empresas en paralelo</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="color: var(--text-muted);">Herramientas</td>
+          <td>7 tools (idénticas)</td>
+          <td>7 tools (idénticas)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="color: var(--text-muted);">UI</td>
+          <td>Panel lateral sticky</td>
+          <td>Panel fijo inferior expandible</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="color: var(--text-muted);">Modelo</td>
+          <td>Claude Sonnet 4</td>
+          <td>Claude Sonnet 4</td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-muted);">Max steps</td>
+          <td>5 tool calls</td>
+          <td>5 tool calls</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-footer">
+    <span>SignalAI — Technical Deck</span>
+    <span>03 / Agente Comparador</span>
+  </div>
+</div>
+
+<!-- ════════════════════ PAGE 5: PAGINAS ════════════════════ -->
+<div class="page">
+  <div class="section-num">04 — Las 3 páginas</div>
+  <h2>Páginas de la aplicación</h2>
+  <p class="section-desc">
+    La aplicación tiene 3 páginas principales, cada una diseñada con el sistema de diseño "surface-elevated" con noise textures y glow effects.
+  </p>
+
+  <!-- Home -->
+  <div class="page-showcase">
+    <div class="page-label">Página 1 — Home  /</div>
+    <div class="page-mockup">
+      <div class="browser-bar">
+        <span class="browser-dot r"></span>
+        <span class="browser-dot y"></span>
+        <span class="browser-dot g"></span>
+        <span class="browser-url">marketpulse.vercel.app/</span>
+      </div>
+      <div class="mockup-content">
+        <div class="mockup-row">
+          <div class="mockup-block surface" style="flex: 1; padding: 8px 16px;">
+            <div class="mockup-tag">ticker tape</div>
+            <div class="mockup-text-sm">AAPL +1.2%  ·  MSFT -0.3%  ·  ^GSPC +0.8%  ·  GC=F +0.5%</div>
+          </div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-block hero" style="flex: 1;">
+            <div class="mockup-text" style="color: var(--primary);">✨ Hero Banner</div>
+            <div class="mockup-text-sm">Watchlist · CFO IA · Comparador</div>
+          </div>
+          <div class="mockup-block surface">
+            <div class="mockup-tag">market mood</div>
+            <div class="mockup-text">Alcista</div>
+          </div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-block surface"><div class="mockup-tag">watchlist</div><div class="mockup-text-sm">AAPL · MSFT · GOOGL · TSLA</div></div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-block surface"><div class="mockup-tag">índices</div><div class="mockup-text-sm">S&P 500 · Nasdaq · Dow</div></div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-block surface"><div class="mockup-tag">commodities</div><div class="mockup-text-sm">Oro · Plata · Petróleo</div></div>
+          <div class="mockup-block surface"><div class="mockup-tag">divisas</div><div class="mockup-text-sm">EUR/USD · USD/ARS</div></div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-block surface"><div class="mockup-tag">earnings calendar</div><div class="mockup-text-sm">Eventos de la semana</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Detail -->
+  <div class="page-showcase">
+    <div class="page-label">Página 2 — Stock Detail  /stock/[symbol]</div>
+    <div class="page-mockup">
+      <div class="browser-bar">
+        <span class="browser-dot r"></span>
+        <span class="browser-dot y"></span>
+        <span class="browser-dot g"></span>
+        <span class="browser-url">marketpulse.vercel.app/stock/AAPL</span>
+      </div>
+      <div class="mockup-content">
+        <div class="mockup-row">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+            <div class="mockup-block surface">
+              <div class="mockup-tag">stock header</div>
+              <div class="mockup-text">Apple Inc. (AAPL) — $198.50 <span style="color: var(--primary);">+1.2%</span></div>
+              <div class="mockup-text-sm">⭐ Watchlist · ⚖️ Comparar</div>
+            </div>
+            <div class="mockup-block chart">
+              <div class="mockup-tag">price chart</div>
+              <div class="mockup-text-sm">Candlestick / Area · 5d → max</div>
+              <div style="margin-top: 8px; height: 40px; background: linear-gradient(135deg, rgba(22,163,74,0.1), transparent); border-radius: 6px;"></div>
+            </div>
+            <div class="mockup-block surface">
+              <div class="mockup-tag">tabs</div>
+              <div class="mockup-text-sm">General · Fundamentals · Financials · Noticias</div>
+            </div>
+          </div>
+          <div class="mockup-block chat" style="width: 200px; flex-shrink: 0; align-self: stretch;">
+            <div class="mockup-tag" style="color: var(--primary);">CFO IA Chat</div>
+            <div class="mockup-text-sm" style="margin-top: 8px;">Panel lateral sticky</div>
+            <div class="mockup-text-sm">Quick questions</div>
+            <div class="mockup-text-sm">Streaming + Tools</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare -->
+  <div class="page-showcase">
+    <div class="page-label">Página 3 — Compare  /compare/[A]-vs-[B]</div>
+    <div class="page-mockup">
+      <div class="browser-bar">
+        <span class="browser-dot r"></span>
+        <span class="browser-dot y"></span>
+        <span class="browser-dot g"></span>
+        <span class="browser-url">marketpulse.vercel.app/compare/AAPL-vs-MSFT</span>
+      </div>
+      <div class="mockup-content">
+        <div class="mockup-row">
+          <div class="mockup-block surface">
+            <div class="mockup-tag">header</div>
+            <div class="mockup-text">AAPL <span style="color: var(--text-muted);">vs</span> MSFT</div>
+          </div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-block surface">
+            <div class="mockup-tag">quote A</div>
+            <div class="mockup-text-sm">Apple · $198.50</div>
+          </div>
+          <div style="display: flex; align-items: center; font-weight: 700; color: var(--text-muted); font-size: 20px; padding: 0 8px;">VS</div>
+          <div class="mockup-block surface">
+            <div class="mockup-tag">quote B</div>
+            <div class="mockup-text-sm">Microsoft · $415.20</div>
+          </div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-block surface" style="flex: 1;">
+            <div class="mockup-tag">metric groups</div>
+            <div class="mockup-text-sm">Valuación · Rentabilidad · Crecimiento · Deuda · Trading</div>
+          </div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-block chat" style="flex: 1;">
+            <div class="mockup-tag" style="color: var(--primary);">analista IA — fixed bottom panel</div>
+            <div class="mockup-text-sm">Expandible · Quick questions · Tool-use</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>SignalAI — Technical Deck</span>
+    <span>04 / Las 3 Páginas</span>
+  </div>
+</div>
+
+<!-- ════════════════════ PAGE 6: TECH STACK & CHALLENGE ════════════════════ -->
+<div class="page">
+  <div class="section-num">05 — Stack & Challenge</div>
+  <h2>Tech stack</h2>
+  <p class="section-desc">
+    Stack moderno optimizado para performance, developer experience y UX.
+  </p>
+
+  <div class="tech-row">
+    <span class="tech-chip">Next.js 16</span>
+    <span class="tech-chip">React 19</span>
+    <span class="tech-chip">TypeScript</span>
+    <span class="tech-chip">Tailwind 4</span>
+    <span class="tech-chip">shadcn/ui</span>
+    <span class="tech-chip">Vercel AI SDK v6</span>
+    <span class="tech-chip">Claude Sonnet 4</span>
+    <span class="tech-chip">yahoo-finance2</span>
+    <span class="tech-chip">Lightweight Charts</span>
+    <span class="tech-chip">cmdk</span>
+    <span class="tech-chip">react-markdown</span>
+    <span class="tech-chip">Vercel</span>
+  </div>
+
+  <h3 style="margin-top: 40px;">El challenge</h3>
+  <p class="section-desc">
+    Construir una plataforma de análisis financiero con datos en tiempo real y agentes de IA que actúen como asesores financieros especializados.
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="icon-box green">✅</div>
+      <h4>Datos en tiempo real</h4>
+      <p>Integración con Yahoo Finance para cotizaciones, fundamentals, estados financieros y datos históricos. Ticker tape, índices, commodities y divisas actualizados.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box purple">✅</div>
+      <h4>Agentes IA con tools</h4>
+      <p>Dos agentes especializados (CFO y Comparador) con 7 herramientas de Yahoo Finance, streaming de respuestas, multi-step reasoning y respuestas en markdown.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box blue">✅</div>
+      <h4>UI/UX Premium</h4>
+      <p>Diseño dark-theme con surface-elevated cards, noise textures, glow effects, animaciones, y tipografía Geist. Desktop-first con mobile gate.</p>
+    </div>
+    <div class="card">
+      <div class="icon-box amber">✅</div>
+      <h4>Experiencia completa</h4>
+      <p>Watchlist con persistencia, command palette (⌘K), charts interactivos, comparación de empresas, earnings calendar, noticias y estados financieros detallados.</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 40px; text-align: center;">
+    <div style="display: inline-flex; align-items: center; gap: 12px; padding: 16px 28px; border-radius: 14px; background: var(--primary-dim); border: 1px solid rgba(22,163,74,0.18);">
+      <span style="font-size: 20px;">🚀</span>
+      <span style="font-size: 14px; font-weight: 600; color: var(--primary);">Deploy en Vercel — marketpulse.vercel.app</span>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>SignalAI — Technical Deck</span>
+    <span>05 / Stack & Challenge</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -10,7 +10,7 @@ export function AppHeader() {
           <div className="flex items-center justify-center size-7 rounded-lg bg-primary/15">
             <ActivityIcon className="size-4 text-primary" />
           </div>
-          <span>Market Pulse</span>
+          <span>SignalAI</span>
         </Link>
         <div className="flex-1 flex justify-center">
           <SearchCommand />
