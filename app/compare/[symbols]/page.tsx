@@ -38,7 +38,7 @@ export default function ComparePage({
   const dataB = useStockData(symbolB);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-4 space-y-6">
+    <div className="mx-auto max-w-5xl px-4 py-6 space-y-8">
       <div className="flex items-center gap-4">
         <Link href="/">
           <Button variant="ghost" size="icon">
@@ -46,9 +46,9 @@ export default function ComparePage({
           </Button>
         </Link>
         <h1 className="text-xl font-bold">
-          <Link href={`/stock/${symbolA}`} className="hover:underline">{symbolA}</Link>
-          {" vs "}
-          <Link href={`/stock/${symbolB}`} className="hover:underline">{symbolB}</Link>
+          <Link href={`/stock/${symbolA}`} className="hover:underline font-mono">{symbolA}</Link>
+          <span className="text-muted-foreground mx-2">vs</span>
+          <Link href={`/stock/${symbolB}`} className="hover:underline font-mono">{symbolB}</Link>
         </h1>
       </div>
 
@@ -60,7 +60,12 @@ export default function ComparePage({
         isLoading={dataA.isLoading || dataB.isLoading}
       />
 
-      <CompareChat symbolA={symbolA} symbolB={symbolB} />
+      <section>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Analista IA
+        </h2>
+        <CompareChat symbolA={symbolA} symbolB={symbolB} />
+      </section>
     </div>
   );
 }
