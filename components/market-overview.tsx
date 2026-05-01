@@ -33,25 +33,45 @@ const CURRENCY_LABELS: Record<string, string> = {
 function IndexCard({ quote }: { quote: Quote }) {
   const sign = changeSign(quote.change);
   const label = INDEX_LABELS[quote.symbol] ?? COMMODITY_LABELS[quote.symbol] ?? CURRENCY_LABELS[quote.symbol] ?? quote.name;
+  const isPositive = sign === "positive";
+  const isNegative = sign === "negative";
+
   return (
     <Link
       href={`/stock/${encodeURIComponent(quote.symbol)}`}
-      className="flex flex-col gap-1 rounded-lg border bg-card p-4 hover:bg-accent/50 transition-colors min-w-[160px]"
+      className={cn(
+        "group relative flex flex-col gap-2 rounded-2xl p-4 min-w-[170px] transition-all duration-200 overflow-hidden noise-overlay",
+        "surface-elevated hover:scale-[1.02] hover:-translate-y-0.5",
+        isPositive && "hover:surface-glow-positive",
+        isNegative && "hover:surface-glow-negative",
+      )}
     >
-      <span className="text-xs text-muted-foreground font-medium">{label}</span>
-      <span className="font-mono font-semibold text-lg tabular-nums">
-        {formatPrice(quote.price, quote.currency)}
-      </span>
-      <span
-        className={cn(
-          "font-mono text-sm tabular-nums",
-          sign === "positive" && "text-positive",
-          sign === "negative" && "text-negative",
-          sign === "neutral" && "text-muted-foreground",
-        )}
-      >
-        {formatPercent(quote.changePercent, { withSign: true })}
-      </span>
+      <div className="relative z-10">
+        <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-medium">{label}</span>
+        <div className="font-mono font-bold text-lg tabular-nums mt-1 tracking-tight">
+          {formatPrice(quote.price, quote.currency)}
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          <div
+            className={cn(
+              "h-[3px] w-6 rounded-full",
+              isPositive && "bg-positive",
+              isNegative && "bg-negative",
+              sign === "neutral" && "bg-muted-foreground/30",
+            )}
+          />
+          <span
+            className={cn(
+              "font-mono text-xs tabular-nums font-semibold",
+              isPositive && "text-positive",
+              isNegative && "text-negative",
+              sign === "neutral" && "text-muted-foreground",
+            )}
+          >
+            {formatPercent(quote.changePercent, { withSign: true })}
+          </span>
+        </div>
+      </div>
     </Link>
   );
 }
@@ -61,14 +81,14 @@ export function MarketOverview({ quotes, isLoading }: { quotes: Quote[]; isLoadi
     return (
       <div className="flex gap-3 overflow-x-auto pb-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-[88px] min-w-[160px] rounded-lg" />
+          <Skeleton key={i} className="h-[96px] min-w-[170px] rounded-2xl" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2">
+    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
       {quotes.map((q) => (
         <IndexCard key={q.symbol} quote={q} />
       ))}

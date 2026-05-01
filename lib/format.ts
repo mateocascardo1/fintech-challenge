@@ -23,9 +23,20 @@ const pctFmt = new Intl.NumberFormat(LOCALE, {
 
 const relativeFmt = new Intl.RelativeTimeFormat(LOCALE, { numeric: "auto" });
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "US$",
+  ARS: "$",
+  BRL: "R$",
+  JPY: "JPY",
+  EUR: "€",
+  GBP: "£",
+  MXN: "MX$",
+  CLP: "CL$",
+};
+
 export function formatPrice(value: number | null | undefined, currency = "USD"): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  const symbol = currency === "USD" ? "US$" : currency === "ARS" ? "$" : currency;
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
   return `${symbol} ${priceFmt.format(value)}`;
 }
 

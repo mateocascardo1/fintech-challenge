@@ -10,14 +10,16 @@ function TickerItem({ quote }: { quote: Quote }) {
   const sign = changeSign(quote.change);
   return (
     <Link
-      href={`/stock/${quote.symbol}`}
-      className="inline-flex items-center gap-2 px-4 whitespace-nowrap hover:bg-accent/50 transition-colors"
+      href={`/stock/${encodeURIComponent(quote.symbol)}`}
+      className="inline-flex items-center gap-2 px-4 whitespace-nowrap hover:bg-white/[0.03] transition-colors"
     >
-      <span className="font-mono font-semibold text-sm">{quote.symbol}</span>
-      <span className="font-mono text-sm">{formatPrice(quote.price, quote.currency)}</span>
+      <span className="font-mono font-bold text-xs tracking-tight">{quote.symbol}</span>
+      <span className="font-mono text-xs tabular-nums text-muted-foreground">
+        {formatPrice(quote.price, quote.currency)}
+      </span>
       <span
         className={cn(
-          "font-mono text-sm",
+          "font-mono text-xs tabular-nums font-semibold",
           sign === "positive" && "text-positive",
           sign === "negative" && "text-negative",
           sign === "neutral" && "text-muted-foreground",
@@ -53,16 +55,16 @@ export function TickerTape({ quotes }: { quotes: Quote[] }) {
 
   if (quotes.length === 0) {
     return (
-      <div className="h-10 bg-muted/30 border-y border-border flex items-center justify-center">
-        <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+      <div className="h-9 bg-card/50 border-b border-border/50 flex items-center justify-center">
+        <div className="h-2.5 w-48 bg-muted animate-pulse rounded" />
       </div>
     );
   }
 
   return (
-    <div className="h-10 bg-muted/30 border-y border-border overflow-hidden relative">
-      <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent z-10" />
-      <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent z-10" />
+    <div className="h-9 bg-card/30 border-b border-border/50 overflow-hidden relative">
+      <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent z-10" />
+      <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent z-10" />
       <div ref={scrollRef} className="flex items-center h-full will-change-transform">
         {quotes.map((q) => (
           <TickerItem key={`a-${q.symbol}`} quote={q} />
