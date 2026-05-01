@@ -14,7 +14,7 @@ export const CURRENCIES = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDARS=X", "USDB
 export const MAX_WATCHLIST = 20;
 
 export function isValidSymbol(s: string): boolean {
-  return /^[\^A-Z][A-Z0-9.\-]{0,9}$/.test(s);
+  return /^[\^A-Z][A-Z0-9.\-=]{0,11}$/.test(s);
 }
 
 export function parseWatchlistParam(raw: string | null | undefined): string[] {
