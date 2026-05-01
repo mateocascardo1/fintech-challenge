@@ -14,9 +14,25 @@ const INDEX_LABELS: Record<string, string> = {
   "^VIX": "VIX",
 };
 
+const COMMODITY_LABELS: Record<string, string> = {
+  "GC=F": "Oro",
+  "SI=F": "Plata",
+  "CL=F": "Petróleo",
+  "NG=F": "Gas Natural",
+  "HG=F": "Cobre",
+};
+
+const CURRENCY_LABELS: Record<string, string> = {
+  "EURUSD=X": "EUR/USD",
+  "GBPUSD=X": "GBP/USD",
+  "USDJPY=X": "USD/JPY",
+  "USDARS=X": "USD/ARS",
+  "USDBRL=X": "USD/BRL",
+};
+
 function IndexCard({ quote }: { quote: Quote }) {
   const sign = changeSign(quote.change);
-  const label = INDEX_LABELS[quote.symbol] ?? quote.name;
+  const label = INDEX_LABELS[quote.symbol] ?? COMMODITY_LABELS[quote.symbol] ?? CURRENCY_LABELS[quote.symbol] ?? quote.name;
   return (
     <Link
       href={`/stock/${encodeURIComponent(quote.symbol)}`}

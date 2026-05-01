@@ -7,14 +7,16 @@ import { WatchlistGrid } from "@/components/watchlist-grid";
 import { useQuotes } from "@/lib/hooks/use-quotes";
 import { useWatchlist } from "@/lib/hooks/use-watchlist";
 import { computeMarketMood } from "@/lib/hooks/use-market-mood";
-import { POOL_US, INDICES } from "@/lib/tickers";
+import { POOL_US, INDICES, COMMODITIES, CURRENCIES } from "@/lib/tickers";
 
 export default function Home() {
   const { symbols: watchlistSymbols, add, remove, has } = useWatchlist();
-  const allTapeSymbols = [...POOL_US, ...INDICES];
+  const allTapeSymbols = [...POOL_US, ...INDICES, ...COMMODITIES, ...CURRENCIES];
   const { quotes: tapeQuotes, isLoading: tapeLoading } = useQuotes(allTapeSymbols);
 
   const indexQuotes = tapeQuotes.filter((q) => INDICES.includes(q.symbol));
+  const commodityQuotes = tapeQuotes.filter((q) => COMMODITIES.includes(q.symbol));
+  const currencyQuotes = tapeQuotes.filter((q) => CURRENCIES.includes(q.symbol));
   const poolQuotes = tapeQuotes.filter((q) => POOL_US.includes(q.symbol));
   const mood = computeMarketMood(poolQuotes);
 
@@ -33,6 +35,20 @@ export default function Home() {
             Índices
           </h2>
           <MarketOverview quotes={indexQuotes} isLoading={tapeLoading} />
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Commodities
+          </h2>
+          <MarketOverview quotes={commodityQuotes} isLoading={tapeLoading} />
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Divisas
+          </h2>
+          <MarketOverview quotes={currencyQuotes} isLoading={tapeLoading} />
         </section>
 
         <section>

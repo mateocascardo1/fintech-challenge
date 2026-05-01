@@ -8,6 +8,8 @@ export const POOL_US = [
 
 export const INDICES = ["^GSPC", "^IXIC", "^DJI", "^RUT", "^VIX"];
 export const ETFS = ["SPY", "QQQ", "DIA", "IWM", "VTI", "VOO"];
+export const COMMODITIES = ["GC=F", "SI=F", "CL=F", "NG=F", "HG=F"];
+export const CURRENCIES = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDARS=X", "USDBRL=X"];
 
 export const MAX_WATCHLIST = 20;
 
