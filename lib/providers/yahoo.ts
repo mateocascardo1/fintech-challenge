@@ -252,6 +252,97 @@ export async function getEarningsCalendar(symbols: string[]): Promise<EarningsEv
   return results;
 }
 
+type FinancialStatement = Record<string, unknown> & {
+  endDate?: Date | string;
+};
+
+type FinancialStatements = {
+  incomeStatementHistory?: { incomeStatementHistory: FinancialStatement[] };
+  incomeStatementHistoryQuarterly?: { incomeStatementHistory: FinancialStatement[] };
+  cashflowStatementHistory?: { cashflowStatements: FinancialStatement[] };
+  cashflowStatementHistoryQuarterly?: { cashflowStatements: FinancialStatement[] };
+  balanceSheetHistory?: { balanceSheetStatements: FinancialStatement[] };
+  balanceSheetHistoryQuarterly?: { balanceSheetStatements: FinancialStatement[] };
+};
+
+function formatStatementNumber(val: unknown): string | null {
+  if (val == null) return null;
+  const n = Number(val);
+  if (isNaN(n)) return null;
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1e12) return `${sign}${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(0)}K`;
+  return n.toFixed(0);
+}
+
+function extractStatementData(stmt: FinancialStatement, fields: string[]): Record<string, string | null> {
+  const result: Record<string, string | null> = {};
+  const endDate = stmt.endDate;
+  result.period = endDate instanceof Date
+    ? endDate.toISOString().slice(0, 10)
+    : typeof endDate === "string"
+      ? endDate.slice(0, 10)
+      : "N/A";
+  for (const field of fields) {
+    result[field] = formatStatementNumber(stmt[field]);
+  }
+  return result;
+}
+
+export async function getFinancialStatements(symbol: string): Promise<{
+  incomeStatement: Record<string, string | null>[];
+  cashFlow: Record<string, string | null>[];
+  balanceSheet: Record<string, string | null>[];
+}> {
+  const data = (await yahooFinance.quoteSummary(symbol, {
+    modules: [
+      "incomeStatementHistory",
+      "cashflowStatementHistory",
+      "balanceSheetHistory",
+    ] as const,
+  })) as FinancialStatements;
+
+  const incomeFields = [
+    "totalRevenue", "costOfRevenue", "grossProfit",
+    "totalOperatingExpenses", "operatingIncome", "ebit",
+    "interestExpense", "incomeBeforeTax", "incomeTaxExpense",
+    "netIncome", "netIncomeFromContinuingOps",
+    "researchDevelopment", "sellingGeneralAdministrative",
+  ];
+
+  const cashFlowFields = [
+    "netIncome", "depreciation", "changeToNetincome",
+    "changeToOperatingActivities", "totalCashFromOperatingActivities",
+    "capitalExpenditures", "investments",
+    "totalCashflowsFromInvestingActivities",
+    "dividendsPaid", "netBorrowings",
+    "totalCashFromFinancingActivities",
+    "changeInCash", "repurchaseOfStock",
+  ];
+
+  const balanceFields = [
+    "cash", "totalCurrentAssets", "totalAssets",
+    "totalCurrentLiabilities", "totalLiab",
+    "totalStockholderEquity", "netTangibleAssets",
+    "shortLongTermDebt", "longTermDebt",
+    "propertyPlantEquipment", "goodWill", "intangibleAssets",
+    "retainedEarnings", "commonStock",
+  ];
+
+  const incomeStatements = data.incomeStatementHistory?.incomeStatementHistory ?? [];
+  const cashFlowStatements = data.cashflowStatementHistory?.cashflowStatements ?? [];
+  const balanceSheetStatements = data.balanceSheetHistory?.balanceSheetStatements ?? [];
+
+  return {
+    incomeStatement: incomeStatements.map((s) => extractStatementData(s, incomeFields)),
+    cashFlow: cashFlowStatements.map((s) => extractStatementData(s, cashFlowFields)),
+    balanceSheet: balanceSheetStatements.map((s) => extractStatementData(s, balanceFields)),
+  };
+}
+
 type SearchResponse = {
   quotes: Array<{
     symbol?: string;

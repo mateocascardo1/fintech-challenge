@@ -1,7 +1,7 @@
 import { streamText, convertToModelMessages, tool, stepCountIs, type UIMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
-import { getQuote, getFundamentals, getHistoryByRange, searchSymbols, getQuotesBatch } from "@/lib/providers/yahoo";
+import { getQuote, getFundamentals, getHistoryByRange, searchSymbols, getQuotesBatch, getFinancialStatements } from "@/lib/providers/yahoo";
 import { getNews } from "@/lib/providers/google-news";
 import { buildCfoPrompt, buildComparatorPrompt } from "@/lib/chat";
 import { isValidSymbol } from "@/lib/tickers";
@@ -215,6 +215,21 @@ Cuando uses una herramienta, incorporá los resultados naturalmente en tu respue
               };
             } catch {
               return { error: `No se pudo obtener cotizaciones` };
+            }
+          },
+        }),
+
+        getFinancialData: tool({
+          description: "Obtener estados financieros detallados: income statement (ingresos, costos, ganancia), cash flow statement (flujo de caja operativo, inversiones, financiamiento), y balance sheet (activos, deuda, patrimonio). Devuelve datos anuales históricos. Usalo cuando pregunten de dónde vienen los ingresos, cómo está el cash flow, la deuda, o cualquier dato contable detallado.",
+          inputSchema: z.object({
+            symbol: z.string().describe("Símbolo de la acción"),
+          }),
+          execute: async ({ symbol: sym }) => {
+            try {
+              const statements = await getFinancialStatements(sym.toUpperCase());
+              return statements;
+            } catch {
+              return { error: `No se pudo obtener estados financieros de ${sym}` };
             }
           },
         }),
