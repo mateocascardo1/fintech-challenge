@@ -103,6 +103,11 @@ async function computeFullAnalysis(
     const priceUsd = (b.c ?? 0) / mepRate;
     quoteMap.set(posSymbol, { price: priceUsd, name: b.symbol });
   }
+  for (const p of bondPositions) {
+    if (!quoteMap.has(p.symbol)) {
+      quoteMap.set(p.symbol, { price: 0, name: p.symbol });
+    }
+  }
   for (const p of cashPositions) quoteMap.set(p.symbol, { price: 1, name: "Efectivo USD" });
 
   const enriched: PositionWithMarket[] = positions.map((p) => {
@@ -133,7 +138,17 @@ async function computeFullAnalysis(
   const largest = enriched.reduce((max, p) => (p.weight > max.weight ? p : max), enriched[0]);
 
   const diversification = computeDiversificationScore(enriched);
-  const portfolioBeta = enriched.reduce((s, p) => s + p.weight * 1.0, 0);
+  const ASSET_BETA: Record<string, number> = {
+    equity: 1.0,
+    etf: 0.9,
+    bond: 0.3,
+    bond_etf: 0.4,
+    cash: 0,
+  };
+  const portfolioBeta = enriched.reduce(
+    (s, p) => s + p.weight * (ASSET_BETA[p.asset_type] ?? 1.0),
+    0,
+  );
   const portfolioVolatility = 0.15;
 
   const targetBetaMap: Record<string, number> = { conservative: 0.6, moderate: 1.0, aggressive: 1.3 };
@@ -320,7 +335,10 @@ Responder SOLO con el JSON.`;
   }
 
   try {
-    const parsed = JSON.parse(fullText);
+    let jsonStr = fullText.trim();
+    const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fenceMatch) jsonStr = fenceMatch[1].trim();
+    const parsed = JSON.parse(jsonStr);
     const diagnosis = parsed.diagnosis ?? [];
     const allocMoves = parsed.allocation_moves ?? [];
     const instrumentPicks = parsed.instrument_picks ?? [];

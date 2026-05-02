@@ -16,6 +16,7 @@ type TabId = (typeof TABS)[number]["id"];
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>("Overview");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   return (
     <div className="min-h-screen">
@@ -47,8 +48,8 @@ export default function DashboardPage() {
 
       <div className="mx-auto max-w-7xl px-6 py-8">
         <div key={activeTab} className="animate-in fade-in duration-300">
-          {activeTab === "Overview" && <OverviewTab />}
-          {activeTab === "Holdings" && <HoldingsTab />}
+          {activeTab === "Overview" && <OverviewTab key={refreshKey} />}
+          {activeTab === "Holdings" && <HoldingsTab onPortfolioChange={() => setRefreshKey((k) => k + 1)} />}
           {activeTab === "Market Watch" && <MarketWatchTab />}
         </div>
       </div>

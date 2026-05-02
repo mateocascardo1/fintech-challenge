@@ -94,6 +94,7 @@ export function PortfolioDiagnosisCard() {
     }
   }, [fetchData]);
 
+  // Refetches on remount (parent OverviewTab uses key={refreshKey} to trigger this)
   useEffect(() => {
     fetchData()
       .then((count) => {

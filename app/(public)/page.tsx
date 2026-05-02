@@ -113,21 +113,20 @@ export default function LandingPage() {
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/auth">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Iniciar sesión
-              </Button>
-            </Link>
-            <Link href="/auth">
-              <Button size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              asChild
+            >
+              <Link href="/auth">Iniciar sesión</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/auth">
                 Empezá gratis
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </nav>
@@ -163,24 +162,24 @@ export default function LandingPage() {
           </p>
 
           <div className="animate-fade-in-up-delay-3 mt-10 flex items-center justify-center gap-4">
-            <Link href="/auth">
-              <Button
-                size="lg"
-                className="text-base px-8 h-12 rounded-xl font-semibold"
-              >
+            <Button
+              size="lg"
+              className="text-base px-8 h-12 rounded-xl font-semibold"
+              asChild
+            >
+              <Link href="/auth">
                 Empezá gratis
                 <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
-            <a href="#demo">
-              <Button
-                variant="outline"
-                size="lg"
-                className="text-base px-8 h-12 rounded-xl font-semibold border-white/[0.08] hover:border-white/[0.15]"
-              >
-                Ver demo
-              </Button>
-            </a>
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="text-base px-8 h-12 rounded-xl font-semibold border-white/[0.08] hover:border-white/[0.15]"
+              asChild
+            >
+              <a href="#demo">Ver demo</a>
+            </Button>
           </div>
         </div>
       </section>
@@ -511,15 +510,16 @@ export default function LandingPage() {
             análisis y recomendaciones al instante.
           </p>
           <div className="mt-10">
-            <Link href="/auth">
-              <Button
-                size="lg"
-                className="text-base px-10 h-13 rounded-xl font-semibold text-lg"
-              >
+            <Button
+              size="lg"
+              className="text-base px-10 h-13 rounded-xl font-semibold text-lg"
+              asChild
+            >
+              <Link href="/auth">
                 Crear cuenta gratis
                 <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
           <p className="mt-4 text-xs text-muted-foreground/30">
             Sin tarjeta de crédito. Sin compromisos.

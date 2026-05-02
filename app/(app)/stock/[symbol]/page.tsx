@@ -155,14 +155,14 @@ export default function StockDetailPage({
     <div className="mx-auto max-w-7xl px-6 py-6 space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">{quote.symbol}</h1>
-          <span className="text-lg text-muted-foreground">{quote.name}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight shrink-0">{quote.symbol}</h1>
+          <span className="text-lg text-muted-foreground truncate">{quote.name}</span>
           {isBond && (
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-[10px] shrink-0">
               {bondData?.sub_type === "bond" ? "Bono Soberano"
                 : bondData?.sub_type === "note" ? "Letra"
                 : bondData?.sub_type === "corporate" ? "ON"
@@ -170,14 +170,14 @@ export default function StockDetailPage({
             </Badge>
           )}
           {!isBond && fundamentals?.sector && (
-            <Badge variant="secondary" className="text-[10px]">{fundamentals.sector}</Badge>
+            <Badge variant="secondary" className="text-[10px] shrink-0">{fundamentals.sector}</Badge>
           )}
         </div>
-        <div className="ml-auto flex gap-2">
-          <Button variant="ghost" size="icon" className="rounded-full">
+        <div className="ml-auto flex gap-2 shrink-0">
+          <Button variant="ghost" size="icon" className="rounded-full" disabled title="Próximamente">
             <Star className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" disabled title="Próximamente">
             <Plus className="h-3.5 w-3.5 mr-1" /> Agregar al portfolio
           </Button>
         </div>
@@ -201,7 +201,7 @@ export default function StockDetailPage({
       {/* Chart + Sidebar */}
       <div className={`grid gap-6 ${!isBond ? "lg:grid-cols-[1fr_320px]" : ""}`}>
         {/* Chart container */}
-        <ChartWrapper symbol={symbol.toUpperCase()} />
+        {!isBond && <ChartWrapper symbol={symbol.toUpperCase()} />}
 
         {/* Sidebar: News / About - height locked to chart */}
         {!isBond && (

@@ -22,9 +22,21 @@ export async function PUT(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  const ALLOWED_FIELDS = [
+    "risk_tolerance", "investment_horizon", "investment_goal",
+    "age_range", "bond_preference", "experience_level", "monthly_income",
+    "onboarding_completed", "has_portfolio", "objective",
+    "drawdown_reaction", "patrimony_percentage", "liquidity_need",
+    "geo_preference", "sector_preferences", "sector_exclusions",
+    "income_vs_growth",
+  ];
+  const sanitized: Record<string, unknown> = {};
+  for (const key of ALLOWED_FIELDS) {
+    if (key in body) sanitized[key] = body[key];
+  }
   const { data, error } = await supabase
     .from("profiles")
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update({ ...sanitized, updated_at: new Date().toISOString() })
     .eq("id", user.id)
     .select()
     .single();

@@ -161,6 +161,7 @@ export function StepProfile({
               <button
                 key={i}
                 type="button"
+                aria-label={`Pregunta ${i + 1}`}
                 onClick={() => {
                   setShowSlider(false);
                   setCurrentQ(i);

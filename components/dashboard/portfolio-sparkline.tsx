@@ -325,6 +325,7 @@ export function PortfolioSparkline({ positions }: { positions: Position[] }) {
           range={range}
           setRange={setRange}
           onClose={() => setExpanded(false)}
+          hasBonds={positions.some((p) => p.asset_type === "bond")}
         />,
         document.body,
       )}
@@ -339,6 +340,7 @@ function ExpandedChart({
   range,
   setRange,
   onClose,
+  hasBonds,
 }: {
   data: { time: Time; value: number }[];
   histories: ResolvedHistory[];
@@ -346,6 +348,7 @@ function ExpandedChart({
   range: Range;
   setRange: (r: Range) => void;
   onClose: () => void;
+  hasBonds: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -353,6 +356,14 @@ function ExpandedChart({
     date: string;
     total: number;
   } | null>(null);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   useEffect(() => {
     if (!containerRef.current || data.length === 0) return;
@@ -474,7 +485,7 @@ function ExpandedChart({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[55] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="relative w-[95vw] max-w-5xl h-[85vh] max-h-[800px] rounded-2xl border border-border/50 bg-card p-6 flex flex-col animate-in zoom-in-95 duration-300">
@@ -522,6 +533,12 @@ function ExpandedChart({
             </button>
           </div>
         </div>
+
+        {hasBonds && (
+          <p className="text-[10px] text-muted-foreground/40 mt-1">
+            * Valores de bonos convertidos a USD con tipo de cambio MEP actual
+          </p>
+        )}
 
         {/* Chart */}
         <div ref={containerRef} className="flex-1 min-h-0 w-full" />

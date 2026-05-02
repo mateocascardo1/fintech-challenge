@@ -43,6 +43,10 @@ export async function GET(
   }
 
   // Fallback: try data912 for Argentine bonds
+  const BOND_PATTERN = /^[A-Z]{2,5}\d{2,4}[CD]?$/i;
+  if (!BOND_PATTERN.test(symbol)) {
+    return NextResponse.json({ error: "No data available" }, { status: 404 });
+  }
   try {
     const raw = await getArgBondHistory(upper);
     const allPoints: HistoryPoint[] = raw

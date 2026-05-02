@@ -16,6 +16,10 @@ type AddMode = "stock" | "bond" | "cash";
 type SearchResult = { symbol: string; name: string; type?: string };
 type BondResult = { symbol: string; c: number; pct_change: number; sub_type?: string };
 
+function isArgBond(symbol: string): boolean {
+  return /^[A-Z]{2,5}\d/i.test(symbol);
+}
+
 function TableSkeleton() {
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
@@ -41,7 +45,7 @@ function TableSkeleton() {
   );
 }
 
-export function HoldingsTab() {
+export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => void }) {
   const [positions, setPositions] = useState<{ symbol: string; quantity: number; asset_type: string }[]>([]);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [loading, setLoading] = useState(true);
@@ -117,7 +121,7 @@ export function HoldingsTab() {
                     const posSymbol = upperToPosition.get(b.symbol.toUpperCase());
                     if (posSymbol) {
                       matched.add(posSymbol);
-                      const priceUsd = (b.c ?? 0) / rate;
+                      const priceUsd = isArgBond(posSymbol) ? (b.c ?? 0) / rate : (b.c ?? 0);
                       next[posSymbol] = {
                         symbol: posSymbol,
                         name: b.symbol,
@@ -217,6 +221,7 @@ export function HoldingsTab() {
       if (res.ok) {
         resetAdd();
         fetchPositionsAndQuotes();
+        onPortfolioChange?.();
       } else {
         const err = await res.json().catch(() => ({}));
         setSaveError(err?.error ?? `Error ${res.status}`);
@@ -245,6 +250,7 @@ export function HoldingsTab() {
       if (res.ok) {
         resetAdd();
         fetchPositionsAndQuotes();
+        onPortfolioChange?.();
       } else {
         const err = await res.json().catch(() => ({}));
         setSaveError(err?.error ?? `Error ${res.status}`);
@@ -331,6 +337,7 @@ export function HoldingsTab() {
   async function deletePosition(symbol: string) {
     await fetch(`/api/portfolio/${symbol}`, { method: "DELETE" });
     setPositions(positions.filter((p) => p.symbol !== symbol));
+    onPortfolioChange?.();
   }
 
   const formatARS = (v: number) =>
@@ -636,7 +643,7 @@ export function HoldingsTab() {
             {enriched.map((p) => (
               <tr
                 key={p.symbol}
-                className="border-b border-border/50 hover:bg-muted/30 cursor-pointer"
+                className="border-b border-border/50 hover:bg-muted/30"
               >
                 <td className="py-3 px-3">
                   <Link

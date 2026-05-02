@@ -22,14 +22,18 @@ function SkeletonCard({ className }: { className?: string }) {
 }
 
 export function OverviewTab() {
-  const [positions, setPositions] = useState([]);
+  const [positions, setPositions] = useState<{ symbol: string; quantity: number; asset_type: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/portfolio")
       .then((r) => r.json())
       .then((pos) => {
-        setPositions(pos);
+        setPositions(Array.isArray(pos) ? pos : []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setPositions([]);
         setLoading(false);
       });
   }, []);

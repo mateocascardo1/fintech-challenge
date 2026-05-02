@@ -3,7 +3,7 @@ import type { NewsItem } from "@/lib/types";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
-  processEntities: true,
+  processEntities: false,
   cdataPropName: "__cdata",
 });
 

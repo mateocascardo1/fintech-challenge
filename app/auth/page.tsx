@@ -41,6 +41,15 @@ export default function AuthPage() {
         setSuccess("Revisá tu email y confirmá tu cuenta para poder ingresar.");
         return;
       }
+      // Immediate session (e.g. email confirmation disabled)
+      if (data.session) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .single();
+        router.push(profile?.onboarding_completed ? "/dashboard" : "/onboarding");
+        return;
+      }
     }
 
     if (isLogin) {
@@ -121,7 +130,7 @@ export default function AuthPage() {
             {isLogin ? "¿No tenés cuenta?" : "¿Ya tenés cuenta?"}{" "}
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => { setIsLogin(!isLogin); setError(null); setSuccess(null); }}
               className="text-primary underline-offset-4 hover:underline"
             >
               {isLogin ? "Registrate" : "Iniciá sesión"}

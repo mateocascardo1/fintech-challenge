@@ -39,6 +39,14 @@ export function ChatbotPanel({ onClose }: { onClose: () => void }) {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const text = input.trim();

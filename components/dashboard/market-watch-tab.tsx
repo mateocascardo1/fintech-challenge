@@ -144,16 +144,24 @@ export function MarketWatchTab() {
     return () => clearTimeout(timer);
   }, [globalQuery]);
 
+  const [addingSymbol, setAddingSymbol] = useState<string | null>(null);
+
   async function addToWatchlist(symbol: string) {
-    await fetch("/api/watchlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ symbol: symbol.toUpperCase() }),
-    });
-    setShowSearch(false);
-    setSearchQuery("");
-    setSearchResults([]);
-    fetchWatchlist();
+    if (addingSymbol) return;
+    setAddingSymbol(symbol);
+    try {
+      await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol: symbol.toUpperCase() }),
+      });
+      setShowSearch(false);
+      setSearchQuery("");
+      setSearchResults([]);
+      fetchWatchlist();
+    } finally {
+      setAddingSymbol(null);
+    }
   }
 
   async function removeFromWatchlist(symbol: string) {
@@ -269,13 +277,18 @@ export function MarketWatchTab() {
                     key={r.symbol}
                     type="button"
                     onClick={() => addToWatchlist(r.symbol)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/30 transition-colors text-left text-sm"
+                    disabled={addingSymbol === r.symbol}
+                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/30 transition-colors text-left text-sm disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <div>
                       <span className="font-bold">{r.symbol}</span>
                       <span className="ml-2 text-xs text-muted-foreground">{r.name}</span>
                     </div>
-                    <Plus className="h-4 w-4 text-muted-foreground" />
+                    {addingSymbol === r.symbol ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    )}
                   </button>
                 ))}
               </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import {
@@ -39,8 +39,8 @@ export function StepSelectBonds({
   const [argLoading, setArgLoading] = useState(false);
   const [argError, setArgError] = useState(false);
 
-  // Auto-skip if user chose no bonds
-  useEffect(() => {
+  // Auto-skip if user chose no bonds (useLayoutEffect avoids visual flash)
+  useLayoutEffect(() => {
     if (bondPreference === "none") {
       onComplete([]);
     }

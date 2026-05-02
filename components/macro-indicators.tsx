@@ -31,6 +31,9 @@ export function MacroIndicators() {
     const el = scrollRef.current;
     if (!el || quotes.length === 0) return;
 
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (prefersReducedMotion.matches) return;
+
     let animId: number;
     let speed = 0.3;
     let paused = false;
@@ -48,14 +51,28 @@ export function MacroIndicators() {
     const onEnter = () => { paused = true; };
     const onLeave = () => { paused = false; };
 
+    const onVisibilityChange = () => { paused = document.hidden; };
+
+    const onMotionChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        cancelAnimationFrame(animId);
+      } else {
+        animId = requestAnimationFrame(step);
+      }
+    };
+
     el.addEventListener("mouseenter", onEnter);
     el.addEventListener("mouseleave", onLeave);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    prefersReducedMotion.addEventListener("change", onMotionChange);
     animId = requestAnimationFrame(step);
 
     return () => {
       cancelAnimationFrame(animId);
       el.removeEventListener("mouseenter", onEnter);
       el.removeEventListener("mouseleave", onLeave);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      prefersReducedMotion.removeEventListener("change", onMotionChange);
     };
   }, [quotes]);
 

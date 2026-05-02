@@ -24,7 +24,7 @@ export function PositionCard({
     fetch("/api/portfolio")
       .then((r) => r.json())
       .then((positions) => {
-        const pos = positions.find?.((p: { symbol: string }) => p.symbol === symbol);
+        const pos = positions.find?.((p: { symbol: string }) => p.symbol.toUpperCase() === symbol.toUpperCase());
         setPosition(pos ?? null);
         if (pos?.asset_type === "bond" && isArgBond(pos.symbol)) {
           fetch("/api/arg-market?type=mep")
@@ -38,7 +38,14 @@ export function PositionCard({
       });
   }, [symbol]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-6 animate-pulse">
+        <div className="h-3 w-24 rounded bg-muted/20 mb-3" />
+        <div className="h-6 w-32 rounded bg-muted/15" />
+      </div>
+    );
+  }
 
   if (!position) {
     return (

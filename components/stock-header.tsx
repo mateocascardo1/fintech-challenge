@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftIcon, StarIcon, ArrowRightLeftIcon, TrendingUpIcon, TrendingDownIcon, MinusIcon } from "lucide-react";
+import { ArrowLeftIcon, StarIcon, TrendingUpIcon, TrendingDownIcon, MinusIcon } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatPrice, formatPercent, changeSign } from "@/lib/format";
@@ -17,12 +17,10 @@ export function StockHeader({
   quote,
   isFavorite,
   onToggleFavorite,
-  onCompare,
 }: {
   quote: Quote;
   isFavorite: boolean;
   onToggleFavorite: () => void;
-  onCompare?: () => void;
 }) {
   const sign = changeSign(quote.change);
   return (
@@ -54,17 +52,6 @@ export function StockHeader({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {onCompare && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onCompare}
-              title="Comparar con otra acción"
-              className="rounded-xl"
-            >
-              <ArrowRightLeftIcon className="size-4" />
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"

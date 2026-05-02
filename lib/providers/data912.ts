@@ -48,6 +48,7 @@ export type Data912HistoryPoint = {
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     next: { revalidate: 120 },
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) throw new Error(`data912 ${path}: ${res.status}`);
   return res.json() as Promise<T>;
@@ -100,7 +101,13 @@ export async function getArgBondQuotes(
 ): Promise<Data912FixedIncome[]> {
   const all = await getAllFixedIncome();
   const symbolSet = new Set(symbols.map((s) => s.toUpperCase()));
-  return all.filter((item) => symbolSet.has(item.symbol.toUpperCase()));
+
+  return all.filter((item) => {
+    const sym = item.symbol.toUpperCase();
+    if (symbolSet.has(sym)) return true;
+    const base = sym.replace(/[CD]$/, "");
+    return symbolSet.has(base);
+  });
 }
 
 export async function getArgBondHistory(
@@ -125,10 +132,8 @@ export async function getMepRate(): Promise<number> {
 
     for (const b of bonds) {
       const sym = b.symbol.toUpperCase();
-      if (sym.endsWith("C") && b.c > 0) {
+      if ((sym.endsWith("C") || sym.endsWith("D")) && b.c > 0) {
         usdMap.set(sym.slice(0, -1), b.c);
-      } else if (sym.endsWith("D") && b.c > 0) {
-        // D suffix is also USD (MEP)
       } else if (b.c > 0) {
         arsMap.set(sym, b.c);
       }

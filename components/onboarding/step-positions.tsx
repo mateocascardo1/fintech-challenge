@@ -349,13 +349,14 @@ export function StepPositions({
             <div className="flex gap-2 max-w-xs mx-auto">
               <Input
                 type="number"
-                placeholder="Monto en USD"
+                placeholder="Monto total en USD"
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
                 min={1}
               />
               <Button onClick={addCash}><Plus className="h-4 w-4 mr-1" /> Agregar</Button>
             </div>
+            <p className="text-xs text-muted-foreground/60 mt-2">Este monto reemplaza el valor anterior</p>
           </div>
         </div>
       )}

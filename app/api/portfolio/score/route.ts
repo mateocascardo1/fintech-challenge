@@ -81,6 +81,8 @@ export async function GET() {
       : Promise.resolve(1200),
   ]);
 
+  const safeMepRate = Number.isFinite(mepRate) && mepRate > 0 ? mepRate : 1200;
+
   const quoteMap = new Map<string, { price: number; change: number; changePercent: number; name: string }>();
   for (const q of yahooQuotes) {
     quoteMap.set(q.symbol, { price: q.price, change: q.change, changePercent: q.changePercent, name: q.name });
@@ -92,7 +94,7 @@ export async function GET() {
   }
   for (const b of bondQuotes) {
     const posSymbol = bondUpperMap.get(b.symbol.toUpperCase()) ?? b.symbol;
-    const priceUsd = (b.c ?? 0) / mepRate;
+    const priceUsd = (b.c ?? 0) / safeMepRate;
     quoteMap.set(posSymbol, { price: priceUsd, change: 0, changePercent: b.pct_change ?? 0, name: b.symbol });
   }
   for (const p of bondPositions) {
@@ -132,7 +134,17 @@ export async function GET() {
 
   const diversification = computeDiversificationScore(enriched);
 
-  const portfolioBeta = enriched.reduce((s, p) => s + p.weight * 1.0, 0);
+  const ASSET_BETA: Record<string, number> = {
+    equity: 1.0,
+    etf: 0.9,
+    bond: 0.3,
+    bond_etf: 0.4,
+    cash: 0,
+  };
+  const portfolioBeta = enriched.reduce(
+    (s, p) => s + p.weight * (ASSET_BETA[p.asset_type] ?? 1.0),
+    0,
+  );
   const portfolioVolatility = 0.15;
   const investorProfile: InvestorProfile = {
     investment_horizon: profile?.investment_horizon ?? null,

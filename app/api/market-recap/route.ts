@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getQuotesBatch } from "@/lib/providers/yahoo";
 import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { createClient } from "@/lib/supabase/server";
 
 const MACRO_SYMBOLS = ["^GSPC", "^IXIC", "^DJI", "^VIX", "GC=F", "CL=F", "USDARS=X"];
 
@@ -9,6 +10,10 @@ let cachedRecap: { text: string; ts: number } | null = null;
 const CACHE_TTL = 30 * 60 * 1000; // 30 min
 
 export async function GET() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   if (cachedRecap && Date.now() - cachedRecap.ts < CACHE_TTL) {
     return NextResponse.json(
       { recap: cachedRecap.text, cached: true },

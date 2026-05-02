@@ -23,5 +23,10 @@ export function rateLimit(
   }
   arr.push(now);
   hits.set(key, arr);
+  if (hits.size > 10000) {
+    for (const [k, v] of hits) {
+      if (v.length === 0 || now - v[v.length - 1] > windowMs) hits.delete(k);
+    }
+  }
   return { allowed: true, remaining: max - arr.length, resetMs: windowMs };
 }

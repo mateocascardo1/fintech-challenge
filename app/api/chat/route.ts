@@ -3,7 +3,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { getQuote, getFundamentals, getHistoryByRange, searchSymbols, getQuotesBatch, getFinancialStatements } from "@/lib/providers/yahoo";
 import { getNews } from "@/lib/providers/google-news";
-import { buildCfoPrompt, buildComparatorPrompt, buildAdvisorPrompt } from "@/lib/chat";
+import { buildCfoPrompt, buildAdvisorPrompt } from "@/lib/chat";
 import { isValidSymbol } from "@/lib/tickers";
 import { rateLimit } from "@/lib/rate-limit";
 import { formatPrice, formatPercent, formatMarketCap, formatRatio, formatInteger } from "@/lib/format";
@@ -20,22 +20,30 @@ export async function POST(req: Request) {
     );
   }
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   const body = await req.json();
-  const { messages: uiMessages, mode, symbol, compareSymbol } = body as {
+  const { messages: uiMessages, mode, symbol } = body as {
     messages: Array<UIMessage>;
     mode?: string;
     symbol?: string;
-    compareSymbol?: string;
   };
 
   if (mode === "advisor") {
-    return handleAdvisorMode(uiMessages);
+    return handleAdvisorMode(req, uiMessages);
   }
 
   if (!symbol || !isValidSymbol(symbol.toUpperCase())) {
     console.error("chat: invalid symbol", { symbol, bodyKeys: Object.keys(body) });
     return new Response(
-      JSON.stringify({ error: "Invalid symbol", debug: { symbol: symbol ?? null, keys: Object.keys(body) } }),
+      JSON.stringify({ error: "Invalid symbol" }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
@@ -47,21 +55,7 @@ export async function POST(req: Request) {
       getNews(symbol.toUpperCase()),
     ]);
 
-    let systemPrompt: string;
-
-    if (compareSymbol && isValidSymbol(compareSymbol.toUpperCase())) {
-      const [quoteB, fundamentalsB, newsB] = await Promise.all([
-        getQuote(compareSymbol.toUpperCase()),
-        getFundamentals(compareSymbol.toUpperCase()),
-        getNews(compareSymbol.toUpperCase()),
-      ]);
-      systemPrompt = buildComparatorPrompt(
-        quoteA, fundamentalsA, newsA,
-        quoteB, fundamentalsB, newsB,
-      );
-    } else {
-      systemPrompt = buildCfoPrompt(quoteA, fundamentalsA, newsA);
-    }
+    let systemPrompt = buildCfoPrompt(quoteA, fundamentalsA, newsA);
 
     systemPrompt += `
 
@@ -89,6 +83,7 @@ REGLAS CRÍTICAS:
             symbol: z.string().describe("Símbolo de la acción (ej: AAPL, TSLA, GOOGL)"),
           }),
           execute: async ({ symbol: sym }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const q = await getQuote(sym.toUpperCase());
               return {
@@ -112,6 +107,7 @@ REGLAS CRÍTICAS:
             symbol: z.string().describe("Símbolo de la acción"),
           }),
           execute: async ({ symbol: sym }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const f = await getFundamentals(sym.toUpperCase());
               return {
@@ -155,13 +151,14 @@ REGLAS CRÍTICAS:
             range: z.enum(["5d", "1mo", "3mo", "6mo", "1y", "5y", "max"]).describe("Rango temporal"),
           }),
           execute: async ({ symbol: sym, range }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const points = await getHistoryByRange(sym.toUpperCase(), range as Range);
               if (points.length === 0) return { error: `No hay datos históricos para ${sym}` };
 
               const first = points[0];
               const last = points[points.length - 1];
-              const returnPct = ((last.close - first.open) / first.open) * 100;
+              const returnPct = first.open > 0 ? ((last.close - first.open) / first.open) * 100 : 0;
               const high = Math.max(...points.map((p) => p.high));
               const low = Math.min(...points.map((p) => p.low));
 
@@ -234,6 +231,7 @@ REGLAS CRÍTICAS:
             symbol: z.string().describe("Símbolo de la acción"),
           }),
           execute: async ({ symbol: sym }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const statements = await getFinancialStatements(sym.toUpperCase());
               return statements;
@@ -249,6 +247,7 @@ REGLAS CRÍTICAS:
             symbol: z.string().describe("Símbolo de la acción"),
           }),
           execute: async ({ symbol: sym }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const news = await getNews(sym.toUpperCase());
               return {
@@ -277,7 +276,7 @@ REGLAS CRÍTICAS:
   }
 }
 
-async function handleAdvisorMode(uiMessages: Array<UIMessage>) {
+async function handleAdvisorMode(req: Request, uiMessages: Array<UIMessage>) {
   try {
     const supabase = await createClient();
     const {
@@ -302,7 +301,7 @@ async function handleAdvisorMode(uiMessages: Array<UIMessage>) {
           .from("ai_insights")
           .select("type, title, body, metadata")
           .eq("user_id", user.id)
-          .eq("expired", false)
+          .gte("expires_at", new Date().toISOString())
           .order("created_at", { ascending: false })
           .limit(20),
       ]);
@@ -336,11 +335,10 @@ async function handleAdvisorMode(uiMessages: Array<UIMessage>) {
 
       let scoreContext = "";
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : "http://localhost:3000";
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
+          ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
         const scoreRes = await fetch(`${baseUrl}/api/portfolio/score`, {
-          headers: { cookie: "" },
+          headers: { cookie: req.headers.get("cookie") ?? "" },
         }).catch(() => null);
         if (scoreRes?.ok) {
           const scoreData = await scoreRes.json();
@@ -354,7 +352,7 @@ async function handleAdvisorMode(uiMessages: Array<UIMessage>) {
               `  - Downside Protection: ${sub.downside_protection ?? "N/A"}/250`,
               scoreData.allocation ? `\nALLOCATION ACTUAL vs MODELO:` : "",
               scoreData.allocation
-                ? Object.entries(scoreData.allocation.actual ?? {})
+                ? Object.entries(scoreData.allocation.current ?? {})
                     .map(([k, v]) => {
                       const model = (scoreData.allocation.model as Record<string, number>)?.[k] ?? 0;
                       return `  - ${k}: actual ${((v as number) * 100).toFixed(1)}% / modelo ${(model * 100).toFixed(1)}%`;
@@ -427,6 +425,7 @@ REGLAS CRÍTICAS:
             symbol: z.string().describe("Símbolo de la acción"),
           }),
           execute: async ({ symbol: sym }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const q = await getQuote(sym.toUpperCase());
               return {
@@ -451,6 +450,7 @@ REGLAS CRÍTICAS:
             symbol: z.string().describe("Símbolo de la acción"),
           }),
           execute: async ({ symbol: sym }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const f = await getFundamentals(sym.toUpperCase());
               return {
@@ -497,6 +497,7 @@ REGLAS CRÍTICAS:
               .describe("Rango temporal"),
           }),
           execute: async ({ symbol: sym, range }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const points = await getHistoryByRange(
                 sym.toUpperCase(),
@@ -508,7 +509,7 @@ REGLAS CRÍTICAS:
               const first = points[0];
               const last = points[points.length - 1];
               const returnPct =
-                ((last.close - first.open) / first.open) * 100;
+                first.open > 0 ? ((last.close - first.open) / first.open) * 100 : 0;
               const high = Math.max(...points.map((p) => p.high));
               const low = Math.min(...points.map((p) => p.low));
 
@@ -560,6 +561,7 @@ REGLAS CRÍTICAS:
             symbol: z.string().describe("Símbolo de la acción"),
           }),
           execute: async ({ symbol: sym }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const statements = await getFinancialStatements(
                 sym.toUpperCase(),
@@ -580,6 +582,7 @@ REGLAS CRÍTICAS:
             symbol: z.string().describe("Símbolo de la acción"),
           }),
           execute: async ({ symbol: sym }) => {
+            if (!isValidSymbol(sym)) return { error: `Símbolo inválido: ${sym}` };
             try {
               const news = await getNews(sym.toUpperCase());
               return {

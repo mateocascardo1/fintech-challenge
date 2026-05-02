@@ -3,6 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_ROUTES = ["/", "/auth"];
 
+const PUBLIC_API_PREFIXES = [
+  "/api/quote",
+  "/api/search",
+  "/api/news",
+  "/api/fundamentals",
+  "/api/history",
+  "/api/arg-market",
+  "/api/earnings",
+  "/api/market-recap",
+];
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -31,11 +42,8 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicRoute = PUBLIC_ROUTES.some(
-    (route) =>
-      request.nextUrl.pathname === route ||
-      request.nextUrl.pathname.startsWith("/api/"),
-  );
+  const isPublicRoute = PUBLIC_ROUTES.some((route) => request.nextUrl.pathname === route) ||
+    PUBLIC_API_PREFIXES.some((prefix) => request.nextUrl.pathname.startsWith(prefix));
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

@@ -25,7 +25,17 @@ export async function PATCH(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("portfolio error:", error.message);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  }
+
+  await supabase
+    .from("ai_insights")
+    .update({ expires_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .gte("expires_at", new Date().toISOString());
+
   return NextResponse.json(data);
 }
 
@@ -37,6 +47,7 @@ export async function DELETE(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isValidSymbol(symbol)) return NextResponse.json({ error: "Invalid symbol" }, { status: 400 });
 
   const { error } = await supabase
     .from("positions")
@@ -44,6 +55,16 @@ export async function DELETE(
     .eq("user_id", user.id)
     .eq("symbol", symbol);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("portfolio error:", error.message);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  }
+
+  await supabase
+    .from("ai_insights")
+    .update({ expires_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .gte("expires_at", new Date().toISOString());
+
   return NextResponse.json({ ok: true });
 }
