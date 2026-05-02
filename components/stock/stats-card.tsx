@@ -2,6 +2,12 @@ import { formatMarketCap, formatRatio, formatPercent } from "@/lib/format";
 import type { Fundamentals } from "@/lib/types";
 
 export function StatsCard({ fundamentals }: { fundamentals: Fundamentals }) {
+  const hasAnyData = fundamentals.marketCap != null || fundamentals.peRatio != null
+    || fundamentals.forwardPe != null || fundamentals.dividendYield != null
+    || fundamentals.grossMargin != null || fundamentals.profitMargin != null
+    || fundamentals.operatingMargin != null || fundamentals.debtToEquity != null;
+  if (!hasAnyData) return null;
+
   const stats = [
     { label: "Mkt Cap", value: formatMarketCap(fundamentals.marketCap) },
     { label: "P/E", value: formatRatio(fundamentals.peRatio) },
@@ -37,13 +43,12 @@ export function StatsCard({ fundamentals }: { fundamentals: Fundamentals }) {
   ];
 
   return (
-    <div className="card-revolut">
-      <p className="section-label">ESTADÍSTICAS</p>
-      <div className="mt-3 grid grid-cols-4 lg:grid-cols-8 gap-4">
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="grid grid-cols-4 lg:grid-cols-8 gap-px bg-border/50 rounded-xl overflow-hidden">
         {stats.map((s) => (
-          <div key={s.label}>
-            <p className="text-[10px] text-muted-foreground uppercase">{s.label}</p>
-            <p className="font-medium tabular-nums mt-0.5">{s.value}</p>
+          <div key={s.label} className="bg-card px-4 py-3 text-center">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{s.label}</p>
+            <p className="text-sm font-semibold tabular-nums mt-1">{s.value}</p>
           </div>
         ))}
       </div>

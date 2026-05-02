@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Briefcase } from "lucide-react";
 
 export function PositionCard({
   symbol,
@@ -29,12 +29,17 @@ export function PositionCard({
 
   if (!position) {
     return (
-      <div className="card-revolut flex items-center justify-between">
-        <div>
-          <p className="section-label">TU POSICIÓN</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            No tenés {symbol} en tu portfolio.
-          </p>
+      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-full bg-muted/50 flex items-center justify-center">
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">Tu posición</p>
+            <p className="text-xs text-muted-foreground">
+              No tenés {symbol} en tu portfolio.
+            </p>
+          </div>
         </div>
         <Button variant="outline" size="sm">
           <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
@@ -46,24 +51,29 @@ export function PositionCard({
   const value = price * position.quantity;
 
   return (
-    <div className="card-revolut">
-      <p className="section-label">TU POSICIÓN</p>
-      <div className="mt-3 grid grid-cols-4 gap-6">
+    <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+          <Briefcase className="h-4 w-4 text-primary" />
+        </div>
+        <p className="text-sm font-medium">Tu posición</p>
+      </div>
+      <div className="grid grid-cols-4 gap-6">
         <div>
-          <p className="text-xs text-muted-foreground">Valor total</p>
-          <p className="text-lg font-bold tabular-nums">{formatPrice(value)}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Valor total</p>
+          <p className="text-lg font-bold tabular-nums mt-0.5">{formatPrice(value)}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Cantidad</p>
-          <p className="text-lg font-bold tabular-nums">{position.quantity}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Cantidad</p>
+          <p className="text-lg font-bold tabular-nums mt-0.5">{position.quantity}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Precio</p>
-          <p className="text-lg font-bold tabular-nums">{formatPrice(price)}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Precio</p>
+          <p className="text-lg font-bold tabular-nums mt-0.5">{formatPrice(price)}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Tipo</p>
-          <p className="text-lg font-bold">{position.asset_type}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Tipo</p>
+          <p className="text-lg font-bold mt-0.5">{position.asset_type}</p>
         </div>
       </div>
     </div>

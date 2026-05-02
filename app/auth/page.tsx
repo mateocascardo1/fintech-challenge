@@ -12,6 +12,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -19,22 +20,30 @@ export default function AuthPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
 
-    const { error: authError } = isLogin
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
-
-    setLoading(false);
-
-    if (authError) {
-      setError(authError.message);
-      return;
+    if (isLogin) {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+    } else {
+      const { data, error: authError } = await supabase.auth.signUp({ email, password });
+      setLoading(false);
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+      if (data.user && !data.session) {
+        setSuccess("Revisá tu email y confirmá tu cuenta para poder ingresar.");
+        return;
+      }
     }
 
-    if (!isLogin) {
-      router.push("/onboarding");
-    } else {
+    if (isLogin) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("onboarding_completed")
@@ -97,6 +106,11 @@ export default function AuthPage() {
             />
             {error && (
               <p className="text-sm text-destructive">{error}</p>
+            )}
+            {success && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
+                {success}
+              </div>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading

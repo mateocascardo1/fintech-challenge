@@ -43,5 +43,13 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Expire existing insights so they are regenerated with the updated portfolio
+  await supabase
+    .from("ai_insights")
+    .update({ expires_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .gte("expires_at", new Date().toISOString());
+
   return NextResponse.json(data, { status: 201 });
 }

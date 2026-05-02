@@ -4,31 +4,43 @@ import { useState } from "react";
 import { OverviewTab } from "@/components/dashboard/overview-tab";
 import { HoldingsTab } from "@/components/dashboard/holdings-tab";
 import { MarketWatchTab } from "@/components/dashboard/market-watch-tab";
+import { BarChart3, Briefcase, Globe } from "lucide-react";
 
-const TABS = ["Overview", "Holdings", "Market Watch"] as const;
+const TABS = [
+  { id: "Overview", label: "Overview", icon: BarChart3 },
+  { id: "Holdings", label: "Holdings", icon: Briefcase },
+  { id: "Market Watch", label: "Market Watch", icon: Globe },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("Overview");
+  const [activeTab, setActiveTab] = useState<TabId>("Overview");
 
   return (
     <div className="min-h-screen">
-      <div className="border-b border-border">
+      <div className="border-b border-border/50">
         <div className="mx-auto max-w-7xl px-6">
-          <nav className="flex gap-6">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <nav className="flex gap-1">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${
+                    active
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground/80"
+                  }`}
+                >
+                  <Icon className={`h-3.5 w-3.5 ${active ? "text-primary" : ""}`} />
+                  {tab.label}
+                </button>
+              );
+            })}
           </nav>
         </div>
       </div>

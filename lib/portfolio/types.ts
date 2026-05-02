@@ -6,8 +6,10 @@ export type PatrimonyPercentage = "under_25" | "25_50" | "50_75" | "over_75";
 export type LiquidityNeed = "frequent" | "sometimes" | "none";
 export type GeoPreference = "us_only" | "us_intl" | "no_preference";
 export type BondPreference = "none" | "low" | "medium" | "high";
-export type AssetType = "equity" | "etf" | "bond_etf";
-export type InsightType = "alert" | "recommendation" | "market" | "earnings";
+export type AssetType = "equity" | "etf" | "bond_etf" | "bond" | "cash";
+export type InsightType =
+  | "alert" | "recommendation" | "market" | "earnings" | "trade"
+  | "diagnosis" | "alloc_move" | "instrument_pick";
 
 export type InvestorProfile = {
   investment_horizon: InvestmentHorizon | null;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getQuotesBatch } from "@/lib/providers/yahoo";
+import { getArgBondQuotes } from "@/lib/providers/data912";
 import {
   computeDiversificationScore,
   computeRiskMatchScore,
@@ -26,7 +27,8 @@ function classifySymbol(
   symbol: string,
   assetType: string,
 ): "us_equities" | "intl_equities" | "bonds" | "cash" {
-  if (assetType === "bond_etf") return "bonds";
+  if (assetType === "cash") return "cash";
+  if (assetType === "bond" || assetType === "bond_etf") return "bonds";
   return ASSET_CLASS_MAP[symbol] ?? "us_equities";
 }
 
@@ -57,9 +59,47 @@ export async function GET() {
     });
   }
 
-  const symbols = positions.map((p: { symbol: string }) => p.symbol);
-  const quotes = await getQuotesBatch(symbols);
-  const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+  const bondPositions = positions.filter(
+    (p: { asset_type: string }) => p.asset_type === "bond",
+  );
+  const yahooPositions = positions.filter(
+    (p: { asset_type: string }) => p.asset_type !== "bond" && p.asset_type !== "cash",
+  );
+  const cashPositions = positions.filter(
+    (p: { asset_type: string }) => p.asset_type === "cash",
+  );
+
+  const [yahooQuotes, bondQuotes] = await Promise.all([
+    yahooPositions.length > 0
+      ? getQuotesBatch(yahooPositions.map((p: { symbol: string }) => p.symbol))
+      : Promise.resolve([]),
+    bondPositions.length > 0
+      ? getArgBondQuotes(bondPositions.map((p: { symbol: string }) => p.symbol))
+      : Promise.resolve([]),
+  ]);
+
+  const quoteMap = new Map<string, { price: number; change: number; changePercent: number; name: string }>();
+  for (const q of yahooQuotes) {
+    quoteMap.set(q.symbol, { price: q.price, change: q.change, changePercent: q.changePercent, name: q.name });
+  }
+
+  const bondUpperMap = new Map<string, string>();
+  for (const p of bondPositions) {
+    bondUpperMap.set(p.symbol.toUpperCase(), p.symbol);
+  }
+  for (const b of bondQuotes) {
+    const posSymbol = bondUpperMap.get(b.symbol.toUpperCase()) ?? b.symbol;
+    quoteMap.set(posSymbol, { price: b.c ?? 0, change: 0, changePercent: b.pct_change ?? 0, name: b.symbol });
+  }
+  for (const p of bondPositions) {
+    if (!quoteMap.has(p.symbol)) {
+      quoteMap.set(p.symbol, { price: 0, change: 0, changePercent: 0, name: p.symbol });
+    }
+  }
+
+  for (const p of cashPositions) {
+    quoteMap.set(p.symbol, { price: 1, change: 0, changePercent: 0, name: "Efectivo USD" });
+  }
 
   const enriched: PositionWithMarket[] = positions.map(
     (p: { id: string; symbol: string; asset_type: string; quantity: number }) => {
@@ -122,7 +162,13 @@ export async function GET() {
 
   const avgCorrelation = enriched.length > 1 ? 0.5 : 1.0;
   const defensiveWeight = enriched
-    .filter((p) => DEFENSIVE_SECTORS.has(p.sector ?? ""))
+    .filter(
+      (p) =>
+        DEFENSIVE_SECTORS.has(p.sector ?? "") ||
+        p.asset_type === "bond" ||
+        p.asset_type === "bond_etf" ||
+        p.asset_type === "cash",
+    )
     .reduce((s, p) => s + p.weight, 0);
   const downsideProtection = computeDownsideProtectionScore(
     avgCorrelation,

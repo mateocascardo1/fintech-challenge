@@ -1,42 +1,257 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2, X, DollarSign, Loader2 } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 
 type SortKey = "symbol" | "value" | "weight" | "changePercent";
 type SortDir = "asc" | "desc";
+type AddMode = "stock" | "bond" | "cash";
+
+type SearchResult = { symbol: string; name: string; type?: string };
+type BondResult = { symbol: string; c: number; pct_change: number; sub_type?: string };
 
 export function HoldingsTab() {
   const [positions, setPositions] = useState<{ symbol: string; quantity: number; asset_type: string }[]>([]);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
-  const [filter, setFilter] = useState<"all" | "equity" | "etf" | "bond_etf">("all");
+  const [filter, setFilter] = useState<"all" | "equity" | "etf" | "bond_etf" | "bond" | "cash">("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  useEffect(() => {
+  // Add position state
+  const [showAdd, setShowAdd] = useState(false);
+  const [addMode, setAddMode] = useState<AddMode>("stock");
+  const [addQuery, setAddQuery] = useState("");
+  const [addResults, setAddResults] = useState<SearchResult[]>([]);
+  const [bondResults, setBondResults] = useState<BondResult[]>([]);
+  const [addLoading, setAddLoading] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [selectedName, setSelectedName] = useState("");
+  const [selectedAssetType, setSelectedAssetType] = useState("equity");
+  const [addQty, setAddQty] = useState("");
+  const [cashAmount, setCashAmount] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const fetchPositionsAndQuotes = useCallback(() => {
     fetch("/api/portfolio")
       .then((r) => r.json())
       .then((data) => {
+        if (!Array.isArray(data)) return;
         setPositions(data);
-        if (data.length > 0) {
-          const symbols = data.map((p: { symbol: string }) => p.symbol).join(",");
-          fetch(`/api/quote?symbols=${symbols}`)
-            .then((r) => r.json())
-            .then((qs: Quote[]) => {
-              const map: Record<string, Quote> = {};
-              qs.forEach((q) => (map[q.symbol] = q));
-              setQuotes(map);
-            });
+        if (data.length === 0) return;
+
+        const yahooSymbols: string[] = [];
+        const bondSymbols: string[] = [];
+
+        for (const p of data as { symbol: string; asset_type: string }[]) {
+          if (p.asset_type === "bond") bondSymbols.push(p.symbol);
+          else if (p.asset_type !== "cash") yahooSymbols.push(p.symbol);
         }
+
+        const fetches: Promise<void>[] = [];
+
+        if (yahooSymbols.length > 0) {
+          fetches.push(
+            fetch(`/api/quote?symbols=${yahooSymbols.join(",")}`)
+              .then((r) => r.json())
+              .then((d) => {
+                const list: Quote[] = Array.isArray(d) ? d : d?.quotes ?? [];
+                setQuotes((prev) => {
+                  const next = { ...prev };
+                  list.forEach((q) => (next[q.symbol] = q));
+                  return next;
+                });
+              }),
+          );
+        }
+
+        if (bondSymbols.length > 0) {
+          fetches.push(
+            fetch(`/api/arg-market?type=all`)
+              .then((r) => r.json())
+              .then((d) => {
+                const results = d?.results ?? [];
+                const upperToPosition = new Map<string, string>();
+                for (const s of bondSymbols) upperToPosition.set(s.toUpperCase(), s);
+                setQuotes((prev) => {
+                  const next = { ...prev };
+                  const matched = new Set<string>();
+                  for (const b of results as BondResult[]) {
+                    const posSymbol = upperToPosition.get(b.symbol.toUpperCase());
+                    if (posSymbol) {
+                      matched.add(posSymbol);
+                      next[posSymbol] = {
+                        symbol: posSymbol,
+                        name: b.symbol,
+                        price: b.c ?? 0,
+                        change: 0,
+                        changePercent: b.pct_change ?? 0,
+                      };
+                    }
+                  }
+                  for (const s of bondSymbols) {
+                    if (!matched.has(s)) {
+                      next[s] = { symbol: s, name: s, price: 0, change: 0, changePercent: 0 };
+                    }
+                  }
+                  return next;
+                });
+              })
+              .catch(() => {
+                setQuotes((prev) => {
+                  const next = { ...prev };
+                  for (const s of bondSymbols) {
+                    if (!next[s]) next[s] = { symbol: s, name: s, price: 0, change: 0, changePercent: 0 };
+                  }
+                  return next;
+                });
+              }),
+          );
+        }
+
+        const cashPositions = (data as { symbol: string; asset_type: string }[]).filter(
+          (p) => p.asset_type === "cash",
+        );
+        for (const p of cashPositions) {
+          setQuotes((prev) => ({
+            ...prev,
+            [p.symbol]: { symbol: p.symbol, name: "Efectivo USD", price: 1, change: 0, changePercent: 0 },
+          }));
+        }
+
+        Promise.all(fetches).catch(() => {});
       });
   }, []);
+
+  useEffect(() => {
+    fetchPositionsAndQuotes();
+  }, [fetchPositionsAndQuotes]);
+
+  // Stock search
+  useEffect(() => {
+    if (addMode !== "stock" || addQuery.length < 2) { setAddResults([]); return; }
+    const timer = setTimeout(() => {
+      setAddLoading(true);
+      fetch(`/api/search?q=${encodeURIComponent(addQuery)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const list = Array.isArray(data) ? data : data?.results ?? [];
+          setAddResults(list.slice(0, 8));
+        })
+        .catch(() => setAddResults([]))
+        .finally(() => setAddLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [addQuery, addMode]);
+
+  // Bond search
+  useEffect(() => {
+    if (addMode !== "bond") { setBondResults([]); return; }
+    const timer = setTimeout(() => {
+      setAddLoading(true);
+      const url = addQuery.length > 0
+        ? `/api/arg-market?q=${encodeURIComponent(addQuery)}`
+        : `/api/arg-market?type=all`;
+      fetch(url)
+        .then((r) => r.json())
+        .then((data) => setBondResults((data?.results ?? []).slice(0, 15)))
+        .catch(() => setBondResults([]))
+        .finally(() => setAddLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [addQuery, addMode]);
+
+  async function savePosition() {
+    if (!selectedSymbol || !addQty || Number(addQty) <= 0) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      const res = await fetch("/api/portfolio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol: selectedSymbol.toUpperCase(),
+          quantity: Number(addQty),
+          asset_type: selectedAssetType,
+        }),
+      });
+      if (res.ok) {
+        resetAdd();
+        fetchPositionsAndQuotes();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setSaveError(err?.error ?? `Error ${res.status}`);
+      }
+    } catch {
+      setSaveError("Error de red");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveCash() {
+    if (!cashAmount || Number(cashAmount) <= 0) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      const res = await fetch("/api/portfolio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol: "CASH-USD",
+          quantity: Number(cashAmount),
+          asset_type: "cash",
+        }),
+      });
+      if (res.ok) {
+        resetAdd();
+        fetchPositionsAndQuotes();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setSaveError(err?.error ?? `Error ${res.status}`);
+      }
+    } catch {
+      setSaveError("Error de red");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function resetAdd() {
+    setShowAdd(false);
+    setAddQuery("");
+    setAddResults([]);
+    setBondResults([]);
+    setSelectedSymbol("");
+    setSelectedName("");
+    setSelectedAssetType("equity");
+    setAddQty("");
+    setCashAmount("");
+    setSaveError("");
+  }
+
+  function selectStock(r: SearchResult) {
+    setSelectedSymbol(r.symbol);
+    setSelectedName(r.name);
+    setSelectedAssetType(r.type === "ETF" ? "etf" : "equity");
+    setAddResults([]);
+    setAddQuery("");
+  }
+
+  function selectBond(b: BondResult) {
+    setSelectedSymbol(b.symbol);
+    setSelectedName(b.symbol);
+    setSelectedAssetType("bond");
+    setBondResults([]);
+    setAddQuery("");
+  }
 
   const totalValue = positions.reduce((sum, p) => {
     const q = quotes[p.symbol];
@@ -86,18 +301,21 @@ export function HoldingsTab() {
     setPositions(positions.filter((p) => p.symbol !== symbol));
   }
 
+  const formatARS = (v: number) =>
+    new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex gap-1">
-          {(["all", "equity", "etf", "bond_etf"] as const).map((f) => (
+          {(["all", "equity", "etf", "bond", "bond_etf", "cash"] as const).map((f) => (
             <Button
               key={f}
               size="sm"
               variant={filter === f ? "default" : "ghost"}
               onClick={() => setFilter(f)}
             >
-              {f === "all" ? "Todos" : f === "bond_etf" ? "Bonds" : f.toUpperCase()}
+              {f === "all" ? "Todos" : f === "bond_etf" ? "Bond ETF" : f === "bond" ? "Bonos" : f === "cash" ? "Cash" : f.toUpperCase()}
             </Button>
           ))}
         </div>
@@ -110,12 +328,247 @@ export function HoldingsTab() {
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <Button size="sm" variant="outline">
-          <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
+        <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
+          {showAdd ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+          {showAdd ? "Cerrar" : "Agregar"}
         </Button>
       </div>
 
-      <div className="card-revolut overflow-x-auto">
+      {/* Add position panel */}
+      {showAdd && (
+        <div className="rounded-2xl border border-primary/20 bg-card p-5 space-y-4">
+          {/* Mode tabs */}
+          <div className="flex gap-1">
+            {([
+              { id: "stock" as AddMode, label: "Acciones / ETFs" },
+              { id: "bond" as AddMode, label: "Bonos" },
+              { id: "cash" as AddMode, label: "Efectivo" },
+            ]).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setAddMode(tab.id);
+                  setAddQuery("");
+                  setAddResults([]);
+                  setBondResults([]);
+                  setSelectedSymbol("");
+                  setSelectedName("");
+                  setAddQty("");
+                }}
+                className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
+                  addMode === tab.id
+                    ? "bg-primary/10 text-primary border border-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Stock mode */}
+          {addMode === "stock" && (
+            <div className="space-y-3">
+              {!selectedSymbol ? (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por ticker o nombre (ej: AAPL, Tesla)..."
+                      value={addQuery}
+                      onChange={(e) => setAddQuery(e.target.value)}
+                      className="pl-9"
+                      autoFocus
+                    />
+                  </div>
+                  {addLoading && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+                    </div>
+                  )}
+                  {addResults.length > 0 && (
+                    <div className="border border-border rounded-xl overflow-hidden divide-y divide-border/50">
+                      {addResults.map((r) => (
+                        <button
+                          key={r.symbol}
+                          type="button"
+                          onClick={() => selectStock(r)}
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+                        >
+                          <div>
+                            <span className="font-bold text-sm">{r.symbol}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">{r.name}</span>
+                          </div>
+                          {r.type && (
+                            <Badge variant="secondary" className="text-[10px]">{r.type}</Badge>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border">
+                    <div className="flex-1">
+                      <span className="font-bold">{selectedSymbol}</span>
+                      <span className="ml-2 text-sm text-muted-foreground">{selectedName}</span>
+                      <Badge variant="secondary" className="ml-2 text-[10px]">{selectedAssetType}</Badge>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedSymbol(""); setSelectedName(""); }}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground mb-1 block">Cantidad</label>
+                      <Input
+                        type="number"
+                        placeholder="Ej: 10"
+                        value={addQty}
+                        onChange={(e) => setAddQty(e.target.value)}
+                        min={1}
+                        autoFocus
+                      />
+                    </div>
+                    <Button onClick={savePosition} disabled={saving || !addQty || Number(addQty) <= 0}>
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                      Agregar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bond mode */}
+          {addMode === "bond" && (
+            <div className="space-y-3">
+              {!selectedSymbol ? (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar bono (ej: AL30, GD30, AE38)..."
+                      value={addQuery}
+                      onChange={(e) => setAddQuery(e.target.value)}
+                      className="pl-9"
+                      autoFocus
+                    />
+                  </div>
+                  {addLoading && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Buscando bonos...
+                    </div>
+                  )}
+                  {bondResults.length > 0 && (
+                    <div className="border border-border rounded-xl overflow-hidden divide-y divide-border/50 max-h-64 overflow-y-auto">
+                      {bondResults.map((b) => (
+                        <button
+                          key={b.symbol}
+                          type="button"
+                          onClick={() => selectBond(b)}
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+                        >
+                          <div>
+                            <span className="font-bold text-sm">{b.symbol}</span>
+                            {b.sub_type && (
+                              <Badge variant="secondary" className="ml-2 text-[10px]">
+                                {b.sub_type === "bond" ? "Soberano" : b.sub_type === "note" ? "Letra" : "ON"}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm tabular-nums font-medium">$ {formatARS(b.c)}</span>
+                            <span className={`ml-2 text-xs tabular-nums ${b.pct_change >= 0 ? "text-positive" : "text-negative"}`}>
+                              {b.pct_change >= 0 ? "+" : ""}{b.pct_change?.toFixed(2)}%
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border">
+                    <div className="flex-1">
+                      <span className="font-bold">{selectedSymbol}</span>
+                      <Badge variant="secondary" className="ml-2 text-[10px]">bono</Badge>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedSymbol(""); setSelectedName(""); }}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground mb-1 block">Cantidad (nominales)</label>
+                      <Input
+                        type="number"
+                        placeholder="Ej: 100"
+                        value={addQty}
+                        onChange={(e) => setAddQty(e.target.value)}
+                        min={1}
+                        autoFocus
+                      />
+                    </div>
+                    <Button onClick={savePosition} disabled={saving || !addQty || Number(addQty) <= 0}>
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                      Agregar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Cash mode */}
+          {addMode === "cash" && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border">
+                <DollarSign className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Efectivo en USD</p>
+                  <p className="text-xs text-muted-foreground">Se guarda como CASH-USD a precio $1</p>
+                </div>
+              </div>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">Monto en USD</label>
+                  <Input
+                    type="number"
+                    placeholder="Ej: 5000"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    min={1}
+                    autoFocus
+                  />
+                </div>
+                <Button onClick={saveCash} disabled={saving || !cashAmount || Number(cashAmount) <= 0}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                  Agregar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {saveError && (
+            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{saveError}</p>
+          )}
+        </div>
+      )}
+
+      {/* Holdings table */}
+      <div className="rounded-2xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
@@ -138,6 +591,13 @@ export function HoldingsTab() {
             </tr>
           </thead>
           <tbody>
+            {enriched.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                  No hay posiciones. Usá el botón &quot;Agregar&quot; para empezar.
+                </td>
+              </tr>
+            )}
             {enriched.map((p) => (
               <tr
                 key={p.symbol}
@@ -153,7 +613,7 @@ export function HoldingsTab() {
                       {p.name}
                     </span>
                     <Badge variant="secondary" className="text-[10px]">
-                      {p.asset_type}
+                      {p.asset_type === "bond" ? "bono" : p.asset_type === "cash" ? "cash" : p.asset_type}
                     </Badge>
                   </Link>
                 </td>

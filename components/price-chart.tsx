@@ -175,8 +175,8 @@ export function PriceChart({ symbol }: { symbol: string }) {
   }, [mode, applySeries]);
 
   return (
-    <div className="mt-6 space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 h-full flex flex-col">
+      <div className="flex items-center justify-between flex-shrink-0">
         <RangeSelector value={range} onChange={setRange} />
         <div className="flex gap-0.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-0.5">
           <button
@@ -201,7 +201,7 @@ export function PriceChart({ symbol }: { symbol: string }) {
           </button>
         </div>
       </div>
-      <div className="relative rounded-2xl surface-elevated overflow-hidden" style={{ height: "55vh" }}>
+      <div className="relative rounded-2xl surface-elevated overflow-hidden flex-1 min-h-0">
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center">
             <Skeleton className="w-full h-full" />

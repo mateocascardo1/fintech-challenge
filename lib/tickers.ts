@@ -4,6 +4,10 @@ export const POOL_US = [
   "SOFI", "HOOD", "INTC", "BA", "DIS", "NKE", "PYPL", "BABA", "JPM", "V",
   "WMT", "COST", "MCD", "PEP", "KO", "ABNB", "RBLX", "ROKU", "SNAP", "PINS",
   "DELL", "ORCL", "IBM", "GS", "MS", "C", "WFC", "BAC", "XOM", "CVX",
+  "LLY", "UNH", "JNJ", "PG", "HD", "MA", "ABBV", "MRK", "T", "VZ",
+  "ADBE", "NOW", "INTU", "PANW", "CRWD", "ZS", "DDOG", "NET", "MDB", "TEAM",
+  "BRK-B", "LIN", "UPS", "FDX", "CAT", "DE", "MMM", "HON", "RTX", "LMT",
+  "SPOT", "TTD", "DASH", "LYFT", "GRAB", "SE", "MELI", "NU", "GLOB", "DESP",
 ];
 
 export const INDICES = ["^GSPC", "^IXIC", "^DJI", "^RUT", "^VIX"];
@@ -14,7 +18,7 @@ export const CURRENCIES = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDARS=X", "USDB
 export const MAX_WATCHLIST = 20;
 
 export function isValidSymbol(s: string): boolean {
-  return /^[\^A-Z][A-Z0-9.\-=]{0,9}$/.test(s);
+  return /^[\^A-Za-z0-9][A-Za-z0-9.\-=]{0,11}$/.test(s);
 }
 
 export function parseWatchlistParam(raw: string | null | undefined): string[] {

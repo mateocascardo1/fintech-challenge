@@ -19,7 +19,10 @@ export function MacroIndicators() {
   useEffect(() => {
     fetch(`/api/quote?symbols=${MACRO_SYMBOLS.join(",")}`)
       .then((r) => r.json())
-      .then(setQuotes);
+      .then((data) => {
+        if (Array.isArray(data?.quotes)) setQuotes(data.quotes);
+      })
+      .catch(() => {});
   }, []);
 
   if (quotes.length === 0) return null;

@@ -13,10 +13,13 @@ import {
 import { SearchIcon } from "lucide-react";
 import type { SearchResult } from "@/lib/types";
 
+type BondResult = { symbol: string; c: number; pct_change: number; sub_type?: string };
+
 export function SearchCommand() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [bondResults, setBondResults] = useState<BondResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
 
@@ -33,20 +36,24 @@ export function SearchCommand() {
 
   useEffect(() => {
     if (query.length < 1) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing results when query is empty
       setResults([]);
+      setBondResults([]);
       return;
     }
     const controller = new AbortController();
     setIsSearching(true);
+
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/search?q=${encodeURIComponent(query)}`,
-          { signal: controller.signal },
-        );
-        const data = await res.json();
-        setResults(data.results ?? []);
+        const [stockRes, bondRes] = await Promise.all([
+          fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal }),
+          fetch(`/api/arg-market?q=${encodeURIComponent(query)}`, { signal: controller.signal }),
+        ]);
+        const stockData = await stockRes.json();
+        setResults(stockData.results ?? []);
+
+        const bondData = await bondRes.json();
+        setBondResults((bondData?.results ?? []).slice(0, 5));
       } catch {
         // abort or error
       } finally {
@@ -69,6 +76,8 @@ export function SearchCommand() {
     [router],
   );
 
+  const hasResults = results.length > 0 || bondResults.length > 0;
+
   return (
     <>
       <button
@@ -84,11 +93,11 @@ export function SearchCommand() {
       <CommandDialog
         open={open}
         onOpenChange={setOpen}
-        title="Buscar acción"
-        description="Buscá por símbolo o nombre de empresa"
+        title="Buscar"
+        description="Buscá acciones, ETFs o bonos argentinos"
       >
         <CommandInput
-          placeholder="AAPL, Apple, Tesla..."
+          placeholder="AAPL, Tesla, AL30, GD30..."
           value={query}
           onValueChange={setQuery}
         />
@@ -97,7 +106,7 @@ export function SearchCommand() {
             {isSearching ? "Buscando..." : "No se encontraron resultados."}
           </CommandEmpty>
           {results.length > 0 && (
-            <CommandGroup heading="Resultados">
+            <CommandGroup heading="Acciones y ETFs">
               {results.map((r) => (
                 <CommandItem
                   key={r.symbol}
@@ -113,6 +122,29 @@ export function SearchCommand() {
               ))}
             </CommandGroup>
           )}
+          {bondResults.length > 0 && (
+            <CommandGroup heading="Bonos Argentinos">
+              {bondResults.map((b) => (
+                <CommandItem
+                  key={b.symbol}
+                  value={`bond-${b.symbol}`}
+                  onSelect={() => handleSelect(b.symbol)}
+                >
+                  <span className="font-mono font-semibold">{b.symbol}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {b.sub_type === "bond" ? "Soberano" : b.sub_type === "note" ? "Letra" : b.sub_type === "corporate" ? "ON" : "Bono"}
+                  </span>
+                  <span className="ml-auto tabular-nums text-xs font-medium">
+                    $ {b.c?.toFixed(2)}
+                  </span>
+                  <span className={`ml-1 tabular-nums text-xs ${(b.pct_change ?? 0) >= 0 ? "text-positive" : "text-negative"}`}>
+                    {(b.pct_change ?? 0) >= 0 ? "+" : ""}{b.pct_change?.toFixed(2)}%
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+          {!isSearching && !hasResults && query.length > 0 && null}
         </CommandList>
       </CommandDialog>
     </>
