@@ -92,46 +92,51 @@ function ExpandedDiagnosis({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-background overflow-y-auto">
-      <div className="relative min-h-full flex flex-col items-center px-6 py-16">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-[90vw] max-w-sm rounded-2xl bg-card border border-border/50 p-6 shadow-2xl animate-in zoom-in-95 fade-in duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           type="button"
           onClick={onClose}
-          className="fixed top-5 right-5 z-[10000] text-muted-foreground hover:text-foreground transition-colors p-2.5 rounded-full hover:bg-muted/20"
+          className="absolute top-4 right-4 text-muted-foreground/60 hover:text-foreground transition-colors"
           aria-label="Cerrar"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </button>
 
-        <div className="w-full max-w-md space-y-8">
-          <div className="flex items-center gap-3">
-            <cat.Icon className="h-5 w-5 text-muted-foreground/70" />
-            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <div className="space-y-5">
+          <div className="flex items-center gap-2">
+            <cat.Icon className="h-4 w-4 text-muted-foreground/60" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {cat.label}
             </span>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="relative h-28 w-28 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="relative h-20 w-20 shrink-0">
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
                   background: `conic-gradient(${status.arcColor} 0% ${pct}%, rgba(30,30,30,0.3) ${pct}% 100%)`,
-                  mask: "radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 7px))",
-                  WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 7px))",
+                  mask: "radial-gradient(farthest-side, transparent calc(100% - 6px), #fff calc(100% - 5px))",
+                  WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 6px), #fff calc(100% - 5px))",
                 }}
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-3xl font-bold tabular-nums">{score}</span>
+                <span className="text-xl font-bold tabular-nums">{score}</span>
               </div>
             </div>
-            <div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-bold tabular-nums">{score}</span>
-                <span className="text-xl text-muted-foreground/50">/250</span>
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[10px] font-mono text-muted-foreground/50">/250</span>
               </div>
               <span
-                className={`inline-block mt-2 text-xs font-bold tracking-[0.15em] px-2.5 py-1 rounded ${status.textColor}`}
+                className={`inline-block mt-1.5 text-[9px] font-bold tracking-[0.15em] px-1.5 py-0.5 rounded ${status.textColor}`}
                 style={{ backgroundColor: status.bgColor }}
               >
                 {status.label}
@@ -140,23 +145,13 @@ function ExpandedDiagnosis({
           </div>
 
           {diag && (
-            <div className="space-y-4 pt-2">
-              <p className="text-xl font-semibold leading-snug">{diag.title}</p>
-              <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+            <div className="space-y-2 pt-1">
+              <p className="text-sm font-medium leading-snug">{diag.title}</p>
+              <p className="text-[13px] text-muted-foreground/80 leading-relaxed">
                 {diag.body}
               </p>
             </div>
           )}
-
-          <div className="pt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-            >
-              ← Volver al diagnóstico
-            </button>
-          </div>
         </div>
       </div>
     </div>
