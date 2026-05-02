@@ -308,8 +308,9 @@ ${bondMarketContext ? `Bonos argentinos más operados hoy:\n${bondMarketContext}
 
 Generá SOLO un JSON (sin markdown) con estas 3 secciones:
 
-1. "diagnosis": EXACTAMENTE 4 objetos, uno por cada sub-score. USARÁS los scores y métricas exactos que te di arriba.
-   Cada objeto: { "category": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection", "title": "título corto en español", "body": "explicación de 1-2 oraciones referenciando las métricas reales" }
+1. "diagnosis": EXACTAMENTE 4 objetos, uno por cada sub-score.
+   Cada objeto: { "category": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection", "title": "título corto en español (max 5 palabras)", "body": "explicación de 1-2 oraciones usando SOLO las métricas que te di (HHI, beta, volatilidad, etc). NO menciones el score numérico X/250 en el body — el score ya se muestra en la UI." }
+   REGLA CRÍTICA: NUNCA escribas "Score de X", "X/250", "Score perfecto", ni ningún número de score en title o body. Solo explicá POR QUÉ está bien o mal usando las métricas subyacentes.
 
 2. "allocation_moves": 2-4 movimientos de rebalanceo a nivel asset class.
    Cada objeto: { "asset_class": "bonds"|"us_equities"|"intl_equities"|"cash", "direction": "increase"|"decrease", "current_pct": number, "target_pct": number, "score_impact": number, "title": "acción corta", "body": "explicación de por qué y qué score mejora" }
@@ -339,7 +340,11 @@ Responder SOLO con el JSON.`;
     const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (fenceMatch) jsonStr = fenceMatch[1].trim();
     const parsed = JSON.parse(jsonStr);
-    const diagnosis = parsed.diagnosis ?? [];
+    const rawDiagnosis = parsed.diagnosis ?? [];
+    const diagnosis = rawDiagnosis.map((d: { category: string; title: string; body: string }) => ({
+      ...d,
+      body: d.body.replace(/\bScore\s*(perfecto\s*)?(\d+)\s*[/\/]\s*250\b/gi, "").replace(/\b\d+\s*[/\/]\s*250\b/g, "").trim(),
+    }));
     const allocMoves = parsed.allocation_moves ?? [];
     const instrumentPicks = parsed.instrument_picks ?? [];
 
