@@ -1,4 +1,5 @@
 import { AppHeader } from "@/components/app-header";
+import { ChatbotButton } from "@/components/chatbot/chatbot-button";
 
 export default function AppLayout({
   children,
@@ -9,6 +10,7 @@ export default function AppLayout({
     <>
       <AppHeader />
       <main className="flex-1">{children}</main>
+      <ChatbotButton />
     </>
   );
 }
