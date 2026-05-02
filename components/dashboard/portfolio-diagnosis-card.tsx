@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Activity, Loader2, RefreshCw, Shield, Target, BarChart3, TrendingDown } from "lucide-react";
+import { Activity, Loader2, RefreshCw, Shield, Target, BarChart3, TrendingDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type DiagnosisItem = {
@@ -65,6 +65,7 @@ export function PortfolioDiagnosisCard() {
   const [scores, setScores] = useState<ScoreData | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     const [insightsRes, scoreRes] = await Promise.all([
@@ -185,9 +186,11 @@ export function PortfolioDiagnosisCard() {
             const diag = getDiagForCategory(key);
 
             return (
-              <div
+              <button
                 key={key}
-                className="rounded-xl bg-card/50 border border-border/50 p-4 space-y-3"
+                type="button"
+                onClick={() => diag && setExpandedCategory(key)}
+                className="rounded-xl bg-card/50 border border-border/50 p-4 space-y-3 text-left transition-colors hover:border-border/80 hover:bg-card/70 cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <Icon className="h-3.5 w-3.5 text-muted-foreground/60" />
@@ -223,10 +226,71 @@ export function PortfolioDiagnosisCard() {
                     Sin análisis disponible
                   </p>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
+
+        {expandedCategory && (() => {
+          const cat = CATEGORIES.find(c => c.key === expandedCategory);
+          if (!cat) return null;
+          const score = scores?.sub_scores?.[cat.key] ?? 0;
+          const status = getStatus(score);
+          const diag = getDiagForCategory(cat.key);
+          return (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+              onClick={() => setExpandedCategory(null)}
+              onKeyDown={(e) => e.key === "Escape" && setExpandedCategory(null)}
+            >
+              <div
+                className="relative w-full max-w-md mx-4 rounded-2xl border border-border/60 bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => setExpandedCategory(null)}
+                  className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Cerrar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
+                <div className="flex items-center gap-2 mb-4">
+                  <cat.Icon className="h-4 w-4 text-muted-foreground/70" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    {cat.label}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4 mb-5">
+                  <MiniGauge score={score} maxScore={250} color={status.arcColor} />
+                  <div>
+                    <span className="text-2xl font-bold tabular-nums">{score}</span>
+                    <span className="text-sm text-muted-foreground/50 ml-1">/250</span>
+                    <div>
+                      <span
+                        className={`inline-block mt-1 text-[9px] font-bold tracking-[0.15em] px-1.5 py-0.5 rounded ${status.textColor}`}
+                        style={{ backgroundColor: status.bgColor }}
+                      >
+                        {status.label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {diag && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{diag.title}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {diag.body}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
