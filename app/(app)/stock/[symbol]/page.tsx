@@ -182,34 +182,32 @@ export default function StockDetailPage({
         </div>
       </div>
 
-      {/* Price hero + Chart / Sidebar */}
-      <div className={`grid gap-6 ${!isBond ? "lg:grid-cols-[1fr_320px]" : ""}`}>
-        <div className="space-y-5">
-          {/* Price display */}
-          <div className="flex items-end gap-4">
-            <span className="text-5xl font-bold tabular-nums tracking-tight leading-none">
-              {formatFn(quote.price)}
-            </span>
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${
-              isPositive
-                ? "bg-positive/10 text-positive"
-                : "bg-negative/10 text-negative"
-            }`}>
-              {isPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-              {formatPercent(quote.changePercent, { withSign: true })}
-            </div>
-          </div>
+      {/* Price display */}
+      <div className="flex items-end gap-4">
+        <span className="text-5xl font-bold tabular-nums tracking-tight leading-none">
+          {formatFn(quote.price)}
+        </span>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${
+          isPositive
+            ? "bg-positive/10 text-positive"
+            : "bg-negative/10 text-negative"
+        }`}>
+          {isPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+          {formatPercent(quote.changePercent, { withSign: true })}
+        </div>
+      </div>
 
-          {/* Chart container */}
-          <div className="h-[420px] rounded-2xl border border-border bg-card p-4">
-            <PriceChart symbol={symbol.toUpperCase()} />
-          </div>
+      {/* Chart + Sidebar */}
+      <div className={`grid gap-6 ${!isBond ? "lg:grid-cols-[1fr_320px]" : ""}`}>
+        {/* Chart container */}
+        <div className="h-[420px] rounded-2xl border border-border bg-card p-4">
+          <PriceChart symbol={symbol.toUpperCase()} />
         </div>
 
-        {/* Sidebar: News / About (only for equities) */}
+        {/* Sidebar: News / About - height locked to chart */}
         {!isBond && (
-          <div className="rounded-2xl border border-border bg-card p-5 flex flex-col">
-            <div className="flex gap-1 mb-4">
+          <div className="rounded-2xl border border-border bg-card p-5 flex flex-col h-[420px]">
+            <div className="flex gap-1 mb-4 shrink-0">
               {(["news", "about"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -225,7 +223,7 @@ export default function StockDetailPage({
                 </button>
               ))}
             </div>
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
               {activeInfoTab === "news" ? (
                 <div className="space-y-4">
                   {news.slice(0, 6).map((n, i) => (
@@ -250,14 +248,14 @@ export default function StockDetailPage({
                     {fundamentals?.description ?? "Descripción no disponible."}
                   </p>
                   {fundamentals?.employees && (
-                    <div className="flex items-center justify-between py-2 border-t border-border">
+                    <div className="flex items-center justify-between py-2 border-t border-border/50 shrink-0">
                       <span className="text-muted-foreground">Empleados</span>
                       <span className="font-medium tabular-nums">{fundamentals.employees.toLocaleString("es-AR")}</span>
                     </div>
                   )}
                   {fundamentals?.website && (
                     <a href={fundamentals.website} target="_blank" rel="noopener noreferrer"
-                      className="text-primary hover:underline text-xs">
+                      className="text-primary hover:underline text-xs block shrink-0">
                       {fundamentals.website}
                     </a>
                   )}

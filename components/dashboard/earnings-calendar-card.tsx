@@ -57,14 +57,18 @@ export function EarningsCalendarCard() {
         </div>
 
         {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="h-6 w-14 animate-pulse rounded bg-muted/30" />
-                  <div className="h-4 w-24 animate-pulse rounded bg-muted/30" />
+          <div className="space-y-4">
+            {Array.from({ length: 2 }).map((_, gi) => (
+              <div key={gi}>
+                <div className="h-2.5 w-20 rounded-md bg-muted/10 animate-pulse mb-2.5" />
+                <div className="space-y-1.5">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 py-2 px-2">
+                      <div className="h-6 w-14 rounded-md bg-yellow-400/5 animate-pulse" />
+                      <div className="h-3.5 w-28 rounded-md bg-muted/10 animate-pulse" />
+                    </div>
+                  ))}
                 </div>
-                <div className="h-4 w-16 animate-pulse rounded bg-muted/30" />
               </div>
             ))}
           </div>
@@ -73,7 +77,7 @@ export function EarningsCalendarCard() {
             No hay earnings programados esta semana.
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-in fade-in duration-500">
             {grouped.map((group, gi) => (
               <div key={group.label}>
                 {gi > 0 && <div className="border-t border-white/[0.04] mb-3" />}

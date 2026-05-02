@@ -123,7 +123,7 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
         `,
       }}
     >
-      <div className="relative z-10">
+      <div className="relative z-10 animate-in fade-in duration-500">
         <div className="flex items-center justify-between mb-4">
           <p className="section-label">PORTFOLIO</p>
           <span className="text-[11px] text-muted-foreground/60">

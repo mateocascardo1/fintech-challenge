@@ -9,6 +9,18 @@ import { AiInsightsCard } from "./ai-insights-card";
 import { MarketRecapCard } from "./market-recap-card";
 import { EarningsCalendarCard } from "./earnings-calendar-card";
 
+function SkeletonCard({ className }: { className?: string }) {
+  return (
+    <div className={`rounded-2xl surface-elevated noise-overlay ${className ?? ""}`}>
+      <div className="relative z-10 p-6 space-y-4">
+        <div className="h-3 w-28 rounded-md bg-muted/20 animate-pulse" />
+        <div className="h-8 w-40 rounded-md bg-muted/15 animate-pulse" />
+        <div className="h-3 w-32 rounded-md bg-muted/10 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export function OverviewTab() {
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,17 +38,19 @@ export function OverviewTab() {
     return (
       <div className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-border bg-card h-52 animate-pulse" />
+          <SkeletonCard className="h-52" />
+          <SkeletonCard className="h-52" />
+        </div>
+        <SkeletonCard className="h-48" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-44" />
           ))}
         </div>
-        <div className="rounded-2xl border border-border bg-card h-56 animate-pulse" />
-        <div className="rounded-2xl border border-border bg-card h-40 animate-pulse" />
-        <div className="rounded-2xl border border-border bg-card h-64 animate-pulse" />
+        <SkeletonCard className="h-56" />
         <div className="grid gap-6 lg:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-border bg-card h-48 animate-pulse" />
-          ))}
+          <SkeletonCard className="h-48" />
+          <SkeletonCard className="h-48" />
         </div>
       </div>
     );
@@ -44,23 +58,24 @@ export function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      {/* Hero: Value + Score side by side */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 animate-in fade-in duration-500">
         <PortfolioValueCard positions={positions} />
         <PortfolioScoreCard positions={positions} />
       </div>
 
-      {/* Allocation breakdown */}
-      <AllocationCard positions={positions} />
+      <div className="animate-in fade-in duration-500" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+        <AllocationCard positions={positions} />
+      </div>
 
-      {/* Diagnosis: 4 sub-score cards with AI commentary */}
-      <PortfolioDiagnosisCard />
+      <div className="animate-in fade-in duration-500" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
+        <PortfolioDiagnosisCard />
+      </div>
 
-      {/* Recommendations: allocation moves + instrument picks */}
-      <AiInsightsCard />
+      <div className="animate-in fade-in duration-500" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
+        <AiInsightsCard />
+      </div>
 
-      {/* Bottom row: Market Recap + Earnings */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 animate-in fade-in duration-500" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
         <MarketRecapCard />
         <EarningsCalendarCard />
       </div>

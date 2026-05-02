@@ -46,9 +46,11 @@ export default function DashboardPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-        {activeTab === "Overview" && <OverviewTab />}
-        {activeTab === "Holdings" && <HoldingsTab />}
-        {activeTab === "Market Watch" && <MarketWatchTab />}
+        <div key={activeTab} className="animate-in fade-in duration-300">
+          {activeTab === "Overview" && <OverviewTab />}
+          {activeTab === "Holdings" && <HoldingsTab />}
+          {activeTab === "Market Watch" && <MarketWatchTab />}
+        </div>
       </div>
     </div>
   );

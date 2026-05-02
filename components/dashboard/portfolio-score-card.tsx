@@ -90,7 +90,7 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
 
   return (
     <div className="surface-elevated noise-overlay rounded-2xl p-6 relative overflow-hidden">
-      <div className="relative z-10">
+      <div className="relative z-10 animate-in fade-in duration-500">
         <p className="section-label">PORTFOLIO SCORE</p>
 
         <div className="mt-5 flex justify-center">

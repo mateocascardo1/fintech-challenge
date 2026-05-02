@@ -64,7 +64,7 @@ export function AllocationCard({ positions }: { positions: Position[] }) {
 
   return (
     <div className="surface-elevated noise-overlay rounded-2xl p-6">
-      <div className="relative z-10">
+      <div className="relative z-10 animate-in fade-in duration-500">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <PieChart className="h-4 w-4 text-muted-foreground/60" />

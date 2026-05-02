@@ -141,13 +141,40 @@ export function AiInsightsCard() {
     return (
       <div className="surface-elevated noise-overlay rounded-2xl p-6">
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-6">
             <Zap className="h-4 w-4 text-yellow-400" />
             <p className="section-label">RECOMENDACIONES</p>
+            {generating && (
+              <span className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                <Loader2 className="h-3 w-3 animate-spin text-yellow-400/60" />
+                Generando...
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-3 py-10 justify-center text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            {generating ? "Generando recomendaciones..." : "Cargando..."}
+          <div className="mb-5">
+            <div className="h-2.5 w-32 rounded-md bg-muted/10 animate-pulse mb-3" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="h-3 w-24 rounded-md bg-muted/15 animate-pulse" />
+                  <div className="flex-1 h-2 rounded-full bg-muted/10 animate-pulse" />
+                  <div className="h-3 w-14 rounded-md bg-muted/15 animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="border-t border-border/20 pt-5">
+            <div className="h-2.5 w-28 rounded-md bg-muted/10 animate-pulse mb-3" />
+            <div className="space-y-2.5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="h-5 w-16 rounded-full bg-muted/10 animate-pulse" />
+                  <div className="h-4 w-12 rounded bg-muted/15 animate-pulse" />
+                  <div className="flex-1 h-3 rounded-md bg-muted/10 animate-pulse" />
+                  <div className="h-4 w-10 rounded bg-muted/15 animate-pulse" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -184,7 +211,7 @@ export function AiInsightsCard() {
 
   return (
     <div className="surface-elevated noise-overlay rounded-2xl p-6">
-      <div className="relative z-10">
+      <div className="relative z-10 animate-in fade-in duration-500">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-yellow-400" />
@@ -202,7 +229,6 @@ export function AiInsightsCard() {
           </Button>
         </div>
 
-        {/* Tier A: Capital Allocation */}
         {allocMoves.length > 0 && (
           <div className="mb-6">
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-3">

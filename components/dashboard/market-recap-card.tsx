@@ -19,7 +19,6 @@ export function MarketRecapCard() {
 
   return (
     <div className="surface-elevated noise-overlay rounded-2xl p-6 relative overflow-hidden">
-      {/* Decorative quotation mark */}
       <div
         className="absolute top-3 right-5 text-[120px] font-serif leading-none text-white/[0.03] pointer-events-none select-none"
         aria-hidden="true"
@@ -34,12 +33,19 @@ export function MarketRecapCard() {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 py-8 justify-center text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin text-chart-2" />
-            Generando resumen...
+          <div className="space-y-3 py-2">
+            <div className="flex items-center gap-2 mb-2">
+              <Loader2 className="h-3 w-3 animate-spin text-chart-2/50" />
+              <span className="text-[10px] text-muted-foreground/40">Generando resumen...</span>
+            </div>
+            <div className="h-4 w-full rounded-md bg-muted/10 animate-pulse" />
+            <div className="h-4 w-11/12 rounded-md bg-muted/10 animate-pulse" />
+            <div className="h-4 w-3/4 rounded-md bg-muted/10 animate-pulse" />
+            <div className="h-4 w-5/6 rounded-md bg-muted/10 animate-pulse" />
+            <div className="h-4 w-1/2 rounded-md bg-muted/10 animate-pulse" />
           </div>
         ) : recap ? (
-          <div>
+          <div className="animate-in fade-in duration-500">
             <p className="text-[15px] leading-[1.7] text-muted-foreground/90">{recap}</p>
             <p className="mt-4 text-[10px] uppercase tracking-widest text-muted-foreground/40 font-medium">
               Generado por IA

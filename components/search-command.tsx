@@ -82,12 +82,12 @@ export function SearchCommand() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-md border border-input bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent transition-colors w-full max-w-sm"
+        className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-sm text-muted-foreground hover:bg-white/[0.07] hover:border-white/[0.12] transition-all w-52 sm:w-72"
       >
-        <SearchIcon className="size-4" />
-        <span className="flex-1 text-left">Buscar acción...</span>
-        <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-          <span className="text-xs">⌘</span>K
+        <SearchIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
+        <span className="flex-1 text-left text-xs truncate">Buscar instrumento...</span>
+        <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-white/[0.08] bg-white/[0.04] px-1.5 font-mono text-[10px] font-medium text-muted-foreground/50">
+          <span className="text-[10px]">⌘</span>K
         </kbd>
       </button>
       <CommandDialog

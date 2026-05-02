@@ -113,13 +113,33 @@ export function PortfolioDiagnosisCard() {
     return (
       <div className="surface-elevated noise-overlay rounded-2xl p-6">
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-5">
             <Activity className="h-4 w-4 text-chart-2" />
             <p className="section-label">DIAGNÓSTICO</p>
+            {generating && (
+              <span className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                <Loader2 className="h-3 w-3 animate-spin text-primary/60" />
+                Analizando...
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-3 py-8 justify-center text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            {generating ? "Analizando portfolio..." : "Cargando diagnóstico..."}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl bg-card/50 border border-border/30 p-4 space-y-3">
+                <div className="h-3 w-20 rounded-md bg-muted/15 animate-pulse" />
+                <div className="flex items-center gap-3">
+                  <div className="h-16 w-16 rounded-full bg-muted/10 animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-12 rounded-md bg-muted/15 animate-pulse" />
+                    <div className="h-4 w-16 rounded-md bg-muted/10 animate-pulse" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="h-3 w-full rounded-md bg-muted/10 animate-pulse" />
+                  <div className="h-3 w-3/4 rounded-md bg-muted/10 animate-pulse" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -146,7 +166,7 @@ export function PortfolioDiagnosisCard() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-500">
           {CATEGORIES.map(({ key, label, Icon }) => {
             const score = scores?.sub_scores?.[key] ?? 0;
             const status = getStatus(score);
