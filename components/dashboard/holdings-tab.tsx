@@ -16,9 +16,35 @@ type AddMode = "stock" | "bond" | "cash";
 type SearchResult = { symbol: string; name: string; type?: string };
 type BondResult = { symbol: string; c: number; pct_change: number; sub_type?: string };
 
+function TableSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="px-3 py-2.5 border-b border-border flex gap-6">
+        {["w-20", "w-24", "w-16", "w-16", "w-8"].map((w, i) => (
+          <div key={i} className={`h-3.5 ${w} rounded-md bg-muted/15 animate-pulse`} />
+        ))}
+      </div>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="px-3 py-3.5 border-b border-border/30 flex items-center gap-6">
+          <div className="flex items-center gap-2 w-40">
+            <div className="h-4 w-14 rounded-md bg-muted/20 animate-pulse" />
+            <div className="h-3 w-20 rounded-md bg-muted/10 animate-pulse" />
+            <div className="h-4 w-10 rounded-full bg-muted/10 animate-pulse" />
+          </div>
+          <div className="h-4 w-24 rounded-md bg-muted/15 animate-pulse" />
+          <div className="h-4 w-14 rounded-md bg-muted/10 animate-pulse" />
+          <div className="h-4 w-14 rounded-md bg-muted/10 animate-pulse" />
+          <div className="h-3.5 w-4 rounded bg-muted/10 animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function HoldingsTab() {
   const [positions, setPositions] = useState<{ symbol: string; quantity: number; asset_type: string }[]>([]);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "equity" | "etf" | "bond_etf" | "bond" | "cash">("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("value");
@@ -40,12 +66,13 @@ export function HoldingsTab() {
   const [saveError, setSaveError] = useState("");
 
   const fetchPositionsAndQuotes = useCallback(() => {
+    setLoading(true);
     fetch("/api/portfolio")
       .then((r) => r.json())
       .then((data) => {
-        if (!Array.isArray(data)) return;
+        if (!Array.isArray(data)) { setLoading(false); return; }
         setPositions(data);
-        if (data.length === 0) return;
+        if (data.length === 0) { setLoading(false); return; }
 
         const yahooSymbols: string[] = [];
         const bondSymbols: string[] = [];
@@ -74,9 +101,12 @@ export function HoldingsTab() {
 
         if (bondSymbols.length > 0) {
           fetches.push(
-            fetch(`/api/arg-market?type=all`)
-              .then((r) => r.json())
-              .then((d) => {
+            Promise.all([
+              fetch(`/api/arg-market?type=all`).then((r) => r.json()),
+              fetch(`/api/arg-market?type=mep`).then((r) => r.json()),
+            ])
+              .then(([d, mepData]) => {
+                const rate = mepData?.rate ?? 1200;
                 const results = d?.results ?? [];
                 const upperToPosition = new Map<string, string>();
                 for (const s of bondSymbols) upperToPosition.set(s.toUpperCase(), s);
@@ -87,10 +117,11 @@ export function HoldingsTab() {
                     const posSymbol = upperToPosition.get(b.symbol.toUpperCase());
                     if (posSymbol) {
                       matched.add(posSymbol);
+                      const priceUsd = (b.c ?? 0) / rate;
                       next[posSymbol] = {
                         symbol: posSymbol,
                         name: b.symbol,
-                        price: b.c ?? 0,
+                        price: priceUsd,
                         change: 0,
                         changePercent: b.pct_change ?? 0,
                       };
@@ -126,8 +157,9 @@ export function HoldingsTab() {
           }));
         }
 
-        Promise.all(fetches).catch(() => {});
-      });
+        Promise.all(fetches).catch(() => {}).finally(() => setLoading(false));
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -568,7 +600,10 @@ export function HoldingsTab() {
       )}
 
       {/* Holdings table */}
-      <div className="rounded-2xl border border-border bg-card overflow-x-auto">
+      {loading ? (
+        <TableSkeleton />
+      ) : (
+      <div className="rounded-2xl border border-border bg-card overflow-x-auto animate-in fade-in duration-500">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
@@ -647,6 +682,7 @@ export function HoldingsTab() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

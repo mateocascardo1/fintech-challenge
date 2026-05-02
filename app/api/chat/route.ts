@@ -287,22 +287,115 @@ async function handleAdvisorMode(uiMessages: Array<UIMessage>) {
     let portfolioContext = "El usuario no tiene sesión iniciada.";
 
     if (user) {
-      const { data: positions } = await supabase
-        .from("positions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
+      const [{ data: positions }, { data: profile }, { data: insights }] = await Promise.all([
+        supabase
+          .from("positions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single(),
+        supabase
+          .from("ai_insights")
+          .select("type, title, body, metadata")
+          .eq("user_id", user.id)
+          .eq("expired", false)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
+
+      const sections: string[] = [];
+
+      if (profile) {
+        const p = profile as Record<string, unknown>;
+        const profileLines: string[] = [];
+        if (p.risk_tolerance) profileLines.push(`Tolerancia al riesgo: ${p.risk_tolerance}`);
+        if (p.investment_horizon) profileLines.push(`Horizonte de inversión: ${p.investment_horizon}`);
+        if (p.investment_goal) profileLines.push(`Objetivo: ${p.investment_goal}`);
+        if (p.age_range) profileLines.push(`Rango de edad: ${p.age_range}`);
+        if (p.bond_preference) profileLines.push(`Preferencia de bonos: ${p.bond_preference}`);
+        if (p.experience_level) profileLines.push(`Experiencia: ${p.experience_level}`);
+        if (p.monthly_income) profileLines.push(`Ingreso mensual: ${p.monthly_income}`);
+        if (profileLines.length > 0) {
+          sections.push(`PERFIL DE RIESGO DEL USUARIO:\n${profileLines.join("\n")}`);
+        }
+      }
 
       if (positions && positions.length > 0) {
-        portfolioContext = positions
-          .map(
-            (p: { symbol: string; quantity: number; asset_type: string }) =>
-              `- ${p.symbol}: ${p.quantity} unidades (${p.asset_type})`,
-          )
-          .join("\n");
+        const posLines = positions.map(
+          (p: { symbol: string; quantity: number; asset_type: string }) =>
+            `- ${p.symbol}: ${p.quantity} unidades (${p.asset_type})`,
+        );
+        sections.push(`POSICIONES ACTUALES:\n${posLines.join("\n")}`);
       } else {
-        portfolioContext = "El usuario no tiene posiciones en su portfolio.";
+        sections.push("POSICIONES ACTUALES:\nEl usuario no tiene posiciones en su portfolio.");
       }
+
+      let scoreContext = "";
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : "http://localhost:3000";
+        const scoreRes = await fetch(`${baseUrl}/api/portfolio/score`, {
+          headers: { cookie: "" },
+        }).catch(() => null);
+        if (scoreRes?.ok) {
+          const scoreData = await scoreRes.json();
+          if (scoreData?.total != null) {
+            const sub = scoreData.sub_scores ?? {};
+            scoreContext = [
+              `PORTFOLIO SCORE: ${scoreData.total}/1000`,
+              `  - Diversificación: ${sub.diversification ?? "N/A"}/250`,
+              `  - Risk Match: ${sub.risk_match ?? "N/A"}/250`,
+              `  - Sharpe (risk-adjusted return): ${sub.risk_adjusted_return ?? "N/A"}/250`,
+              `  - Downside Protection: ${sub.downside_protection ?? "N/A"}/250`,
+              scoreData.allocation ? `\nALLOCATION ACTUAL vs MODELO:` : "",
+              scoreData.allocation
+                ? Object.entries(scoreData.allocation.actual ?? {})
+                    .map(([k, v]) => {
+                      const model = (scoreData.allocation.model as Record<string, number>)?.[k] ?? 0;
+                      return `  - ${k}: actual ${((v as number) * 100).toFixed(1)}% / modelo ${(model * 100).toFixed(1)}%`;
+                    })
+                    .join("\n")
+                : "",
+            ].filter(Boolean).join("\n");
+          }
+        }
+      } catch { /* score fetch optional */ }
+
+      if (scoreContext) sections.push(scoreContext);
+
+      if (insights && insights.length > 0) {
+        const diagItems = (insights as Array<{ type: string; title: string; body: string; metadata?: Record<string, unknown> | null }>)
+          .filter((i) => i.type === "diagnosis");
+        const allocMoves = (insights as Array<{ type: string; title: string; body: string; metadata?: Record<string, unknown> | null }>)
+          .filter((i) => i.type === "alloc_move");
+        const instrPicks = (insights as Array<{ type: string; title: string; body: string; metadata?: Record<string, unknown> | null }>)
+          .filter((i) => i.type === "instrument_pick");
+
+        if (diagItems.length > 0) {
+          sections.push(`DIAGNÓSTICO AI DEL PORTFOLIO:\n${diagItems.map((d) =>
+            `- [${(d.metadata as Record<string, unknown>)?.category ?? "general"}] ${d.title}: ${d.body}`
+          ).join("\n")}`);
+        }
+        if (allocMoves.length > 0) {
+          sections.push(`RECOMENDACIONES DE ALLOCATION:\n${allocMoves.map((a) => {
+            const m = a.metadata as Record<string, unknown> | null;
+            return `- ${a.title}: ${a.body} (de ${m?.from_pct ?? "?"}% a ${m?.to_pct ?? "?"}%, impacto score: ${m?.score_impact ?? "?"})`;
+          }).join("\n")}`);
+        }
+        if (instrPicks.length > 0) {
+          sections.push(`INSTRUMENTOS RECOMENDADOS:\n${instrPicks.map((i) => {
+            const m = i.metadata as Record<string, unknown> | null;
+            return `- ${m?.action ?? "?"} ${m?.symbol ?? ""}: ${i.body} (impacto score: ${m?.score_impact ?? "?"})`;
+          }).join("\n")}`);
+        }
+      }
+
+      portfolioContext = sections.join("\n\n");
     }
 
     let systemPrompt = buildAdvisorPrompt(portfolioContext);

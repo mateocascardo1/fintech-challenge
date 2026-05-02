@@ -151,6 +151,17 @@ export function AiInsightsCard() {
               </span>
             )}
           </div>
+          {generating && (
+            <div className="rounded-xl border border-yellow-400/10 bg-yellow-400/[0.03] px-4 py-3 mb-5 flex items-center gap-3 animate-in fade-in duration-300">
+              <div className="relative flex h-2 w-2 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-400" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Generando recomendaciones personalizadas para tu portfolio. Esto puede tomar unos instantes.
+              </p>
+            </div>
+          )}
           <div className="mb-5">
             <div className="h-2.5 w-32 rounded-md bg-muted/10 animate-pulse mb-3" />
             <div className="space-y-3">

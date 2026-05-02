@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Star, Plus, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { EarningsCard as StockEarningsCard } from "@/components/stock/earnings-c
 import { FinancialsChartCard } from "@/components/stock/financials-chart-card";
 import { MarginTrendCard } from "@/components/stock/margin-trend-card";
 import { InsiderTradingCard } from "@/components/stock/insider-trading-card";
+import { BondCashflowCard } from "@/components/stock/bond-cashflow-card";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { DetailedQuote, Fundamentals, NewsItem } from "@/lib/types";
 import type {
@@ -200,9 +201,7 @@ export default function StockDetailPage({
       {/* Chart + Sidebar */}
       <div className={`grid gap-6 ${!isBond ? "lg:grid-cols-[1fr_320px]" : ""}`}>
         {/* Chart container */}
-        <div className="h-[420px] rounded-2xl border border-border bg-card p-4">
-          <PriceChart symbol={symbol.toUpperCase()} />
-        </div>
+        <ChartWrapper symbol={symbol.toUpperCase()} />
 
         {/* Sidebar: News / About - height locked to chart */}
         {!isBond && (
@@ -313,6 +312,9 @@ export default function StockDetailPage({
         </div>
       )}
 
+      {/* Bond cashflow schedule */}
+      {isBond && <BondCashflowCard symbol={symbol.toUpperCase()} />}
+
       {/* Position card */}
       <PositionCard symbol={symbol.toUpperCase()} price={quote.price} />
 
@@ -330,6 +332,41 @@ export default function StockDetailPage({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function ChartWrapper({ symbol }: { symbol: string }) {
+  const [visible, setVisible] = useState(true);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (ref.current && ref.current.childElementCount === 0) {
+        setVisible(false);
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new MutationObserver(() => {
+      if (ref.current && ref.current.childElementCount === 0) {
+        setVisible(false);
+      } else {
+        setVisible(true);
+      }
+    });
+    observer.observe(ref.current, { childList: true });
+    return () => observer.disconnect();
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div ref={ref} className="h-[420px] rounded-2xl border border-border bg-card p-4">
+      <PriceChart symbol={symbol} />
     </div>
   );
 }

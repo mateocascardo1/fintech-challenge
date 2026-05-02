@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { getQuotesBatch } from "@/lib/providers/yahoo";
-import { getAllFixedIncome, getArgBondQuotes } from "@/lib/providers/data912";
+import { getAllFixedIncome, getArgBondQuotes, getMepRate } from "@/lib/providers/data912";
 import {
   computeDiversificationScore,
   computeRiskMatchScore,
@@ -81,13 +81,16 @@ async function computeFullAnalysis(
   const yahooPositions = positions.filter((p) => p.asset_type !== "bond" && p.asset_type !== "cash");
   const cashPositions = positions.filter((p) => p.asset_type === "cash");
 
-  const [yahooQuotes, bondQuotes] = await Promise.all([
+  const [yahooQuotes, bondQuotes, mepRate] = await Promise.all([
     yahooPositions.length > 0
       ? getQuotesBatch(yahooPositions.map((p) => p.symbol))
       : Promise.resolve([]),
     bondPositions.length > 0
       ? getArgBondQuotes(bondPositions.map((p) => p.symbol))
       : Promise.resolve([]),
+    bondPositions.length > 0
+      ? getMepRate()
+      : Promise.resolve(1200),
   ]);
 
   const quoteMap = new Map<string, { price: number; name: string }>();
@@ -97,7 +100,8 @@ async function computeFullAnalysis(
   for (const p of bondPositions) bondUpperMap.set(p.symbol.toUpperCase(), p.symbol);
   for (const b of bondQuotes) {
     const posSymbol = bondUpperMap.get(b.symbol.toUpperCase()) ?? b.symbol;
-    quoteMap.set(posSymbol, { price: b.c ?? 0, name: b.symbol });
+    const priceUsd = (b.c ?? 0) / mepRate;
+    quoteMap.set(posSymbol, { price: priceUsd, name: b.symbol });
   }
   for (const p of cashPositions) quoteMap.set(p.symbol, { price: 1, name: "Efectivo USD" });
 

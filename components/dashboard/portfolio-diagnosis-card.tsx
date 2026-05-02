@@ -34,10 +34,10 @@ const CATEGORIES = [
   { key: "downside_protection", label: "Downside", Icon: TrendingDown },
 ] as const;
 
-function getStatus(score: number): { label: string; color: string; arcColor: string; textColor: string } {
-  if (score < 63) return { label: "CRÍTICO", color: "oklch(0.66 0.21 20)", arcColor: "oklch(0.66 0.21 20)", textColor: "text-negative" };
-  if (score < 150) return { label: "ATENCIÓN", color: "oklch(0.75 0.15 85)", arcColor: "oklch(0.75 0.15 85)", textColor: "text-yellow-400" };
-  return { label: "SALUDABLE", color: "oklch(0.74 0.17 152)", arcColor: "oklch(0.74 0.17 152)", textColor: "text-primary" };
+function getStatus(score: number): { label: string; color: string; arcColor: string; textColor: string; bgColor: string } {
+  if (score < 63) return { label: "CRÍTICO", color: "#ef4444", arcColor: "#ef4444", textColor: "text-red-300", bgColor: "rgba(239,68,68,0.15)" };
+  if (score < 150) return { label: "ATENCIÓN", color: "#eab308", arcColor: "#eab308", textColor: "text-yellow-300", bgColor: "rgba(234,179,8,0.15)" };
+  return { label: "SALUDABLE", color: "#22c55e", arcColor: "#22c55e", textColor: "text-green-300", bgColor: "rgba(34,197,94,0.15)" };
 }
 
 function MiniGauge({ score, maxScore, color }: { score: number; maxScore: number; color: string }) {
@@ -48,7 +48,7 @@ function MiniGauge({ score, maxScore, color }: { score: number; maxScore: number
       <div
         className="absolute inset-0 rounded-full transition-all duration-700 ease-out"
         style={{
-          background: `conic-gradient(${color} 0% ${pct}%, oklch(0.22 0 0 / 30%) ${pct}% 100%)`,
+          background: `conic-gradient(${color} 0% ${pct}%, rgba(30,30,30,0.3) ${pct}% 100%)`,
           mask: "radial-gradient(farthest-side, transparent calc(100% - 5px), #fff calc(100% - 4px))",
           WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 5px), #fff calc(100% - 4px))",
         }}
@@ -123,6 +123,17 @@ export function PortfolioDiagnosisCard() {
               </span>
             )}
           </div>
+          {generating && (
+            <div className="rounded-xl border border-primary/10 bg-primary/[0.03] px-4 py-3 mb-4 flex items-center gap-3 animate-in fade-in duration-300">
+              <div className="relative flex h-2 w-2 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Nuestra IA está analizando tu portfolio. En unos instantes tendrás tu diagnóstico personalizado.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="rounded-xl bg-card/50 border border-border/30 p-4 space-y-3">
@@ -192,7 +203,7 @@ export function PortfolioDiagnosisCard() {
                     </div>
                     <span
                       className={`inline-block mt-1 text-[9px] font-bold tracking-[0.15em] px-1.5 py-0.5 rounded ${status.textColor}`}
-                      style={{ backgroundColor: `${status.color.replace(")", " / 10%)")}` }}
+                      style={{ backgroundColor: status.bgColor }}
                     >
                       {status.label}
                     </span>

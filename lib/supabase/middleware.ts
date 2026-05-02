@@ -49,5 +49,25 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (user && request.nextUrl.pathname === "/dashboard") {
+    const [{ data: profile }, { count }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .single(),
+      supabase
+        .from("positions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
+    ]);
+
+    if (!profile?.onboarding_completed || (count ?? 0) === 0) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/onboarding";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }

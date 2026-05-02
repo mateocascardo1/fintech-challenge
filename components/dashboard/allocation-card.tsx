@@ -9,10 +9,10 @@ type AllocData = {
 };
 
 const CATEGORIES = [
-  { key: "us_equities", label: "US Equities", color: "bg-primary", dotColor: "bg-primary", hex: "oklch(0.74 0.17 152)" },
-  { key: "intl_equities", label: "Intl. Equities", color: "bg-chart-2", dotColor: "bg-chart-2", hex: "oklch(0.60 0.12 200)" },
-  { key: "bonds", label: "Bonos", color: "bg-yellow-400", dotColor: "bg-yellow-400", hex: "oklch(0.75 0.15 85)" },
-  { key: "cash", label: "Cash", color: "bg-emerald-400", dotColor: "bg-emerald-400", hex: "oklch(0.75 0.17 165)" },
+  { key: "us_equities", label: "US Equities", color: "bg-primary", dotColor: "bg-primary", hex: "#22c55e" },
+  { key: "intl_equities", label: "Intl. Equities", color: "bg-chart-2", dotColor: "bg-chart-2", hex: "#3b82f6" },
+  { key: "bonds", label: "Bonos", color: "bg-yellow-400", dotColor: "bg-yellow-400", hex: "#eab308" },
+  { key: "cash", label: "Cash", color: "bg-emerald-400", dotColor: "bg-emerald-400", hex: "#34d399" },
 ];
 
 type Position = { symbol: string; quantity: number; asset_type: string };

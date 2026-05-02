@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getQuotesBatch } from "@/lib/providers/yahoo";
-import { getArgBondQuotes } from "@/lib/providers/data912";
+import { getArgBondQuotes, getMepRate } from "@/lib/providers/data912";
 import {
   computeDiversificationScore,
   computeRiskMatchScore,
@@ -69,13 +69,16 @@ export async function GET() {
     (p: { asset_type: string }) => p.asset_type === "cash",
   );
 
-  const [yahooQuotes, bondQuotes] = await Promise.all([
+  const [yahooQuotes, bondQuotes, mepRate] = await Promise.all([
     yahooPositions.length > 0
       ? getQuotesBatch(yahooPositions.map((p: { symbol: string }) => p.symbol))
       : Promise.resolve([]),
     bondPositions.length > 0
       ? getArgBondQuotes(bondPositions.map((p: { symbol: string }) => p.symbol))
       : Promise.resolve([]),
+    bondPositions.length > 0
+      ? getMepRate()
+      : Promise.resolve(1200),
   ]);
 
   const quoteMap = new Map<string, { price: number; change: number; changePercent: number; name: string }>();
@@ -89,7 +92,8 @@ export async function GET() {
   }
   for (const b of bondQuotes) {
     const posSymbol = bondUpperMap.get(b.symbol.toUpperCase()) ?? b.symbol;
-    quoteMap.set(posSymbol, { price: b.c ?? 0, change: 0, changePercent: b.pct_change ?? 0, name: b.symbol });
+    const priceUsd = (b.c ?? 0) / mepRate;
+    quoteMap.set(posSymbol, { price: priceUsd, change: 0, changePercent: b.pct_change ?? 0, name: b.symbol });
   }
   for (const p of bondPositions) {
     if (!quoteMap.has(p.symbol)) {

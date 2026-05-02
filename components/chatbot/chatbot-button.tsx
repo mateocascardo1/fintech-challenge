@@ -1,21 +1,36 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import { MessageCircle, X } from "lucide-react";
 import { ChatbotPanel } from "./chatbot-panel";
 
+const HIDDEN_PATHS = ["/onboarding"];
+
 export function ChatbotButton() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  if (HIDDEN_PATHS.some((p) => pathname?.startsWith(p))) return null;
 
   return (
     <>
-      {open && <ChatbotPanel onClose={() => setOpen(false)} />}
+      {open &&
+        createPortal(
+          <ChatbotPanel onClose={() => setOpen(false)} />,
+          document.body,
+        )}
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+        className={`fixed bottom-6 right-6 z-50 flex items-center justify-center rounded-full shadow-xl transition-all duration-300 ${
+          open
+            ? "h-12 w-12 bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/15"
+            : "h-14 w-14 bg-primary text-primary-foreground hover:scale-105 hover:shadow-[0_0_30px_-5px_rgba(34,197,94,0.3)]"
+        }`}
       >
-        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+        {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-6 w-6" />}
       </button>
     </>
   );

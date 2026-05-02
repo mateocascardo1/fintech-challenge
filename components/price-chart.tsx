@@ -56,6 +56,7 @@ export function PriceChart({ symbol }: { symbol: string }) {
   const [range, setRange] = useState<Range>("6mo");
   const [mode, setMode] = useState<ChartMode>("area");
   const [isLoading, setIsLoading] = useState(true);
+  const [hasData, setHasData] = useState(true);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -157,11 +158,15 @@ export function PriceChart({ symbol }: { symbol: string }) {
       .then((data) => {
         const points: HistoryPoint[] = data.points ?? [];
         pointsRef.current = points;
-        applySeries(chart, points, mode);
+        setHasData(points.length > 0);
+        if (points.length > 0) {
+          applySeries(chart, points, mode);
+        }
         setIsLoading(false);
       })
       .catch((e) => {
         if (e instanceof DOMException && e.name === "AbortError") return;
+        setHasData(false);
         setIsLoading(false);
       });
 
@@ -174,8 +179,10 @@ export function PriceChart({ symbol }: { symbol: string }) {
     applySeries(chart, pointsRef.current, mode);
   }, [mode, applySeries]);
 
+  if (!isLoading && !hasData) return null;
+
   return (
-    <div className="space-y-3 h-full flex flex-col">
+    <div className={`space-y-3 h-full flex flex-col ${!isLoading && hasData ? "animate-in fade-in duration-500" : ""}`}>
       <div className="flex items-center justify-between flex-shrink-0">
         <RangeSelector value={range} onChange={setRange} />
         <div className="flex gap-0.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-0.5">

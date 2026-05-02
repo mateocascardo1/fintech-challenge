@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Star, TrendingUp, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, Plus, Star, TrendingUp, Loader2, ArrowRight } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import { INDICES, ETFS, COMMODITIES, CURRENCIES } from "@/lib/tickers";
 import { StockCard } from "@/components/stock-card";
@@ -43,7 +45,10 @@ function RowSkeleton() {
   );
 }
 
+type InstrumentResult = { symbol: string; name: string; type?: string; asset_type?: string };
+
 export function MarketWatchTab() {
+  const router = useRouter();
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [watchQuotes, setWatchQuotes] = useState<Quote[]>([]);
   const [marketQuotes, setMarketQuotes] = useState<Quote[]>([]);
@@ -56,6 +61,11 @@ export function MarketWatchTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ symbol: string; name: string; type?: string }[]>([]);
   const [searching, setSearching] = useState(false);
+
+  // Global instrument search
+  const [globalQuery, setGlobalQuery] = useState("");
+  const [globalResults, setGlobalResults] = useState<InstrumentResult[]>([]);
+  const [globalSearching, setGlobalSearching] = useState(false);
 
   const fetchWatchlist = useCallback(async () => {
     try {
@@ -90,7 +100,8 @@ export function MarketWatchTab() {
     fetch("/api/news?symbol=SPY&hours=24")
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data)) setNews(data.slice(0, 10));
+        const items = data?.items ?? (Array.isArray(data) ? data : []);
+        setNews(items.slice(0, 10));
       })
       .finally(() => setNewsLoading(false));
   }, [fetchWatchlist]);
@@ -107,6 +118,31 @@ export function MarketWatchTab() {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (globalQuery.length < 2) { setGlobalResults([]); return; }
+    const timer = setTimeout(() => {
+      setGlobalSearching(true);
+      Promise.allSettled([
+        fetch(`/api/search?q=${encodeURIComponent(globalQuery)}`).then((r) => r.json()),
+        fetch(`/api/arg-market?q=${encodeURIComponent(globalQuery)}`).then((r) => r.json()),
+      ]).then(([yahooR, bondsR]) => {
+        const yahoo = yahooR.status === "fulfilled" ? (yahooR.value?.results ?? []) : [];
+        const bonds = bondsR.status === "fulfilled" ? (bondsR.value?.results ?? []) : [];
+        const merged: InstrumentResult[] = [];
+        for (const r of yahoo.slice(0, 6)) {
+          merged.push({ symbol: r.symbol, name: r.name, type: r.type, asset_type: (r.type ?? "").toLowerCase().includes("etf") ? "etf" : "equity" });
+        }
+        for (const b of bonds.slice(0, 4)) {
+          if (!merged.find((m) => m.symbol === b.symbol)) {
+            merged.push({ symbol: b.symbol, name: b.symbol, type: b.sub_type === "bond" ? "Bono Soberano" : b.sub_type === "note" ? "Letra" : "ON", asset_type: "bond" });
+          }
+        }
+        setGlobalResults(merged);
+      }).finally(() => setGlobalSearching(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [globalQuery]);
 
   async function addToWatchlist(symbol: string) {
     await fetch("/api/watchlist", {
@@ -137,6 +173,61 @@ export function MarketWatchTab() {
 
   return (
     <div className="space-y-8">
+      {/* Global Instrument Search */}
+      <div className="relative">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+          <Input
+            placeholder="Buscar acciones, ETFs, bonos, cedears..."
+            value={globalQuery}
+            onChange={(e) => setGlobalQuery(e.target.value)}
+            className="pl-11 h-11 rounded-xl border-border/50 bg-card/60 backdrop-blur-sm text-sm placeholder:text-muted-foreground/50 focus-visible:ring-primary/30"
+          />
+          {globalQuery && (
+            <button
+              type="button"
+              onClick={() => { setGlobalQuery(""); setGlobalResults([]); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+        {globalSearching && (
+          <div className="absolute left-0 right-0 mt-1 z-20 rounded-xl border border-border/50 bg-card p-4 flex items-center gap-2 text-sm text-muted-foreground shadow-xl">
+            <Loader2 className="h-4 w-4 animate-spin" /> Buscando instrumentos...
+          </div>
+        )}
+        {!globalSearching && globalResults.length > 0 && (
+          <div className="absolute left-0 right-0 mt-1 z-20 rounded-xl border border-border/50 bg-card shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            {globalResults.map((r) => (
+              <button
+                key={r.symbol}
+                type="button"
+                onClick={() => {
+                  router.push(`/stock/${encodeURIComponent(r.symbol)}`);
+                  setGlobalQuery("");
+                  setGlobalResults([]);
+                }}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors text-left group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="font-bold text-sm">{r.symbol}</span>
+                  <span className="text-xs text-muted-foreground truncate">{r.name}</span>
+                  {r.asset_type === "bond" && (
+                    <Badge variant="secondary" className="text-[9px] shrink-0">Renta Fija</Badge>
+                  )}
+                  {r.type && r.asset_type !== "bond" && (
+                    <Badge variant="outline" className="text-[9px] shrink-0">{r.type}</Badge>
+                  )}
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Watchlist */}
       <div>
         <div className="flex items-center justify-between mb-4">

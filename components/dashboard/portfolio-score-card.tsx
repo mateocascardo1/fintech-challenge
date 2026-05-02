@@ -28,10 +28,10 @@ function getScoreColor(score: number): string {
 }
 
 function getScoreGradient(score: number): string {
-  if (score >= 750) return "oklch(0.74 0.17 152)";
-  if (score >= 500) return "oklch(0.60 0.12 200)";
-  if (score >= 250) return "oklch(0.75 0.15 85)";
-  return "oklch(0.66 0.21 20)";
+  if (score >= 750) return "#22c55e";
+  if (score >= 500) return "#3b82f6";
+  if (score >= 250) return "#eab308";
+  return "#ef4444";
 }
 
 function getSubScoreBarColor(ratio: number): string {
@@ -98,7 +98,7 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: `conic-gradient(${color} 0% ${scorePercent}%, oklch(0.22 0 0 / 40%) ${scorePercent}% 100%)`,
+                background: `conic-gradient(${color} 0% ${scorePercent}%, rgba(30,30,30,0.4) ${scorePercent}% 100%)`,
                 mask: "radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 7px))",
                 WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 7px))",
               }}
@@ -106,7 +106,7 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
             <div
               className="absolute inset-[10px] rounded-full"
               style={{
-                background: `radial-gradient(circle, ${color.replace(")", " / 8%)")} 0%, transparent 70%)`,
+                background: `radial-gradient(circle, ${color}14 0%, transparent 70%)`,
               }}
             />
             <div className="absolute inset-0 flex flex-col items-center justify-center">

@@ -5,6 +5,10 @@ import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Plus, Briefcase } from "lucide-react";
 
+function isArgBond(symbol: string): boolean {
+  return /^[A-Z]{2,5}\d/i.test(symbol);
+}
+
 export function PositionCard({
   symbol,
   price,
@@ -14,6 +18,7 @@ export function PositionCard({
 }) {
   const [position, setPosition] = useState<{ symbol: string; quantity: number; asset_type: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mepRate, setMepRate] = useState<number>(1);
 
   useEffect(() => {
     fetch("/api/portfolio")
@@ -21,7 +26,15 @@ export function PositionCard({
       .then((positions) => {
         const pos = positions.find?.((p: { symbol: string }) => p.symbol === symbol);
         setPosition(pos ?? null);
-        setLoading(false);
+        if (pos?.asset_type === "bond" && isArgBond(pos.symbol)) {
+          fetch("/api/arg-market?type=mep")
+            .then((r) => r.json())
+            .then((d) => setMepRate(d?.rate ?? 1200))
+            .catch(() => setMepRate(1200))
+            .finally(() => setLoading(false));
+        } else {
+          setLoading(false);
+        }
       });
   }, [symbol]);
 
@@ -48,7 +61,9 @@ export function PositionCard({
     );
   }
 
-  const value = price * position.quantity;
+  const isBond = position.asset_type === "bond" && isArgBond(position.symbol);
+  const priceUsd = isBond ? price / mepRate : price;
+  const value = priceUsd * position.quantity;
 
   return (
     <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-5">
@@ -68,12 +83,14 @@ export function PositionCard({
           <p className="text-lg font-bold tabular-nums mt-0.5">{position.quantity}</p>
         </div>
         <div>
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Precio</p>
-          <p className="text-lg font-bold tabular-nums mt-0.5">{formatPrice(price)}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Precio USD</p>
+          <p className="text-lg font-bold tabular-nums mt-0.5">{formatPrice(priceUsd)}</p>
         </div>
         <div>
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Tipo</p>
-          <p className="text-lg font-bold mt-0.5">{position.asset_type}</p>
+          <p className="text-lg font-bold mt-0.5">
+            {position.asset_type === "bond" ? "Bono" : position.asset_type === "etf" ? "ETF" : position.asset_type === "cash" ? "Cash" : "Acción"}
+          </p>
         </div>
       </div>
     </div>

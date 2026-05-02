@@ -110,3 +110,43 @@ export async function getArgBondHistory(
     `/historical/bonds/${encodeURIComponent(ticker)}`,
   );
 }
+
+/**
+ * Derive the implicit USD MEP rate by comparing a pair of
+ * ARS-denominated and USD-denominated bonds (e.g. AE38 / AE38C).
+ * Falls back to a reasonable default if data is unavailable.
+ */
+export async function getMepRate(): Promise<number> {
+  const DEFAULT_MEP = 1200;
+  try {
+    const bonds = await getArgBonds();
+    const arsMap = new Map<string, number>();
+    const usdMap = new Map<string, number>();
+
+    for (const b of bonds) {
+      const sym = b.symbol.toUpperCase();
+      if (sym.endsWith("C") && b.c > 0) {
+        usdMap.set(sym.slice(0, -1), b.c);
+      } else if (sym.endsWith("D") && b.c > 0) {
+        // D suffix is also USD (MEP)
+      } else if (b.c > 0) {
+        arsMap.set(sym, b.c);
+      }
+    }
+
+    const rates: number[] = [];
+    for (const [base, arsPrice] of arsMap) {
+      const usdPrice = usdMap.get(base);
+      if (usdPrice && usdPrice > 0) {
+        rates.push(arsPrice / usdPrice);
+      }
+    }
+
+    if (rates.length > 0) {
+      return rates.reduce((a, b) => a + b, 0) / rates.length;
+    }
+    return DEFAULT_MEP;
+  } catch {
+    return DEFAULT_MEP;
+  }
+}

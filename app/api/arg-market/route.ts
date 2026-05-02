@@ -5,9 +5,10 @@ import {
   getArgCorp,
   getAllFixedIncome,
   searchArgFixedIncome,
+  getMepRate,
 } from "@/lib/providers/data912";
 
-const VALID_TYPES = new Set(["bonds", "notes", "corp", "all"]);
+const VALID_TYPES = new Set(["bonds", "notes", "corp", "all", "mep"]);
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -22,6 +23,14 @@ export async function GET(req: Request) {
   }
 
   try {
+    if (type === "mep") {
+      const rate = await getMepRate();
+      return NextResponse.json(
+        { rate, updated: new Date().toISOString() },
+        { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } },
+      );
+    }
+
     let data;
 
     if (query) {

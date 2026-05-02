@@ -1,14 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { PortfolioSparkline } from "./portfolio-sparkline";
 
 type Position = { symbol: string; quantity: number; asset_type: string };
 
+function isArgBond(symbol: string): boolean {
+  return /^[A-Z]{2,5}\d/i.test(symbol);
+}
+
 export function PortfolioValueCard({ positions }: { positions: Position[] }) {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
+  const [mepRate, setMepRate] = useState<number>(1200);
 
   useEffect(() => {
     if (positions.length === 0) return;
@@ -40,10 +46,15 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
 
     if (bondSymbols.length > 0) {
       fetches.push(
-        fetch(`/api/arg-market?type=all`)
-          .then((r) => r.json())
-          .then((data) => {
-            const results = data?.results ?? [];
+        Promise.all([
+          fetch(`/api/arg-market?type=all`).then((r) => r.json()),
+          fetch(`/api/arg-market?type=mep`).then((r) => r.json()),
+        ])
+          .then(([bondData, mepData]) => {
+            const rate = mepData?.rate ?? 1200;
+            setMepRate(rate);
+
+            const results = bondData?.results ?? [];
             const upperToPosition = new Map<string, string>();
             for (const s of bondSymbols) upperToPosition.set(s.toUpperCase(), s);
 
@@ -55,10 +66,11 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
                 const posSymbol = upperToPosition.get(b.symbol.toUpperCase());
                 if (posSymbol) {
                   matched.add(posSymbol);
+                  const priceUsd = isArgBond(posSymbol) ? (b.c ?? 0) / rate : (b.c ?? 0);
                   next[posSymbol] = {
                     symbol: posSymbol,
                     name: b.symbol,
-                    price: b.c ?? 0,
+                    price: priceUsd,
                     change: 0,
                     changePercent: b.pct_change ?? 0,
                   };
@@ -118,8 +130,8 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
       className="surface-elevated noise-overlay rounded-2xl p-6 relative overflow-hidden"
       style={{
         backgroundImage: `
-          radial-gradient(ellipse 80% 60% at 20% 10%, oklch(0.74 0.17 152 / 4%) 0%, transparent 60%),
-          radial-gradient(ellipse 50% 50% at 80% 80%, oklch(0.60 0.12 200 / 3%) 0%, transparent 50%)
+          radial-gradient(ellipse 80% 60% at 20% 10%, rgba(34,197,94,0.04) 0%, transparent 60%),
+          radial-gradient(ellipse 50% 50% at 80% 80%, rgba(59,130,246,0.03) 0%, transparent 50%)
         `,
       }}
     >
@@ -136,8 +148,8 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
             isNeutral
               ? ""
               : isPositive
-                ? "drop-shadow-[0_0_24px_oklch(0.74_0.17_152_/_20%)]"
-                : "drop-shadow-[0_0_24px_oklch(0.66_0.21_20_/_20%)]"
+                ? "drop-shadow-[0_0_24px_rgba(34,197,94,0.2)]"
+                : "drop-shadow-[0_0_24px_rgba(239,68,68,0.2)]"
           }`}
         >
           {formatPrice(totalValue)}
@@ -172,6 +184,8 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
             {formatPercent(totalChangePercent, { withSign: true })}
           </div>
         </div>
+
+        <PortfolioSparkline positions={positions} />
       </div>
     </div>
   );
