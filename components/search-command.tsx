@@ -33,6 +33,7 @@ export function SearchCommand() {
 
   useEffect(() => {
     if (query.length < 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing results when query is empty
       setResults([]);
       return;
     }

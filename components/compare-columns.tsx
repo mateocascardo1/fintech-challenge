@@ -84,7 +84,7 @@ function TrendIcon({ change }: { change: number }) {
   return <MinusIcon className="size-3.5 text-muted-foreground" />;
 }
 
-function QuoteCard({ quote, side }: { quote: Quote; side: "a" | "b" }) {
+function QuoteCard({ quote }: { quote: Quote }) {
   const sign = changeSign(quote.change);
 
   return (
@@ -181,7 +181,7 @@ export function CompareColumns({
     <div className="space-y-6">
       {/* Quote headers */}
       <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-stretch">
-        <QuoteCard quote={quoteA} side="a" />
+        <QuoteCard quote={quoteA} />
         <div className="flex flex-col items-center justify-center gap-2 px-1">
           <div className="flex items-center justify-center size-11 rounded-full bg-primary/15 border border-primary/20">
             <span className="font-black text-[11px] text-primary tracking-wider">VS</span>
@@ -194,7 +194,7 @@ export function CompareColumns({
             </div>
           )}
         </div>
-        <QuoteCard quote={quoteB} side="b" />
+        <QuoteCard quote={quoteB} />
       </div>
 
       {/* Metrics */}

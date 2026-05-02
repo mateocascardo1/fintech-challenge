@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeModelAllocation } from "@/lib/portfolio/allocation";
-import type { InvestorProfile, AllocationTarget } from "@/lib/portfolio/types";
+import type { InvestorProfile } from "@/lib/portfolio/types";
 
 const baseProfile: InvestorProfile = {
   investment_horizon: "long",

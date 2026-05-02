@@ -33,15 +33,24 @@ const FEATURES = [
 ];
 
 export function HeroBanner() {
-  const [dismissed, setDismissed] = useState<boolean | null>(null);
+  const [dismissed, setDismissed] = useState<boolean | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem(STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
+    if (dismissed !== null) return;
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration sync from localStorage
       setDismissed(localStorage.getItem(STORAGE_KEY) === "1");
     } catch {
       setDismissed(false);
     }
-  }, []);
+  }, [dismissed]);
 
   if (dismissed === null || dismissed) return null;
 

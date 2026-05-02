@@ -12,28 +12,28 @@ type ScoreData = {
   };
 };
 
+type Position = { symbol: string; quantity: number; asset_type: string };
+
+const EMPTY_SCORE: ScoreData = {
+  total: 0,
+  sub_scores: { diversification: 0, risk_match: 0, risk_adjusted_return: 0, downside_protection: 0 },
+};
+
 export function PortfolioScoreCard({
   positions,
-  profile,
 }: {
-  positions: any[];
-  profile: any;
+  positions: Position[];
 }) {
-  const [data, setData] = useState<ScoreData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const hasPositions = positions && positions.length > 0;
+  const [data, setData] = useState<ScoreData | null>(hasPositions ? null : EMPTY_SCORE);
+  const [loading, setLoading] = useState(hasPositions);
 
   useEffect(() => {
-    if (!positions || positions.length === 0) {
-      setData({ total: 0, sub_scores: { diversification: 0, risk_match: 0, risk_adjusted_return: 0, downside_protection: 0 } });
-      setLoading(false);
-      return;
-    }
+    if (!positions || positions.length === 0) return;
     fetch("/api/portfolio/score")
       .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch(() =>
-        setData({ total: 0, sub_scores: { diversification: 0, risk_match: 0, risk_adjusted_return: 0, downside_protection: 0 } }),
-      )
+      .then((d: ScoreData) => setData(d))
+      .catch(() => setData(EMPTY_SCORE))
       .finally(() => setLoading(false));
   }, [positions]);
 

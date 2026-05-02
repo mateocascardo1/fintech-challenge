@@ -3,9 +3,7 @@ import {
   formatPrice,
   formatPercent,
   formatMarketCap,
-  formatRatio,
   changeSign,
-  formatRelativeTime,
 } from "@/lib/format";
 
 describe("formatPrice", () => {

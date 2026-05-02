@@ -12,14 +12,14 @@ export function PositionCard({
   symbol: string;
   price: number;
 }) {
-  const [position, setPosition] = useState<any>(null);
+  const [position, setPosition] = useState<{ symbol: string; quantity: number; asset_type: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/portfolio")
       .then((r) => r.json())
       .then((positions) => {
-        const pos = positions.find?.((p: any) => p.symbol === symbol);
+        const pos = positions.find?.((p: { symbol: string }) => p.symbol === symbol);
         setPosition(pos ?? null);
         setLoading(false);
       });

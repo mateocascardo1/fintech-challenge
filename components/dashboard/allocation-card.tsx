@@ -16,28 +16,27 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_ORDER = ["us_equities", "intl_equities", "bonds", "cash"];
 
+type Position = { symbol: string; quantity: number; asset_type: string };
+
+const EMPTY_ALLOC: AllocData = {
+  current: { us_equities: 0, intl_equities: 0, bonds: 0, cash: 0 },
+  model: { us_equities: 0, intl_equities: 0, bonds: 0, cash: 0 },
+};
+
 export function AllocationCard({
   positions,
-  profile,
 }: {
-  positions: any[];
-  profile: any;
+  positions: Position[];
 }) {
-  const [alloc, setAlloc] = useState<AllocData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const hasPositions = positions && positions.length > 0;
+  const [alloc, setAlloc] = useState<AllocData | null>(hasPositions ? null : EMPTY_ALLOC);
+  const [loading, setLoading] = useState(hasPositions);
 
   useEffect(() => {
-    if (!positions || positions.length === 0) {
-      setAlloc({
-        current: { us_equities: 0, intl_equities: 0, bonds: 0, cash: 0 },
-        model: { us_equities: 0, intl_equities: 0, bonds: 0, cash: 0 },
-      });
-      setLoading(false);
-      return;
-    }
+    if (!positions || positions.length === 0) return;
     fetch("/api/portfolio/score")
       .then((r) => r.json())
-      .then((d) => setAlloc(d.allocation ?? null))
+      .then((d: { allocation?: AllocData }) => setAlloc(d.allocation ?? null))
       .catch(() => setAlloc(null))
       .finally(() => setLoading(false));
   }, [positions]);

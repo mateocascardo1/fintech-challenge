@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 
-export function PortfolioValueCard({ positions }: { positions: any[] }) {
+type Position = { symbol: string; quantity: number; asset_type: string };
+
+export function PortfolioValueCard({ positions }: { positions: Position[] }) {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
 
   useEffect(() => {
     if (positions.length === 0) return;
-    const symbols = positions.map((p: any) => p.symbol).join(",");
+    const symbols = positions.map((p) => p.symbol).join(",");
     fetch(`/api/quote?symbols=${symbols}`)
       .then((r) => r.json())
       .then((data: Quote[]) => {
@@ -19,12 +21,12 @@ export function PortfolioValueCard({ positions }: { positions: any[] }) {
       });
   }, [positions]);
 
-  const totalValue = positions.reduce((sum: number, p: any) => {
+  const totalValue = positions.reduce((sum: number, p: Position) => {
     const quote = quotes[p.symbol];
     return sum + (quote ? quote.price * p.quantity : 0);
   }, 0);
 
-  const totalChange = positions.reduce((sum: number, p: any) => {
+  const totalChange = positions.reduce((sum: number, p: Position) => {
     const quote = quotes[p.symbol];
     return sum + (quote ? quote.change * p.quantity : 0);
   }, 0);

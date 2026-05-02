@@ -9,7 +9,7 @@ import type { Quote } from "@/lib/types";
 
 export function MarketWatchTab() {
   const [indices, setIndices] = useState<Quote[]>([]);
-  const [news, setNews] = useState<any[]>([]);
+  const [news, setNews] = useState<{ title: string; link: string; pubDate: string; source: string }[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {

@@ -47,7 +47,8 @@ export function useQuotes(
   }, [symbolsKey]);
 
   useEffect(() => {
-    fetchQuotes();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching on mount
+    void fetchQuotes();
     if (intervalMs <= 0) return;
     const id = setInterval(fetchQuotes, intervalMs);
     return () => {

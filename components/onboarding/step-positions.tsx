@@ -15,6 +15,8 @@ type PositionEntry = {
   price?: number;
 };
 
+type SearchResultItem = { symbol: string; name: string; type?: string };
+
 export function StepPositions({
   positions,
   setPositions,
@@ -27,9 +29,9 @@ export function StepPositions({
   onBack: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selectedSymbol, setSelectedSymbol] = useState<any>(null);
+  const [results, setResults] = useState<SearchResultItem[]>([]);
+  const [, setSearching] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState<SearchResultItem | null>(null);
   const [quantity, setQuantity] = useState("");
 
   const search = useCallback(async (q: string) => {
@@ -94,7 +96,7 @@ export function StepPositions({
         {results.length > 0 && !selectedSymbol && (
           <Card className="card-revolut max-h-48 overflow-y-auto">
             <CardContent className="p-2">
-              {results.map((r: any) => (
+              {results.map((r) => (
                 <button
                   key={r.symbol}
                   type="button"
@@ -179,7 +181,7 @@ export function StepPositions({
   );
 }
 
-function guessType(result: any): string {
+function guessType(result: { type?: string }): string {
   const t = (result.type ?? "").toLowerCase();
   if (t.includes("etf")) return "etf";
   return "equity";

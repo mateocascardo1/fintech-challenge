@@ -13,7 +13,7 @@ type SortKey = "symbol" | "value" | "weight" | "changePercent";
 type SortDir = "asc" | "desc";
 
 export function HoldingsTab() {
-  const [positions, setPositions] = useState<any[]>([]);
+  const [positions, setPositions] = useState<{ symbol: string; quantity: number; asset_type: string }[]>([]);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [filter, setFilter] = useState<"all" | "equity" | "etf" | "bond_etf">("all");
   const [search, setSearch] = useState("");
@@ -26,7 +26,7 @@ export function HoldingsTab() {
       .then((data) => {
         setPositions(data);
         if (data.length > 0) {
-          const symbols = data.map((p: any) => p.symbol).join(",");
+          const symbols = data.map((p: { symbol: string }) => p.symbol).join(",");
           fetch(`/api/quote?symbols=${symbols}`)
             .then((r) => r.json())
             .then((qs: Quote[]) => {

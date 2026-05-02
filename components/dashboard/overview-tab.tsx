@@ -10,18 +10,15 @@ import { EarningsCalendarCard } from "./earnings-calendar-card";
 
 export function OverviewTab() {
   const [positions, setPositions] = useState([]);
-  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/portfolio").then((r) => r.json()),
-      fetch("/api/profile").then((r) => r.json()),
-    ]).then(([pos, prof]) => {
-      setPositions(pos);
-      setProfile(prof);
-      setLoading(false);
-    });
+    fetch("/api/portfolio")
+      .then((r) => r.json())
+      .then((pos) => {
+        setPositions(pos);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) {
@@ -38,9 +35,9 @@ export function OverviewTab() {
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-2">
         <PortfolioValueCard positions={positions} />
-        <PortfolioScoreCard positions={positions} profile={profile} />
+        <PortfolioScoreCard positions={positions} />
       </div>
-      <AllocationCard positions={positions} profile={profile} />
+      <AllocationCard positions={positions} />
       <AiInsightsCard />
       <div className="grid gap-6 lg:grid-cols-2">
         <MarketRecapCard />

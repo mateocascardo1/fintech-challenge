@@ -14,6 +14,7 @@ function extractTextContent(parts: Array<{ type: string; text?: string }>): stri
     .join("");
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function ChatbotPanel({ onClose }: { onClose: () => void }) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
