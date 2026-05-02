@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Activity, Loader2, RefreshCw, Shield, Target, BarChart3, TrendingDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -55,6 +56,108 @@ function MiniGauge({ score, maxScore, color }: { score: number; maxScore: number
       />
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-base font-bold tabular-nums">{score}</span>
+      </div>
+    </div>
+  );
+}
+
+function ExpandedDiagnosis({
+  category,
+  scores,
+  getDiagForCategory,
+  onClose,
+}: {
+  category: string;
+  scores: ScoreData | null;
+  getDiagForCategory: (cat: string) => DiagnosisItem | undefined;
+  onClose: () => void;
+}) {
+  const cat = CATEGORIES.find(c => c.key === category);
+  if (!cat) return null;
+  const score = scores?.sub_scores?.[cat.key] ?? 0;
+  const status = getStatus(score);
+  const diag = getDiagForCategory(cat.key);
+  const pct = Math.min((score / 250) * 100, 100);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-background overflow-y-auto">
+      <div className="relative min-h-full flex flex-col items-center px-6 py-16">
+        <button
+          type="button"
+          onClick={onClose}
+          className="fixed top-5 right-5 z-[10000] text-muted-foreground hover:text-foreground transition-colors p-2.5 rounded-full hover:bg-muted/20"
+          aria-label="Cerrar"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <div className="w-full max-w-md space-y-8">
+          <div className="flex items-center gap-3">
+            <cat.Icon className="h-5 w-5 text-muted-foreground/70" />
+            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {cat.label}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="relative h-28 w-28 shrink-0">
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: `conic-gradient(${status.arcColor} 0% ${pct}%, rgba(30,30,30,0.3) ${pct}% 100%)`,
+                  mask: "radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 7px))",
+                  WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 7px))",
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-3xl font-bold tabular-nums">{score}</span>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-bold tabular-nums">{score}</span>
+                <span className="text-xl text-muted-foreground/50">/250</span>
+              </div>
+              <span
+                className={`inline-block mt-2 text-xs font-bold tracking-[0.15em] px-2.5 py-1 rounded ${status.textColor}`}
+                style={{ backgroundColor: status.bgColor }}
+              >
+                {status.label}
+              </span>
+            </div>
+          </div>
+
+          {diag && (
+            <div className="space-y-4 pt-2">
+              <p className="text-xl font-semibold leading-snug">{diag.title}</p>
+              <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {diag.body}
+              </p>
+            </div>
+          )}
+
+          <div className="pt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+            >
+              ← Volver al diagnóstico
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -231,84 +334,15 @@ export function PortfolioDiagnosisCard() {
           })}
         </div>
 
-        {expandedCategory && (() => {
-          const cat = CATEGORIES.find(c => c.key === expandedCategory);
-          if (!cat) return null;
-          const score = scores?.sub_scores?.[cat.key] ?? 0;
-          const status = getStatus(score);
-          const diag = getDiagForCategory(cat.key);
-          return (
-            <div
-              className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
-              onKeyDown={(e) => e.key === "Escape" && setExpandedCategory(null)}
-            >
-              <div className="min-h-full flex flex-col items-center justify-center px-6 py-12">
-                <button
-                  type="button"
-                  onClick={() => setExpandedCategory(null)}
-                  className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-muted/20"
-                  aria-label="Cerrar"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-
-                <div className="w-full max-w-lg space-y-8">
-                  <div className="flex items-center gap-3">
-                    <cat.Icon className="h-5 w-5 text-muted-foreground/70" />
-                    <span className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      {cat.label}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-6">
-                    <div className="relative h-24 w-24 shrink-0">
-                      <div
-                        className="absolute inset-0 rounded-full transition-all duration-700 ease-out"
-                        style={{
-                          background: `conic-gradient(${status.arcColor} 0% ${Math.min((score / 250) * 100, 100)}%, rgba(30,30,30,0.3) ${Math.min((score / 250) * 100, 100)}% 100%)`,
-                          mask: "radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 6px))",
-                          WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 6px))",
-                        }}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold tabular-nums">{score}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-4xl font-bold tabular-nums">{score}</span>
-                      <span className="text-lg text-muted-foreground/50 ml-1">/250</span>
-                      <div className="mt-2">
-                        <span
-                          className={`inline-block text-xs font-bold tracking-[0.15em] px-2 py-1 rounded ${status.textColor}`}
-                          style={{ backgroundColor: status.bgColor }}
-                        >
-                          {status.label}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {diag && (
-                    <div className="space-y-3">
-                      <p className="text-lg font-semibold">{diag.title}</p>
-                      <p className="text-base text-muted-foreground leading-relaxed">
-                        {diag.body}
-                      </p>
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setExpandedCategory(null)}
-                    className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-                  >
-                    Volver al diagnóstico
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+        {expandedCategory && typeof document !== "undefined" && createPortal(
+          <ExpandedDiagnosis
+            category={expandedCategory}
+            scores={scores}
+            getDiagForCategory={getDiagForCategory}
+            onClose={() => setExpandedCategory(null)}
+          />,
+          document.body
+        )}
       </div>
     </div>
   );
