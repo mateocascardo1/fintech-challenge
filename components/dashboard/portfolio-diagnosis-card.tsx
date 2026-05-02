@@ -239,54 +239,72 @@ export function PortfolioDiagnosisCard() {
           const diag = getDiagForCategory(cat.key);
           return (
             <div
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-              onClick={() => setExpandedCategory(null)}
+              className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
               onKeyDown={(e) => e.key === "Escape" && setExpandedCategory(null)}
             >
-              <div
-                className="relative w-full max-w-md mx-4 rounded-2xl border border-border/60 bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="min-h-full flex flex-col items-center justify-center px-6 py-12">
                 <button
                   type="button"
                   onClick={() => setExpandedCategory(null)}
-                  className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-muted/20"
                   aria-label="Cerrar"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-5 w-5" />
                 </button>
 
-                <div className="flex items-center gap-2 mb-4">
-                  <cat.Icon className="h-4 w-4 text-muted-foreground/70" />
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    {cat.label}
-                  </span>
-                </div>
+                <div className="w-full max-w-lg space-y-8">
+                  <div className="flex items-center gap-3">
+                    <cat.Icon className="h-5 w-5 text-muted-foreground/70" />
+                    <span className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      {cat.label}
+                    </span>
+                  </div>
 
-                <div className="flex items-center gap-4 mb-5">
-                  <MiniGauge score={score} maxScore={250} color={status.arcColor} />
-                  <div>
-                    <span className="text-2xl font-bold tabular-nums">{score}</span>
-                    <span className="text-sm text-muted-foreground/50 ml-1">/250</span>
+                  <div className="flex items-center gap-6">
+                    <div className="relative h-24 w-24 shrink-0">
+                      <div
+                        className="absolute inset-0 rounded-full transition-all duration-700 ease-out"
+                        style={{
+                          background: `conic-gradient(${status.arcColor} 0% ${Math.min((score / 250) * 100, 100)}%, rgba(30,30,30,0.3) ${Math.min((score / 250) * 100, 100)}% 100%)`,
+                          mask: "radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 6px))",
+                          WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 6px))",
+                        }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-2xl font-bold tabular-nums">{score}</span>
+                      </div>
+                    </div>
                     <div>
-                      <span
-                        className={`inline-block mt-1 text-[9px] font-bold tracking-[0.15em] px-1.5 py-0.5 rounded ${status.textColor}`}
-                        style={{ backgroundColor: status.bgColor }}
-                      >
-                        {status.label}
-                      </span>
+                      <span className="text-4xl font-bold tabular-nums">{score}</span>
+                      <span className="text-lg text-muted-foreground/50 ml-1">/250</span>
+                      <div className="mt-2">
+                        <span
+                          className={`inline-block text-xs font-bold tracking-[0.15em] px-2 py-1 rounded ${status.textColor}`}
+                          style={{ backgroundColor: status.bgColor }}
+                        >
+                          {status.label}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {diag && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">{diag.title}</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {diag.body}
-                    </p>
-                  </div>
-                )}
+                  {diag && (
+                    <div className="space-y-3">
+                      <p className="text-lg font-semibold">{diag.title}</p>
+                      <p className="text-base text-muted-foreground leading-relaxed">
+                        {diag.body}
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setExpandedCategory(null)}
+                    className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+                  >
+                    Volver al diagnóstico
+                  </button>
+                </div>
               </div>
             </div>
           );
