@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
-import { AppHeader } from "@/components/app-header";
 import { MobileGate } from "@/components/mobile-gate";
 import "./globals.css";
 
@@ -18,9 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SignalAI — Datos y análisis de acciones con IA",
+  title: "SignalAI — Tu portfolio analizado con IA",
   description:
-    "Plataforma de market data y análisis con IA. Buscá acciones, visualizá charts y conversá con tus inversiones.",
+    "Plataforma portfolio-centric con scoring, recomendaciones y análisis AI.",
 };
 
 export default function RootLayout({
@@ -36,8 +35,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <MobileGate>
           <TooltipProvider delayDuration={200}>
-            <AppHeader />
-            <main className="flex-1">{children}</main>
+            {children}
             <Toaster richColors position="top-right" />
           </TooltipProvider>
         </MobileGate>
