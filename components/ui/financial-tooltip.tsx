@@ -25,13 +25,14 @@ export function FinancialTooltip({
     <TooltipProvider>
       <Tooltip delayDuration={150}>
         <TooltipTrigger asChild>
-          <button
-            type="button"
-            className={`inline-flex items-center justify-center rounded-full text-muted-foreground/50 hover:text-muted-foreground transition-colors focus:outline-none ${className ?? ""}`}
+          <span
+            role="button"
+            tabIndex={0}
+            className={`inline-flex items-center justify-center rounded-full text-muted-foreground/50 hover:text-muted-foreground transition-colors focus:outline-none cursor-help ${className ?? ""}`}
             onClick={(e) => e.stopPropagation()}
           >
             <HelpCircle className="h-3.5 w-3.5" />
-          </button>
+          </span>
         </TooltipTrigger>
         <TooltipContent
           side={side}
