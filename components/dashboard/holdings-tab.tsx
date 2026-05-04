@@ -20,6 +20,28 @@ function isArgBond(symbol: string): boolean {
   return /^[A-Z]{2,5}\d/i.test(symbol);
 }
 
+function isArsDenominated(symbol: string): boolean {
+  const s = symbol.toUpperCase();
+  return isArgBond(s) && !s.endsWith("C") && !s.endsWith("D");
+}
+
+const KNOWN_ETFS = new Set([
+  "SPY","QQQ","DIA","IWM","VTI","VOO","VEA","VWO","EFA","IEMG",
+  "XLK","XLV","XLE","XLF","XLY","XLP","XLI","XLU","XLRE","XLC",
+  "TLT","LQD","AGG","SHY","HYG","IEF","GOVT","ARKK","ARKG","ARKW",
+  "SCHD","VIG","VYM","DVY","SPHD","HDV","GLD","SLV","USO","UNG",
+]);
+
+const KNOWN_BOND_ETFS = new Set(["TLT","LQD","AGG","SHY","HYG","IEF","GOVT"]);
+
+function resolveAssetType(symbol: string, dbType: string): string {
+  const sym = symbol.toUpperCase();
+  if (dbType === "bond" || dbType === "cash") return dbType;
+  if (KNOWN_BOND_ETFS.has(sym)) return "bond_etf";
+  if (KNOWN_ETFS.has(sym)) return "etf";
+  return dbType;
+}
+
 function TableSkeleton() {
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
@@ -121,7 +143,7 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
                     const posSymbol = upperToPosition.get(b.symbol.toUpperCase());
                     if (posSymbol) {
                       matched.add(posSymbol);
-                      const priceUsd = isArgBond(posSymbol) ? (b.c ?? 0) / rate : (b.c ?? 0);
+                      const priceUsd = isArsDenominated(posSymbol) ? (b.c ?? 0) / rate : (b.c ?? 0);
                       next[posSymbol] = {
                         symbol: posSymbol,
                         name: b.symbol,
@@ -303,6 +325,7 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
         const value = q ? q.price * p.quantity : 0;
         return {
           ...p,
+          asset_type: resolveAssetType(p.symbol, p.asset_type),
           name: q?.name ?? p.symbol,
           price: q?.price ?? 0,
           change: q?.change ?? 0,
@@ -347,14 +370,14 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex gap-1">
-          {(["all", "equity", "etf", "bond", "bond_etf", "cash"] as const).map((f) => (
+          {(["all", ...Array.from(new Set(positions.map((p) => resolveAssetType(p.symbol, p.asset_type))))] as const).map((f) => (
             <Button
               key={f}
               size="sm"
               variant={filter === f ? "default" : "ghost"}
-              onClick={() => setFilter(f)}
+              onClick={() => setFilter(f as typeof filter)}
             >
-              {f === "all" ? "Todos" : f === "bond_etf" ? "Bond ETF" : f === "bond" ? "Bonos" : f === "cash" ? "Cash" : f.toUpperCase()}
+              {f === "all" ? "Todos" : f === "bond_etf" ? "Bond ETF" : f === "bond" ? "Bonos" : f === "cash" ? "Cash" : f === "etf" ? "ETF" : f === "equity" ? "Acciones" : f.toUpperCase()}
             </Button>
           ))}
         </div>
@@ -550,7 +573,7 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
                   </div>
                   <div className="flex gap-3 items-end">
                     <div className="flex-1">
-                      <label className="text-xs text-muted-foreground mb-1 block">Cantidad (nominales)</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">Cantidad de bonos (VN100)</label>
                       <Input
                         type="number"
                         placeholder="Ej: 100"

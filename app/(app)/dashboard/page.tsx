@@ -4,12 +4,14 @@ import { useState } from "react";
 import { OverviewTab } from "@/components/dashboard/overview-tab";
 import { HoldingsTab } from "@/components/dashboard/holdings-tab";
 import { MarketWatchTab } from "@/components/dashboard/market-watch-tab";
-import { BarChart3, Briefcase, Globe } from "lucide-react";
+import { HeatmapTab } from "@/components/dashboard/market-heatmap";
+import { BarChart3, Briefcase, Globe, LayoutGrid } from "lucide-react";
 
 const TABS = [
   { id: "Overview", label: "Overview", icon: BarChart3 },
   { id: "Holdings", label: "Holdings", icon: Briefcase },
   { id: "Market Watch", label: "Market Watch", icon: Globe },
+  { id: "Heat Map", label: "Heat Map", icon: LayoutGrid },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -51,6 +53,7 @@ export default function DashboardPage() {
           {activeTab === "Overview" && <OverviewTab key={refreshKey} />}
           {activeTab === "Holdings" && <HoldingsTab onPortfolioChange={() => setRefreshKey((k) => k + 1)} />}
           {activeTab === "Market Watch" && <MarketWatchTab />}
+          {activeTab === "Heat Map" && <HeatmapTab />}
         </div>
       </div>
     </div>

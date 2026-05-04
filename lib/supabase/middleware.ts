@@ -57,7 +57,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && request.nextUrl.pathname === "/dashboard") {
+  if (user && (request.nextUrl.pathname === "/dashboard" || request.nextUrl.pathname === "/onboarding")) {
     const [{ data: profile }, { count }] = await Promise.all([
       supabase
         .from("profiles")
@@ -70,9 +70,17 @@ export async function updateSession(request: NextRequest) {
         .eq("user_id", user.id),
     ]);
 
-    if (!profile?.onboarding_completed || (count ?? 0) === 0) {
+    const hasPortfolio = profile?.onboarding_completed && (count ?? 0) > 0;
+
+    if (!hasPortfolio && request.nextUrl.pathname === "/dashboard") {
       const url = request.nextUrl.clone();
       url.pathname = "/onboarding";
+      return NextResponse.redirect(url);
+    }
+
+    if (hasPortfolio && request.nextUrl.pathname === "/onboarding") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
   }

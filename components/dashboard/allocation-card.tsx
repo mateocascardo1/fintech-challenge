@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { PieChart } from "lucide-react";
+import { FinancialTooltip } from "@/components/ui/financial-tooltip";
+import { ALLOCATION_GENERAL } from "@/lib/financial-explanations";
 
 type AllocData = {
   current: Record<string, number>;
@@ -69,6 +71,11 @@ export function AllocationCard({ positions }: { positions: Position[] }) {
           <div className="flex items-center gap-2">
             <PieChart className="h-4 w-4 text-muted-foreground/60" />
             <p className="section-label">ALLOCATION</p>
+            <FinancialTooltip
+              title={ALLOCATION_GENERAL.title}
+              content={ALLOCATION_GENERAL.content}
+              side="bottom"
+            />
           </div>
         </div>
 

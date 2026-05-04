@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignalAI — Technical Deck v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --bg-card: #111118;
+    --bg-card-alt: #16161f;
+    --bg-elevated: #1a1a24;
+    --text: #e8e8ed;
+    --text-muted: #6b6b80;
+    --text-dim: #45455a;
+    --primary: #22c55e;
+    --primary-dim: rgba(34,197,94,0.10);
+    --primary-glow: rgba(34,197,94,0.05);
+    --negative: #ef4444;
+    --negative-dim: rgba(239,68,68,0.10);
+    --accent: #6366f1;
+    --accent-dim: rgba(99,102,241,0.10);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.10);
+    --cyan: #06b6d4;
+    --cyan-dim: rgba(6,182,212,0.10);
+    --border: rgba(255,255,255,0.06);
+    --border-strong: rgba(255,255,255,0.12);
+    --glow-primary: 0 0 40px -10px rgba(34,197,94,0.20);
+    --glow-accent: 0 0 40px -10px rgba(99,102,241,0.20);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.85em;
+    background: var(--bg-card-alt);
+    padding: 2px 7px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    color: var(--primary);
+  }
+
+  .page {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 72px 48px;
+    min-height: 100vh;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .page::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 48px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .page-num::after { counter-increment: page; content: counter(page); }
+  body { counter-reset: page; }
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  p { margin-bottom: 14px; color: var(--text); font-size: 0.95rem; }
+  .muted { color: var(--text-muted); }
+  .dim { color: var(--text-dim); }
+  .small { font-size: 0.82rem; }
+
+  .hero-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--primary);
+    background: var(--primary-dim);
+    padding: 5px 14px;
+    border-radius: 100px;
+    border: 1px solid rgba(34,197,94,0.15);
+    margin-bottom: 20px;
+  }
+
+  .accent-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 5px 14px;
+    border-radius: 100px;
+    border: 1px solid rgba(99,102,241,0.15);
+    margin-bottom: 20px;
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  .card-grid {
+    display: grid;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border-strong); }
+
+  .card-glow {
+    box-shadow: var(--glow-primary);
+    border-color: rgba(34,197,94,0.15);
+  }
+
+  .card-accent {
+    box-shadow: var(--glow-accent);
+    border-color: rgba(99,102,241,0.15);
+  }
+
+  .card .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+  }
+
+  .icon-green  { background: var(--primary-dim); color: var(--primary); }
+  .icon-red    { background: var(--negative-dim); color: var(--negative); }
+  .icon-accent { background: var(--accent-dim); color: var(--accent); }
+  .icon-yellow { background: var(--yellow-dim); color: var(--yellow); }
+  .icon-cyan   { background: var(--cyan-dim); color: var(--cyan); }
+
+  .stat-big {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--primary);
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    margin: 16px 0;
+  }
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-strong);
+    background: var(--bg-card-alt);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:hover td { background: var(--bg-card); }
+
+  .mermaid-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .flow-step:last-child { border-bottom: none; }
+  .flow-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-dim);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .formula-box {
+    background: var(--bg-card-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--primary);
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 6px;
+    margin-right: 6px;
+  }
+  .tag-green  { color: var(--primary); background: var(--primary-dim); }
+  .tag-accent { color: var(--accent); background: var(--accent-dim); }
+  .tag-yellow { color: var(--yellow); background: var(--yellow-dim); }
+  .tag-cyan   { color: var(--cyan); background: var(--cyan-dim); }
+  .tag-red    { color: var(--negative); background: var(--negative-dim); }
+
+  .toc-list {
+    list-style: none;
+    padding: 0;
+  }
+  .toc-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .toc-list li .toc-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    width: 28px;
+  }
+  .toc-list li a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .toc-list li a:hover { color: var(--primary); }
+
+  .arrow-connector {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 1.5rem;
+    padding: 8px 0;
+  }
+
+  .pipeline-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 700px) {
+    .page { padding: 40px 24px; }
+    h1 { font-size: 2rem; }
+    .card-grid.cols-2, .card-grid.cols-3, .card-grid.cols-4 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media print {
+    .page { page-break-after: always; min-height: auto; padding: 40px 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============= PAGE 1: COVER ============= -->
+<div class="page" style="display:flex; flex-direction:column; justify-content:center; min-height:100vh;">
+  <div class="hero-label">Technical Deck v2 — Mayo 2026</div>
+  <h1 style="font-size:3.5rem;">Signal<span style="color:var(--primary)">AI</span></h1>
+  <p class="subtitle" style="font-size:1.35rem; max-width:650px;">
+    Plataforma de inversión inteligente con motor de scoring, diagnóstico AI, y asesor conversacional — diseñada para inversores argentinos y globales.
+  </p>
+  <div style="display:flex; gap:32px; margin-top:40px;">
+    <div>
+      <div class="stat-big">1000</div>
+      <div class="stat-label">Portfolio Score Max</div>
+    </div>
+    <div>
+      <div class="stat-big" style="color:var(--accent);">4</div>
+      <div class="stat-label">Sub-Scores</div>
+    </div>
+    <div>
+      <div class="stat-big" style="color:var(--cyan);">6</div>
+      <div class="stat-label">AI Tools</div>
+    </div>
+    <div>
+      <div class="stat-big" style="color:var(--yellow);">3</div>
+      <div class="stat-label">Data Providers</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============= PAGE 2: TABLE OF CONTENTS ============= -->
+<div class="page">
+  <h4>Contenido</h4>
+  <h2>Índice</h2>
+  <ul class="toc-list">
+    <li><span class="toc-num">01</span><a href="#overview">Overview y Stack Tecnológico</a></li>
+    <li><span class="toc-num">02</span><a href="#features">Features Principales</a></li>
+    <li><span class="toc-num">03</span><a href="#onboarding">Onboarding y Perfil de Riesgo</a></li>
+    <li><span class="toc-num">04</span><a href="#scoring">Motor de Scoring del Portfolio</a></li>
+    <li><span class="toc-num">05</span><a href="#allocation">Modelo de Allocation</a></li>
+    <li><span class="toc-num">06</span><a href="#insights">AI Insights — Diagnóstico y Recomendaciones</a></li>
+    <li><span class="toc-num">07</span><a href="#advisor">AI Investment Advisor (Chat)</a></li>
+    <li><span class="toc-num">08</span><a href="#data">Capa de Datos y Providers</a></li>
+    <li><span class="toc-num">09</span><a href="#flow">Flujo End-to-End</a></li>
+    <li><span class="toc-num">10</span><a href="#arch">Arquitectura General</a></li>
+  </ul>
+</div>
+
+<!-- ============= PAGE 3: OVERVIEW ============= -->
+<div class="page" id="overview">
+  <h4>01 — Overview</h4>
+  <h2>Stack Tecnológico</h2>
+  <p class="muted">SignalAI es una aplicación full-stack construida con las últimas tecnologías, optimizada para rendimiento y experiencia de usuario premium.</p>
+
+  <div class="card-grid cols-3">
+    <div class="card">
+      <div class="icon icon-green">⚡</div>
+      <h3>Frontend</h3>
+      <p class="small muted">Next.js 16 (App Router, Turbopack), React 19, Tailwind CSS, shadcn/ui, Lightweight Charts</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-accent">🗄</div>
+      <h3>Backend</h3>
+      <p class="small muted">Next.js API Routes (Edge-compatible), Supabase (PostgreSQL + Auth + RLS), Server Components</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-yellow">🤖</div>
+      <h3>AI Layer</h3>
+      <p class="small muted">Vercel AI SDK, Anthropic Claude Sonnet 4, streaming responses, tool-calling (agentic)</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Principios de Diseño</h3>
+  <div class="card-grid cols-2">
+    <div class="card">
+      <h4>UX Premium</h4>
+      <p class="small muted">Estética dark fintech inspirada en Revolut/Plata. Tipografía: DM Sans (UI) + JetBrains Mono (data). Animaciones suaves, skeleton loaders, glassmorphism.</p>
+    </div>
+    <div class="card">
+      <h4>Portfolio-First</h4>
+      <p class="small muted">Cada feature gira alrededor del portfolio del usuario. El scoring, insights y advisor trabajan en sincronía para mejorar el puntaje.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============= PAGE 4: FEATURES ============= -->
+<div class="page" id="features">
+  <h4>02 — Features</h4>
+  <h2>Features Principales</h2>
+
+  <div class="card-grid cols-2">
+    <div class="card card-glow">
+      <div class="icon icon-green">📊</div>
+      <h3>Portfolio Score</h3>
+      <p class="small muted">Motor cuantitativo que puntúa el portfolio de 0 a 1000 en 4 dimensiones: diversificación, risk match, retorno ajustado por riesgo, y protección a la baja.</p>
+    </div>
+    <div class="card card-accent">
+      <div class="icon icon-accent">🧠</div>
+      <h3>AI Insights</h3>
+      <p class="small muted">Diagnóstico automático + recomendaciones de allocation + picks de instrumentos. Se regeneran con cada cambio de portfolio.</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-cyan">💬</div>
+      <h3>Investment Advisor</h3>
+      <p class="small muted">Chat con IA que conoce tu portfolio, perfil de riesgo, diagnóstico y recomendaciones activas. Acceso a datos en tiempo real vía tool-calling.</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-yellow">🎯</div>
+      <h3>Onboarding Inteligente</h3>
+      <p class="small muted">Cuestionario de perfil de riesgo → allocation modelo → selección guiada de activos → portfolio inicial optimizado.</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-green">📈</div>
+      <h3>Market Watch</h3>
+      <p class="small muted">Índices en tiempo real, watchlist personalizable, buscador global de instrumentos (acciones, ETFs, bonos argentinos), y noticias.</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-accent">🏦</div>
+      <h3>Renta Fija Argentina</h3>
+      <p class="small muted">Integración con data912.com para bonos soberanos, letras y ONs. Conversión ARS→USD vía MEP implícito. Calendario de cashflows.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============= PAGE 5: ONBOARDING ============= -->
+<div class="page" id="onboarding">
+  <h4>03 — Onboarding</h4>
+  <h2>Onboarding y Perfil de Riesgo</h2>
+  <p class="muted">El onboarding determina el perfil de inversión del usuario y, opcionalmente, construye un portfolio inicial óptimo basado en sus preferencias.</p>
+
+  <h3>Dos Flujos Posibles</h3>
+  <div class="card-grid cols-2">
+    <div class="card card-glow">
+      <span class="tag tag-green">Path A</span>
+      <h3 style="margin-top:8px;">Ya tengo portfolio</h3>
+      <p class="small muted">3 pasos: Inicio → Cargar posiciones (búsqueda de acciones/bonos) → Perfil de riesgo → Dashboard</p>
+    </div>
+    <div class="card card-accent">
+      <span class="tag tag-accent">Path B</span>
+      <h3 style="margin-top:8px;">Construir desde cero</h3>
+      <p class="small muted">8 pasos: Inicio → Perfil → Capital → Acciones → Bonos → Selección libre → Revisión → Dashboard</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Builder Flow — Paso a Paso</h3>
+  <div class="mermaid-container">
+    <div style="display:flex; flex-direction:column; gap:4px;">
+
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div>
+          <strong>¿Tenés portfolio?</strong>
+          <p class="small muted" style="margin:4px 0 0;">El usuario elige entre cargar posiciones existentes o empezar de cero. UI animada con glassmorphism.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div>
+          <strong>Perfil de Riesgo</strong>
+          <p class="small muted" style="margin:4px 0 0;">8 preguntas: horizonte, tolerancia al riesgo, objetivo, reacción a drawdown, patrimonio, liquidez, geografía, preferencia de bonos. + slider income vs growth (0-100).</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div>
+          <strong>Capital Inicial</strong>
+          <p class="small muted" style="margin:4px 0 0;">Monto en USD con presets rápidos ($1K, $5K, $10K, $50K, $100K) o entrada custom.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div>
+          <strong>Selección de Acciones</strong>
+          <p class="small muted" style="margin:4px 0 0;">Tickers candidatos (AAPL, MSFT, GOOGL, AMZN, etc.) + ETFs sectoriales (XLK, XLF, XLE, etc.). Multi-select. Se muestra el USD asignado al sleeve de equities.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num">6</div>
+        <div>
+          <strong>Selección de Bonos</strong>
+          <p class="small muted" style="margin:4px 0 0;">ETFs de renta fija (BND, AGG, TLT, etc.) + bonos argentinos en vivo desde data912. Auto-skip si <code>bond_preference = "none"</code>.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num">7</div>
+        <div>
+          <strong>Selección Libre</strong>
+          <p class="small muted" style="margin:4px 0 0;">Buscador global (Yahoo + data912) para agregar cualquier instrumento adicional. Excluye los ya seleccionados.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num">8</div>
+        <div>
+          <strong>Revisión y Confirmación</strong>
+          <p class="small muted" style="margin:4px 0 0;">Resumen visual: allocation por sleeve (equities, bonds, free, cash), montos USD por instrumento. Confirmar → crear posiciones en Supabase.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Datos del Perfil → Allocation Modelo</h3>
+  <p class="small muted">El perfil de riesgo alimenta directamente el motor de allocation. Cada campo ajusta los pesos del modelo:</p>
+  <table>
+    <tr><th>Campo</th><th>Efecto en el Modelo</th></tr>
+    <tr><td><code>risk_tolerance</code></td><td>Conservative: +15% bonds, -15% equities. Aggressive: +15% equities, -10% bonds, -5% cash.</td></tr>
+    <tr><td><code>investment_horizon</code></td><td>Corto plazo: más bonds/cash. Largo plazo: más equities.</td></tr>
+    <tr><td><code>objective</code></td><td>Income: más bonds. Growth: más equities.</td></tr>
+    <tr><td><code>bond_preference</code></td><td>"none" → skip bond step. "local" → priorizá AR bonds.</td></tr>
+    <tr><td><code>geo_preference</code></td><td>Ajusta split entre us_equities e intl_equities.</td></tr>
+    <tr><td><code>income_vs_growth</code></td><td>Slider 0-100 que ajusta yield target del portfolio.</td></tr>
+  </table>
+</div>
+
+<!-- ============= PAGE 6: SCORING ENGINE ============= -->
+<div class="page" id="scoring">
+  <h4>04 — Scoring Engine</h4>
+  <h2>Motor de Scoring del Portfolio</h2>
+  <p class="muted">El Portfolio Score es un puntaje de 0 a 1000 que mide la calidad del portfolio en 4 dimensiones iguales. Cada sub-score vale hasta 250 puntos.</p>
+
+  <div class="card-grid cols-4">
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.8rem;">250</div>
+      <div class="stat-label">Diversificación</div>
+      <div class="small muted" style="margin-top:6px;">HHI-based</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.8rem; color:var(--accent);">250</div>
+      <div class="stat-label">Risk Match</div>
+      <div class="small muted" style="margin-top:6px;">β + σ targets</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.8rem; color:var(--cyan);">250</div>
+      <div class="stat-label">Risk-Adj Return</div>
+      <div class="small muted" style="margin-top:6px;">Sharpe ratio</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.8rem; color:var(--yellow);">250</div>
+      <div class="stat-label">Downside Prot.</div>
+      <div class="small muted" style="margin-top:6px;">Defensive %</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Fórmulas por Sub-Score</h3>
+
+  <div class="card" style="margin-bottom:16px;">
+    <h4 style="color:var(--primary);">1. Diversificación</h4>
+    <p class="small muted">Mide la concentración del portfolio usando el Índice Herfindahl-Hirschman (HHI) en dos niveles:</p>
+    <div class="formula-box">
+positionHHI = Σ(weight_i²)
+sectorHHI   = Σ(sector_weight_s²)
+avgHHI      = (positionHHI + sectorHHI) / 2
+score       = (1 - avgHHI) × 250
+    </div>
+    <p class="small muted">Un portfolio con 1 activo tiene HHI = 1.0 (score = 0). Un portfolio perfectamente diversificado tiene HHI → 0 (score → 250).</p>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <h4 style="color:var(--accent);">2. Risk Match</h4>
+    <p class="small muted">Compara la beta y volatilidad del portfolio contra los targets del perfil de riesgo:</p>
+    <div class="formula-box">
+betaScore  = max(0, 1 - |β_portfolio - β_target| / 0.5)
+volScore   = max(0, 1 - |σ_portfolio - σ_target| / 0.2)
+score      = ((betaScore + volScore) / 2) × 250
+    </div>
+    <table>
+      <tr><th>Risk Tolerance</th><th>Target β</th><th>Target σ</th></tr>
+      <tr><td>Conservative</td><td>0.60</td><td>0.08</td></tr>
+      <tr><td>Moderate</td><td>1.00</td><td>0.15</td></tr>
+      <tr><td>Aggressive</td><td>1.30</td><td>0.22</td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <h4 style="color:var(--cyan);">3. Risk-Adjusted Return</h4>
+    <p class="small muted">Basado en el Sharpe Ratio del portfolio:</p>
+    <div class="formula-box">
+Sharpe     = (R_portfolio - R_free) / σ_portfolio
+normalized = max(0, (Sharpe + 0.5) / 2.5)
+score      = normalized × 250
+    </div>
+    <p class="small muted">Un Sharpe de 2.0 da score máximo (250). Un Sharpe negativo da score bajo.</p>
+  </div>
+
+  <div class="card">
+    <h4 style="color:var(--yellow);">4. Downside Protection</h4>
+    <p class="small muted">Combina correlación promedio y peso en activos defensivos:</p>
+    <div class="formula-box">
+correlationScore = max(0, 1 - avgCorrelation)
+defensiveScore   = min(1, defensiveWeight / 0.4)
+score            = (0.6 × correlationScore + 0.4 × defensiveScore) × 250
+    </div>
+    <p class="small muted">Sectores defensivos: Consumer Staples, Healthcare, Utilities. Asset types: bonds, bond ETFs, cash.</p>
+  </div>
+</div>
+
+<!-- ============= PAGE 7: ALLOCATION MODEL ============= -->
+<div class="page" id="allocation">
+  <h4>05 — Allocation</h4>
+  <h2>Modelo de Allocation</h2>
+  <p class="muted">El modelo calcula la distribución óptima de activos basada en el perfil de riesgo del usuario. Se usa como benchmark para scoring y recomendaciones.</p>
+
+  <h3>Base Allocation</h3>
+  <div class="card-grid cols-4">
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.6rem;">55%</div>
+      <div class="stat-label">US Equities</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.6rem; color:var(--accent);">10%</div>
+      <div class="stat-label">Intl Equities</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.6rem; color:var(--yellow);">25%</div>
+      <div class="stat-label">Bonds</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.6rem; color:var(--text-muted);">10%</div>
+      <div class="stat-label">Cash</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Ajustes por Perfil de Riesgo</h3>
+  <table>
+    <tr><th>Perfil</th><th>US Equities</th><th>Bonds</th><th>Cash</th><th>Beta Center</th></tr>
+    <tr><td><span class="tag tag-green">Conservative</span></td><td>40% (−15%)</td><td>40% (+15%)</td><td>10%</td><td>0.60</td></tr>
+    <tr><td><span class="tag tag-yellow">Moderate</span></td><td>55%</td><td>25%</td><td>10%</td><td>1.00</td></tr>
+    <tr><td><span class="tag tag-red">Aggressive</span></td><td>70% (+15%)</td><td>15% (−10%)</td><td>5% (−5%)</td><td>1.30</td></tr>
+  </table>
+  <p class="small muted" style="margin-top:12px;">Adicionalmente, <code>objective</code>, <code>investment_horizon</code>, <code>bond_preference</code>, y <code>geo_preference</code> aplican ajustes incrementales sobre esta base. Los pesos se renormalizan a 100%.</p>
+
+  <hr class="divider">
+
+  <h3>Actual vs Modelo — Cómo se Compara</h3>
+  <p class="small muted">El API <code>/api/portfolio/score</code> clasifica cada posición en un bucket y calcula:</p>
+  <div class="formula-box">
+asset_type === "cash"  → cash bucket
+asset_type === "bond" || "bond_etf"  → bonds bucket
+ASSET_CLASS_MAP[symbol] ?? "us_equities"  → equity buckets
+gap = model_pct - actual_pct  (por bucket)
+  </div>
+  <p class="small muted">El gap por bucket se envía al modelo AI para generar recomendaciones de allocation.</p>
+</div>
+
+<!-- ============= PAGE 8: AI INSIGHTS ============= -->
+<div class="page" id="insights">
+  <h4>06 — AI Insights</h4>
+  <h2>Diagnóstico y Recomendaciones</h2>
+  <p class="muted">Cuando el usuario modifica su portfolio, se dispara la generación de insights AI que combinan análisis determinístico con inteligencia artificial.</p>
+
+  <h3>Pipeline de Generación</h3>
+  <div style="display:flex; flex-direction:column; gap:8px; margin:20px 0;">
+    <div class="pipeline-box" style="border-color:rgba(34,197,94,0.2);">
+      <span class="tag tag-green">TRIGGER</span> Cambio en portfolio (POST /api/portfolio)
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box">
+      <span class="tag tag-yellow">STEP 1</span> Expire insights anteriores en Supabase
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box">
+      <span class="tag tag-cyan">STEP 2</span> Compute determinístico: scores, HHI, Sharpe, allocation gaps
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box" style="border-color:rgba(99,102,241,0.2);">
+      <span class="tag tag-accent">STEP 3</span> Prompt a Claude Sonnet 4 con datos duros + perfil
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box">
+      <span class="tag tag-green">STEP 4</span> Parse JSON → Insert rows en ai_insights
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Estructura del Prompt</h3>
+  <p class="small muted">El prompt inyecta los datos determinísticos calculados server-side para que el modelo AI no invente números:</p>
+  <table>
+    <tr><th>Sección del Prompt</th><th>Contenido</th></tr>
+    <tr><td>Posiciones</td><td>Lista de symbol, quantity, asset_type</td></tr>
+    <tr><td>Score Total</td><td>N/1000 + 4 sub-scores /250</td></tr>
+    <tr><td>Diversificación</td><td>HHI position, HHI sector, count de posiciones, largest position</td></tr>
+    <tr><td>Riesgo</td><td>Beta vs target, vol vs target, Sharpe ratio</td></tr>
+    <tr><td>Defensivo</td><td>Defensive weight, avg correlation</td></tr>
+    <tr><td>Allocation gaps</td><td>Actual % vs modelo % por bucket, con gap</td></tr>
+    <tr><td>Perfil</td><td>Risk tolerance, horizon, objective, bond preference, geo</td></tr>
+    <tr><td>Bonos AR</td><td>Top 15 instrumentos de renta fija por volumen (opcional)</td></tr>
+  </table>
+
+  <hr class="divider">
+
+  <h3>Output del Modelo (JSON)</h3>
+  <div class="card-grid cols-3">
+    <div class="card card-glow">
+      <span class="tag tag-green">DIAGNOSIS</span>
+      <h3 style="margin-top:8px;">Diagnóstico</h3>
+      <p class="small muted">Exactamente 4 items, uno por sub-score. Título + body textual. El <code>score_impact</code> es el sub-score real (determinístico).</p>
+    </div>
+    <div class="card card-accent">
+      <span class="tag tag-accent">ALLOC_MOVES</span>
+      <h3 style="margin-top:8px;">Allocation Moves</h3>
+      <p class="small muted">2-4 movimientos de categoría. <code>direction</code> (increase/decrease), <code>current_pct</code>, <code>target_pct</code>, <code>score_impact</code> estimado por el modelo.</p>
+    </div>
+    <div class="card">
+      <span class="tag tag-cyan">INSTRUMENT_PICKS</span>
+      <h3 style="margin-top:8px;">Picks</h3>
+      <p class="small muted">3-5 instrumentos. <code>action</code> (buy/sell), <code>symbol</code>, <code>reason</code>, <code>priority</code>, <code>improves</code> (qué sub-score mejora).</p>
+    </div>
+  </div>
+
+  <div class="formula-box" style="margin-top:16px; font-size:0.8rem;">
+{
+  "diagnosis": [
+    { "category": "diversification", "title": "...", "body": "..." },
+    { "category": "risk_match", "title": "...", "body": "..." },
+    ...
+  ],
+  "allocation_moves": [
+    { "asset_class": "bonds", "direction": "increase",
+      "current_pct": 15, "target_pct": 25, "score_impact": 40, ... }
+  ],
+  "instrument_picks": [
+    { "action": "buy", "symbol": "BND", "asset_type": "etf",
+      "reason": "...", "score_impact": 30, "priority": "high",
+      "improves": "downside_protection" }
+  ]
+}
+  </div>
+</div>
+
+<!-- ============= PAGE 9: AI ADVISOR ============= -->
+<div class="page" id="advisor">
+  <h4>07 — AI Advisor</h4>
+  <h2>Investment Advisor (Chat)</h2>
+  <p class="muted">El advisor es un agente conversacional con acceso completo al estado del usuario y herramientas de datos en tiempo real.</p>
+
+  <h3>Contexto Inyectado al Advisor</h3>
+  <p class="small muted">A diferencia de un chatbot genérico, el advisor recibe el estado completo del portfolio antes de cada conversación:</p>
+
+  <div class="card-grid cols-2">
+    <div class="card">
+      <div class="icon icon-green">👤</div>
+      <h3>Perfil de Riesgo</h3>
+      <p class="small muted">Tolerancia, horizonte, objetivo, edad, preferencia de bonos, experiencia, ingreso mensual.</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-accent">📋</div>
+      <h3>Posiciones Actuales</h3>
+      <p class="small muted">Lista completa: symbol, quantity, asset_type para cada holding.</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-yellow">🎯</div>
+      <h3>Portfolio Score</h3>
+      <p class="small muted">Total /1000 + 4 sub-scores /250 + allocation actual vs modelo por bucket.</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-cyan">🧠</div>
+      <h3>AI Insights Activos</h3>
+      <p class="small muted">Diagnóstico (4 dimensiones), allocation moves (from/to %), instrument picks (buy/sell + impacto).</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Filosofía de Asesoramiento</h3>
+  <div class="card card-glow" style="margin:16px 0;">
+    <p class="small" style="line-height:1.8;">
+      <strong>Objetivo principal:</strong> Mejorar el Portfolio Score del usuario.<br>
+      <strong>Cada recomendación debe:</strong><br>
+      &nbsp;&nbsp;1. Alinearse con el perfil de riesgo del usuario<br>
+      &nbsp;&nbsp;2. Cerrar brechas entre allocation actual y modelo<br>
+      &nbsp;&nbsp;3. Profundizar (no contradecir) el diagnóstico AI existente<br>
+      &nbsp;&nbsp;4. Indicar qué sub-score mejora y cuántos puntos estima<br>
+      <strong>Persona:</strong> CFA Charterholder, español rioplatense, directo, con datos concretos.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Tools del Advisor (Agentic)</h3>
+  <p class="small muted">El advisor puede llamar a herramientas para obtener datos en tiempo real. El orquestador (Vercel AI SDK) permite hasta 5 pasos de tool-calling por conversación.</p>
+
+  <table>
+    <tr><th>Tool</th><th>Descripción</th><th>Fuente</th></tr>
+    <tr><td><code>getStockQuote</code></td><td>Cotización actual: precio, cambio %, prev close, currency</td><td>Yahoo Finance</td></tr>
+    <tr><td><code>getStockFundamentals</code></td><td>Fundamentals: P/E, market cap, márgenes, ROE, deuda, sector</td><td>Yahoo Finance</td></tr>
+    <tr><td><code>getHistoricalPrices</code></td><td>Precios históricos: rendimiento, máx/mín, rango temporal</td><td>Yahoo Finance</td></tr>
+    <tr><td><code>searchStocks</code></td><td>Buscar acciones/ETFs por nombre o símbolo</td><td>Yahoo Finance</td></tr>
+    <tr><td><code>getFinancialData</code></td><td>Estados financieros: income, cash flow, balance sheet</td><td>Yahoo Finance</td></tr>
+    <tr><td><code>getStockNews</code></td><td>Noticias recientes de una empresa (últimas 24h)</td><td>Google News RSS</td></tr>
+  </table>
+
+  <hr class="divider">
+
+  <h3>Flujo de una Conversación</h3>
+  <div style="display:flex; flex-direction:column; gap:8px; margin:16px 0;">
+    <div class="pipeline-box" style="border-color:rgba(34,197,94,0.2);">
+      <span class="tag tag-green">1</span> Usuario escribe mensaje o selecciona sugerencia
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box">
+      <span class="tag tag-cyan">2</span> POST /api/chat con mode: "advisor" + historial de mensajes
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box">
+      <span class="tag tag-yellow">3</span> Server carga Supabase: positions, profile, insights, score
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box" style="border-color:rgba(99,102,241,0.2);">
+      <span class="tag tag-accent">4</span> buildAdvisorPrompt(contexto) + tools → Claude Sonnet 4
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box">
+      <span class="tag tag-green">5</span> Claude puede llamar tools (0-5 pasos) para obtener datos live
+    </div>
+    <div class="arrow-connector">↓</div>
+    <div class="pipeline-box">
+      <span class="tag tag-accent">6</span> Streaming response → Markdown renderizado en el panel
+    </div>
+  </div>
+</div>
+
+<!-- ============= PAGE 10: DATA LAYER ============= -->
+<div class="page" id="data">
+  <h4>08 — Data Layer</h4>
+  <h2>Capa de Datos y Providers</h2>
+  <p class="muted">SignalAI integra múltiples fuentes de datos para cubrir mercados globales y argentinos.</p>
+
+  <div class="card-grid cols-2">
+    <div class="card card-glow">
+      <h4 style="color:var(--primary);">Yahoo Finance</h4>
+      <p class="small muted" style="margin-bottom:8px;">Acciones globales, ETFs, fundamentals, earnings, estados financieros.</p>
+      <table style="font-size:0.78rem;">
+        <tr><td><code>getQuote</code></td><td>Precio real-time</td></tr>
+        <tr><td><code>getQuotesBatch</code></td><td>Múltiples quotes</td></tr>
+        <tr><td><code>getFundamentals</code></td><td>P/E, margins, ROE...</td></tr>
+        <tr><td><code>getHistoryByRange</code></td><td>OHLCV histórico</td></tr>
+        <tr><td><code>getEarningsCalendar</code></td><td>Earnings esta semana</td></tr>
+        <tr><td><code>getFinancialStatements</code></td><td>Income/CF/BS anual</td></tr>
+        <tr><td><code>searchSymbols</code></td><td>Búsqueda por nombre</td></tr>
+      </table>
+      <p class="small dim" style="margin-top:8px;">Cache: ninguno (real-time)</p>
+    </div>
+
+    <div class="card card-accent">
+      <h4 style="color:var(--accent);">data912.com</h4>
+      <p class="small muted" style="margin-bottom:8px;">Renta fija argentina: bonos soberanos, letras, ONs corporativas.</p>
+      <table style="font-size:0.78rem;">
+        <tr><td><code>getArgBonds</code></td><td>Bonos soberanos live</td></tr>
+        <tr><td><code>getArgNotes</code></td><td>Letras del tesoro</td></tr>
+        <tr><td><code>getArgCorp</code></td><td>ONs corporativas</td></tr>
+        <tr><td><code>getAllFixedIncome</code></td><td>Merge de las 3</td></tr>
+        <tr><td><code>getMepRate</code></td><td>USD MEP implícito</td></tr>
+        <tr><td><code>getArgBondHistory</code></td><td>Historial de bonos</td></tr>
+      </table>
+      <p class="small dim" style="margin-top:8px;">Cache: 2 min in-memory + next revalidate</p>
+    </div>
+  </div>
+
+  <div class="card-grid cols-2" style="margin-top:16px;">
+    <div class="card">
+      <h4 style="color:var(--yellow);">Bond Cashflows (Local)</h4>
+      <p class="small muted">Catálogo estático de bonos argentinos con calendario de cupones y amortizaciones. Cobertura: AL29, AL30, GD30, AE38, GD35, GD38, AL35, GD41, AL41.</p>
+      <p class="small dim" style="margin-top:8px;">Sin red: datos embebidos en el módulo</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--cyan);">Google News RSS</h4>
+      <p class="small muted">Noticias de mercado por símbolo vía RSS de Google News. Hasta 10 artículos por búsqueda, últimas 24 horas.</p>
+      <p class="small dim" style="margin-top:8px;">Sin cache. Timeout: 8 segundos</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Conversión ARS → USD (MEP)</h3>
+  <div class="card" style="margin:12px 0;">
+    <p class="small muted">Los bonos argentinos cotizan en ARS. SignalAI calcula el tipo de cambio MEP implícito comparando pares de bonos:</p>
+    <div class="formula-box">
+MEP = avg(ARS_clean_price / USD_clean_price)
+// Para cada par: AL30 (ARS) vs AL30C (USD), GD30 vs GD30C, etc.
+// Fallback: DEFAULT_MEP = 1200
+    </div>
+    <p class="small muted">Este rate se usa en: portfolio valuation, position card, sparkline histórica, scoring engine, y AI insights.</p>
+  </div>
+</div>
+
+<!-- ============= PAGE 9: END-TO-END FLOW ============= -->
+<div class="page" id="flow">
+  <h4>09 — End-to-End</h4>
+  <h2>Flujo Completo: Del Onboarding a los Insights</h2>
+  <p class="muted">Cómo fluye la información desde que el usuario se registra hasta que recibe recomendaciones personalizadas.</p>
+
+  <div class="mermaid-container">
+    <div style="display:flex; flex-direction:column; gap:4px;">
+
+      <div class="flow-step">
+        <div class="flow-num" style="background:var(--primary-dim); color:var(--primary);">A</div>
+        <div>
+          <strong>Registro + Onboarding</strong>
+          <p class="small muted" style="margin:4px 0 0;">Email/password → Supabase Auth → Wizard de onboarding. Se crean: <code>profiles</code> (perfil de riesgo) y <code>positions</code> (holdings). El perfil alimenta el modelo de allocation.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num" style="background:var(--accent-dim); color:var(--accent);">B</div>
+        <div>
+          <strong>Dashboard Load</strong>
+          <p class="small muted" style="margin:4px 0 0;">Al cargar el dashboard: se fetch posiciones, se calculan quotes (Yahoo + data912), se computa el Portfolio Score (4 sub-scores), y se cargan insights AI previos. Si no hay insights, se triggerean.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num" style="background:var(--yellow-dim); color:var(--yellow);">C</div>
+        <div>
+          <strong>Modificación de Portfolio</strong>
+          <p class="small muted" style="margin:4px 0 0;">Cuando el usuario agrega, elimina o modifica una posición → <code>POST /api/portfolio</code> → se expiran insights anteriores → se regeneran insights con el nuevo estado.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num" style="background:var(--cyan-dim); color:var(--cyan);">D</div>
+        <div>
+          <strong>Generación de Insights AI</strong>
+          <p class="small muted" style="margin:4px 0 0;"><code>POST /api/insights</code> → compute determinístico (scores, HHI, Sharpe, gaps) → prompt con datos + perfil → Claude Sonnet 4 → parse JSON (diagnosis + alloc_moves + picks) → insert en Supabase.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num" style="background:var(--primary-dim); color:var(--primary);">E</div>
+        <div>
+          <strong>Dashboard Actualizado</strong>
+          <p class="small muted" style="margin:4px 0 0;">Los componentes cargan los nuevos insights: Diagnóstico (4 cards con severity), Recomendaciones de Allocation (movimientos visuales), Picks de Instrumentos (buy/sell cards). El score se actualiza en tiempo real.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-num" style="background:var(--accent-dim); color:var(--accent);">F</div>
+        <div>
+          <strong>Advisor Chat (Opcional)</strong>
+          <p class="small muted" style="margin:4px 0 0;">El usuario puede abrir el advisor en cualquier momento. El advisor recibe todo el contexto (perfil + posiciones + score + insights) y puede buscar datos live con tools. Cada respuesta está alineada con el diagnóstico y busca mejorar el score.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3>Ciclo de Retroalimentación</h3>
+  <div class="card card-glow" style="margin:12px 0; padding:28px;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:20px; flex-wrap:wrap; text-align:center;">
+      <div style="padding:12px 20px; background:var(--bg-card-alt); border-radius:10px; border:1px solid var(--border);">
+        <div class="small" style="font-weight:600;">Portfolio</div>
+        <div class="small muted">Posiciones</div>
+      </div>
+      <div style="color:var(--primary); font-size:1.3rem;">→</div>
+      <div style="padding:12px 20px; background:var(--bg-card-alt); border-radius:10px; border:1px solid var(--border);">
+        <div class="small" style="font-weight:600;">Scoring</div>
+        <div class="small muted">Score /1000</div>
+      </div>
+      <div style="color:var(--primary); font-size:1.3rem;">→</div>
+      <div style="padding:12px 20px; background:var(--bg-card-alt); border-radius:10px; border:1px solid var(--border);">
+        <div class="small" style="font-weight:600;">AI Insights</div>
+        <div class="small muted">Diagnóstico</div>
+      </div>
+      <div style="color:var(--primary); font-size:1.3rem;">→</div>
+      <div style="padding:12px 20px; background:var(--bg-card-alt); border-radius:10px; border:1px solid var(--border);">
+        <div class="small" style="font-weight:600;">Advisor</div>
+        <div class="small muted">Recomendación</div>
+      </div>
+      <div style="color:var(--primary); font-size:1.3rem;">→</div>
+      <div style="padding:12px 20px; background:var(--primary-dim); border-radius:10px; border:1px solid rgba(34,197,94,0.2);">
+        <div class="small" style="font-weight:600; color:var(--primary);">Acción</div>
+        <div class="small muted">Modifica portfolio</div>
+      </div>
+      <div style="color:var(--primary); font-size:1.3rem;">↻</div>
+    </div>
+    <p class="small muted" style="text-align:center; margin-top:16px; margin-bottom:0;">Cada modificación del portfolio regenera el ciclo completo: nuevo score → nuevo diagnóstico → nuevas recomendaciones.</p>
+  </div>
+</div>
+
+<!-- ============= PAGE 10: ARCHITECTURE ============= -->
+<div class="page" id="arch">
+  <h4>10 — Arquitectura</h4>
+  <h2>Arquitectura General</h2>
+
+  <div class="mermaid-container">
+    <h4 style="margin-bottom:16px;">Frontend (Next.js 16 — App Router)</h4>
+    <div class="card-grid cols-3" style="gap:10px;">
+      <div style="padding:10px 14px; background:var(--bg-card-alt); border-radius:8px; border:1px solid var(--border); text-align:center;">
+        <div class="small" style="font-weight:600;">Landing</div>
+        <div class="small dim">/(public)/page</div>
+      </div>
+      <div style="padding:10px 14px; background:var(--bg-card-alt); border-radius:8px; border:1px solid var(--border); text-align:center;">
+        <div class="small" style="font-weight:600;">Auth</div>
+        <div class="small dim">/auth/page</div>
+      </div>
+      <div style="padding:10px 14px; background:var(--bg-card-alt); border-radius:8px; border:1px solid var(--border); text-align:center;">
+        <div class="small" style="font-weight:600;">Onboarding</div>
+        <div class="small dim">/onboarding/page</div>
+      </div>
+      <div style="padding:10px 14px; background:var(--primary-dim); border-radius:8px; border:1px solid rgba(34,197,94,0.15); text-align:center;">
+        <div class="small" style="font-weight:600; color:var(--primary);">Dashboard</div>
+        <div class="small dim">/dashboard</div>
+      </div>
+      <div style="padding:10px 14px; background:var(--bg-card-alt); border-radius:8px; border:1px solid var(--border); text-align:center;">
+        <div class="small" style="font-weight:600;">Stock Detail</div>
+        <div class="small dim">/stock/[symbol]</div>
+      </div>
+      <div style="padding:10px 14px; background:var(--accent-dim); border-radius:8px; border:1px solid rgba(99,102,241,0.15); text-align:center;">
+        <div class="small" style="font-weight:600; color:var(--accent);">Chatbot</div>
+        <div class="small dim">Floating panel</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mermaid-container" style="margin-top:16px;">
+    <h4 style="margin-bottom:16px;">API Routes (Next.js Server)</h4>
+    <table style="font-size:0.8rem;">
+      <tr><th>Endpoint</th><th>Método</th><th>Función</th></tr>
+      <tr><td><code>/api/chat</code></td><td>POST</td><td>CFO chat + Advisor chat (mode-based routing)</td></tr>
+      <tr><td><code>/api/insights</code></td><td>GET/POST</td><td>Leer / Generar insights AI</td></tr>
+      <tr><td><code>/api/portfolio</code></td><td>GET/POST/DELETE</td><td>CRUD posiciones + expire insights</td></tr>
+      <tr><td><code>/api/portfolio/score</code></td><td>GET</td><td>Calcular portfolio score + allocation</td></tr>
+      <tr><td><code>/api/profile</code></td><td>GET/PUT</td><td>Perfil de riesgo del usuario</td></tr>
+      <tr><td><code>/api/search</code></td><td>GET</td><td>Búsqueda Yahoo Finance</td></tr>
+      <tr><td><code>/api/quote</code></td><td>GET</td><td>Cotización individual</td></tr>
+      <tr><td><code>/api/quotes</code></td><td>GET</td><td>Batch quotes</td></tr>
+      <tr><td><code>/api/fundamentals</code></td><td>GET</td><td>Datos fundamentales</td></tr>
+      <tr><td><code>/api/history</code></td><td>GET</td><td>Precios históricos</td></tr>
+      <tr><td><code>/api/news</code></td><td>GET</td><td>Noticias por símbolo</td></tr>
+      <tr><td><code>/api/earnings</code></td><td>GET</td><td>Calendario de earnings</td></tr>
+      <tr><td><code>/api/arg-market</code></td><td>GET</td><td>Bonos AR + MEP rate</td></tr>
+    </table>
+  </div>
+
+  <div class="mermaid-container" style="margin-top:16px;">
+    <h4 style="margin-bottom:16px;">Backend Services</h4>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px; padding:14px; background:var(--bg-card-alt); border-radius:10px; border:1px solid var(--border);">
+        <div class="small" style="font-weight:600;">Supabase</div>
+        <div class="small muted" style="margin-top:4px;">PostgreSQL + Auth + RLS</div>
+        <div class="small dim" style="margin-top:8px;">Tables: profiles, positions, ai_insights</div>
+      </div>
+      <div style="flex:1; min-width:200px; padding:14px; background:var(--bg-card-alt); border-radius:10px; border:1px solid var(--border);">
+        <div class="small" style="font-weight:600;">Anthropic API</div>
+        <div class="small muted" style="margin-top:4px;">Claude Sonnet 4</div>
+        <div class="small dim" style="margin-top:8px;">Insights gen + Advisor chat</div>
+      </div>
+      <div style="flex:1; min-width:200px; padding:14px; background:var(--bg-card-alt); border-radius:10px; border:1px solid var(--border);">
+        <div class="small" style="font-weight:600;">Data Providers</div>
+        <div class="small muted" style="margin-top:4px;">Yahoo + data912 + Google News</div>
+        <div class="small dim" style="margin-top:8px;">Real-time market data</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============= PAGE 11: CLOSING ============= -->
+<div class="page" style="display:flex; flex-direction:column; justify-content:center; min-height:80vh;">
+  <div class="hero-label">Resumen</div>
+  <h1>Signal<span style="color:var(--primary)">AI</span></h1>
+  <p class="subtitle">Un ciclo cerrado de inteligencia financiera: el perfil del usuario define el modelo, el motor mide la distancia, la AI diagnostica y recomienda, el advisor explica y guía — y cada acción reinicia el ciclo.</p>
+
+  <div class="card-grid cols-2" style="margin-top:32px; max-width:600px;">
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.5rem;">Determinístico</div>
+      <div class="stat-label">Scoring Engine</div>
+      <p class="small dim" style="margin-top:6px;">HHI, Sharpe, Beta/Vol match, defensive weight — números que no mienten.</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="stat-big" style="font-size:1.5rem; color:var(--accent);">Inteligente</div>
+      <div class="stat-label">AI Layer</div>
+      <p class="small dim" style="margin-top:6px;">Diagnóstico contextual, recomendaciones priorizadas, advisor conversacional con tools.</p>
+    </div>
+  </div>
+
+  <p class="small dim" style="margin-top:48px;">SignalAI Technical Deck v2 — Mayo 2026 — Mateo Cascardo</p>
+</div>
+
+</body>
+</html>

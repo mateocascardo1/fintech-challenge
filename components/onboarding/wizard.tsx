@@ -58,7 +58,7 @@ export function OnboardingWizard() {
   ) {
     setSaving(true);
     try {
-      await fetch("/api/profile", {
+      const profileRes = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -67,16 +67,50 @@ export function OnboardingWizard() {
           onboarding_completed: true,
         }),
       });
+      if (!profileRes.ok) {
+        const err = await profileRes.json().catch(() => ({}));
+        console.error("Profile save failed:", err);
+        alert("Error al guardar el perfil. Intentá de nuevo.");
+        return;
+      }
 
+      // Clear existing positions for builder flow to avoid stale data
+      if (isBuilderFlow) {
+        const existingRes = await fetch("/api/portfolio");
+        if (existingRes.ok) {
+          const existing = await existingRes.json();
+          for (const p of existing) {
+            await fetch(`/api/portfolio/${encodeURIComponent(p.symbol)}`, { method: "DELETE" });
+          }
+        }
+      }
+
+      const errors: string[] = [];
       for (const pos of positionsToSave) {
-        await fetch("/api/portfolio", {
+        if (!pos.quantity || pos.quantity <= 0) {
+          console.warn("Skipping position with invalid quantity:", pos);
+          continue;
+        }
+        const res = await fetch("/api/portfolio", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(pos),
         });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error(`Failed to save ${pos.symbol}:`, err, "payload:", pos);
+          errors.push(pos.symbol);
+        }
+      }
+
+      if (errors.length > 0) {
+        alert(`No se pudieron guardar: ${errors.join(", ")}. El resto se guardó correctamente.`);
       }
 
       router.push("/dashboard");
+    } catch (err) {
+      console.error("Save failed:", err);
+      alert("Error al crear el portfolio. Intentá de nuevo.");
     } finally {
       setSaving(false);
     }
@@ -91,6 +125,10 @@ export function OnboardingWizard() {
     }
   }
 
+  function isUsdBond(symbol: string): boolean {
+    return /[CD]$/i.test(symbol);
+  }
+
   async function handleBuilderConfirm() {
     const allSymbols = [
       ...selectedEquities,
@@ -101,6 +139,69 @@ export function OnboardingWizard() {
       const cashPos = [{ symbol: "CASH-USD", quantity: capital, asset_type: "cash" }];
       await saveProfileAndPositions(profile, cashPos);
       return;
+    }
+
+    const sovereignSymbols = allSymbols.filter((s) => guessAssetType(s) === "bond");
+    const nonBondSymbols = allSymbols.filter((s) => guessAssetType(s) !== "bond");
+
+    let prices: Record<string, number> = {};
+
+    // Fetch prices for equities, ETFs, bond ETFs via Yahoo
+    if (nonBondSymbols.length > 0) {
+      try {
+        const res = await fetch(`/api/quote?symbols=${nonBondSymbols.join(",")}`);
+        if (!res.ok) throw new Error("Failed to fetch prices");
+        const data = await res.json();
+        const quotes = data.quotes as Array<{ symbol: string; price: number }>;
+        for (const q of quotes) {
+          if (q?.symbol && q.price > 0) prices[q.symbol] = q.price;
+        }
+      } catch (err) {
+        console.error("Failed to fetch prices:", err);
+        alert("No pudimos obtener los precios actuales. Intentá de nuevo.");
+        return;
+      }
+
+      const missing = nonBondSymbols.filter((s) => !prices[s]);
+      if (missing.length > 0) {
+        console.error("Missing prices for:", missing);
+        alert(`No pudimos obtener el precio de: ${missing.join(", ")}. Intentá de nuevo.`);
+        return;
+      }
+    }
+
+    // Fetch prices for Argentine sovereign bonds + MEP rate
+    if (sovereignSymbols.length > 0) {
+      try {
+        const [bondsRes, mepRes] = await Promise.all([
+          fetch("/api/arg-market?type=all"),
+          fetch("/api/arg-market?type=mep"),
+        ]);
+        if (!bondsRes.ok || !mepRes.ok) throw new Error("Failed to fetch bond data");
+
+        const bondsData = await bondsRes.json();
+        const mepData = await mepRes.json();
+        const mepRate = mepData.rate ?? 1;
+        const argBonds = (bondsData.results ?? []) as Array<{ symbol: string; c: number }>;
+
+        for (const bond of argBonds) {
+          if (sovereignSymbols.includes(bond.symbol) && bond.c > 0) {
+            const priceUsd = isUsdBond(bond.symbol) ? bond.c : bond.c / mepRate;
+            prices[bond.symbol] = priceUsd;
+          }
+        }
+
+        const missingBonds = sovereignSymbols.filter((s) => !prices[s]);
+        if (missingBonds.length > 0) {
+          console.error("Missing bond prices for:", missingBonds);
+          alert(`No pudimos obtener el precio de: ${missingBonds.join(", ")}. Intentá de nuevo.`);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to fetch bond prices:", err);
+        alert("No pudimos obtener los precios de bonos. Intentá de nuevo.");
+        return;
+      }
     }
 
     const eqCount = selectedEquities.length;
@@ -118,7 +219,9 @@ export function OnboardingWizard() {
     if (eqCount > 0) {
       const perEq = rawEquity / eqCount;
       for (const sym of selectedEquities) {
-        computed.push({ symbol: sym, quantity: Math.round(perEq * 100) / 100, asset_type: guessAssetType(sym) });
+        const price = prices[sym];
+        const shares = Math.round((perEq / price) * 100) / 100;
+        computed.push({ symbol: sym, quantity: shares, asset_type: guessAssetType(sym) });
       }
     }
 
@@ -126,15 +229,24 @@ export function OnboardingWizard() {
       const perBd = rawBond / bdCount;
       for (const sym of selectedBonds) {
         const aType = guessAssetType(sym);
-        const qty = aType === "bond" ? 1 : Math.round(perBd * 100) / 100;
-        computed.push({ symbol: sym, quantity: qty, asset_type: aType });
+        const price = prices[sym];
+        const qty = Math.floor(perBd / price);
+        computed.push({ symbol: sym, quantity: Math.max(qty, 1), asset_type: aType });
       }
     }
 
     if (fpCount > 0) {
       const perFp = rawFree / fpCount;
       for (const fp of freePicks) {
-        computed.push({ symbol: fp.symbol, quantity: Math.round(perFp * 100) / 100, asset_type: fp.asset_type });
+        const aType = fp.asset_type || guessAssetType(fp.symbol);
+        const price = prices[fp.symbol];
+        if (aType === "bond") {
+          const qty = Math.floor(perFp / price);
+          computed.push({ symbol: fp.symbol, quantity: Math.max(qty, 1), asset_type: aType });
+        } else {
+          const shares = Math.round((perFp / price) * 100) / 100;
+          computed.push({ symbol: fp.symbol, quantity: shares, asset_type: aType });
+        }
       }
     }
 

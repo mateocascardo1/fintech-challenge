@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 
 export function AuthAvatar() {
   const router = useRouter();
@@ -28,10 +28,6 @@ export function AuthAvatar() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => router.push("/onboarding")}>
-          <Settings className="h-4 w-4 mr-2" />
-          Perfil
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="h-4 w-4 mr-2" />
           Cerrar sesión

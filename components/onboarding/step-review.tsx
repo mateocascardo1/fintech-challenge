@@ -3,7 +3,16 @@
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Loader2, Wallet } from "lucide-react";
-import { EQUITY_DISPLAY_INFO } from "@/lib/portfolio/constants";
+import { EQUITY_DISPLAY_INFO, CANDIDATE_BOND_ETFS, CANDIDATE_SECTOR_ETFS } from "@/lib/portfolio/constants";
+import { FinancialTooltip } from "@/components/ui/financial-tooltip";
+import { ALLOCATION_SPLIT } from "@/lib/financial-explanations";
+
+const BOND_ETF_SET = new Set<string>(CANDIDATE_BOND_ETFS);
+const SECTOR_ETF_SET = new Set<string>(CANDIDATE_SECTOR_ETFS);
+
+function isSovereignBond(symbol: string): boolean {
+  return /^[A-Z]{2,5}\d/i.test(symbol);
+}
 
 interface StepReviewProps {
   capital: number;
@@ -43,6 +52,26 @@ export function StepReview({
   onBack,
   saving,
 }: StepReviewProps) {
+  const { stocks, sectorEtfs } = useMemo(() => {
+    const s: string[] = [];
+    const e: string[] = [];
+    for (const sym of equities) {
+      if (SECTOR_ETF_SET.has(sym)) e.push(sym);
+      else s.push(sym);
+    }
+    return { stocks: s, sectorEtfs: e };
+  }, [equities]);
+
+  const { bondEtfs, sovereignBonds } = useMemo(() => {
+    const etfs: string[] = [];
+    const sov: string[] = [];
+    for (const sym of bonds) {
+      if (BOND_ETF_SET.has(sym)) etfs.push(sym);
+      else sov.push(sym);
+    }
+    return { bondEtfs: etfs, sovereignBonds: sov };
+  }, [bonds]);
+
   const allocation = useMemo(() => {
     const eqCount = equities.length;
     const bdCount = bonds.length;
@@ -75,6 +104,23 @@ export function StepReview({
 
   const totalInstruments = equities.length + bonds.length + freePicks.length;
 
+  function InstrumentRow({ sym, amount, label }: { sym: string; amount: string; label?: string }) {
+    const info = EQUITY_DISPLAY_INFO[sym];
+    return (
+      <div className="flex items-center justify-between py-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">{sym}</span>
+          {(info?.name || label) && (
+            <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+              {info?.name ?? label}
+            </span>
+          )}
+        </div>
+        <span className="tabular-nums text-sm text-muted-foreground">{amount}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-in fade-in duration-500 space-y-8">
       {/* Header */}
@@ -90,7 +136,14 @@ export function StepReview({
 
       {/* Allocation bar */}
       <div className="space-y-3">
-        <p className="section-label">Allocation</p>
+        <div className="flex items-center gap-2">
+          <p className="section-label">Allocation</p>
+          <FinancialTooltip
+            title={ALLOCATION_SPLIT.title}
+            content={ALLOCATION_SPLIT.content}
+            side="bottom"
+          />
+        </div>
         <div className="h-3 flex rounded-full overflow-hidden gap-0.5">
           {allocation.pcts.eq > 0 && (
             <div
@@ -121,7 +174,7 @@ export function StepReview({
           {allocation.pcts.eq > 0 && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className={`inline-block h-2 w-2 rounded-full ${COLORS.equities.dot}`} />
-              US Equities&nbsp;
+              Renta Variable&nbsp;
               <span className={`tabular-nums font-medium ${COLORS.equities.text}`}>
                 {pct(allocation.pcts.eq)}%
               </span>
@@ -130,7 +183,7 @@ export function StepReview({
           {allocation.pcts.bd > 0 && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className={`inline-block h-2 w-2 rounded-full ${COLORS.bonds.dot}`} />
-              Bonds&nbsp;
+              Renta Fija&nbsp;
               <span className={`tabular-nums font-medium ${COLORS.bonds.text}`}>
                 {pct(allocation.pcts.bd)}%
               </span>
@@ -139,7 +192,7 @@ export function StepReview({
           {allocation.pcts.fp > 0 && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className={`inline-block h-2 w-2 rounded-full ${COLORS.freePicks.dot}`} />
-              Free Picks&nbsp;
+              Selección Libre&nbsp;
               <span className={`tabular-nums font-medium ${COLORS.freePicks.text}`}>
                 {pct(allocation.pcts.fp)}%
               </span>
@@ -148,7 +201,7 @@ export function StepReview({
           {allocation.pcts.ca > 0 && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className={`inline-block h-2 w-2 rounded-full ${COLORS.cash.dot}`} />
-              Cash&nbsp;
+              Efectivo&nbsp;
               <span className={`tabular-nums font-medium ${COLORS.cash.text}`}>
                 {pct(allocation.pcts.ca)}%
               </span>
@@ -161,55 +214,47 @@ export function StepReview({
       <div className="space-y-3">
         <p className="section-label">Instrumentos</p>
 
-        {equities.length > 0 && (
+        {stocks.length > 0 && (
           <div className="surface-elevated rounded-xl p-4 space-y-2">
             <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
-              Acciones &amp; ETFs
+              Acciones
             </p>
-            {equities.map((sym) => {
-              const info = EQUITY_DISPLAY_INFO[sym];
-              return (
-                <div key={sym} className="flex items-center justify-between py-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{sym}</span>
-                    {info && (
-                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                        {info.name}
-                      </span>
-                    )}
-                  </div>
-                  <span className="tabular-nums text-sm text-muted-foreground">
-                    ~${fmt(allocation.equityPer)}
-                  </span>
-                </div>
-              );
-            })}
+            {stocks.map((sym) => (
+              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(allocation.equityPer)}`} />
+            ))}
           </div>
         )}
 
-        {bonds.length > 0 && (
+        {sectorEtfs.length > 0 && (
           <div className="surface-elevated rounded-xl p-4 space-y-2">
             <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
-              Bonos
+              ETFs Sectoriales
             </p>
-            {bonds.map((sym) => {
-              const info = EQUITY_DISPLAY_INFO[sym];
-              return (
-                <div key={sym} className="flex items-center justify-between py-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{sym}</span>
-                    {info && (
-                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                        {info.name}
-                      </span>
-                    )}
-                  </div>
-                  <span className="tabular-nums text-sm text-muted-foreground">
-                    ~${fmt(allocation.bondPer)}
-                  </span>
-                </div>
-              );
-            })}
+            {sectorEtfs.map((sym) => (
+              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(allocation.equityPer)}`} />
+            ))}
+          </div>
+        )}
+
+        {bondEtfs.length > 0 && (
+          <div className="surface-elevated rounded-xl p-4 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
+              ETFs de Bonos
+            </p>
+            {bondEtfs.map((sym) => (
+              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(allocation.bondPer)}`} />
+            ))}
+          </div>
+        )}
+
+        {sovereignBonds.length > 0 && (
+          <div className="surface-elevated rounded-xl p-4 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
+              Bonos Soberanos
+            </p>
+            {sovereignBonds.map((sym) => (
+              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(allocation.bondPer)}`} />
+            ))}
           </div>
         )}
 
@@ -219,17 +264,12 @@ export function StepReview({
               Selección libre
             </p>
             {freePicks.map((fp) => (
-              <div key={fp.symbol} className="flex items-center justify-between py-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">{fp.symbol}</span>
-                  <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                    {fp.name}
-                  </span>
-                </div>
-                <span className="tabular-nums text-sm text-muted-foreground">
-                  ~${fmt(allocation.freePer)}
-                </span>
-              </div>
+              <InstrumentRow
+                key={fp.symbol}
+                sym={fp.symbol}
+                amount={isSovereignBond(fp.symbol) ? "1 bono (VN100)" : `~$${fmt(allocation.freePer)}`}
+                label={fp.name}
+              />
             ))}
           </div>
         )}

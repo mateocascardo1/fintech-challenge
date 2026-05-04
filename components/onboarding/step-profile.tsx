@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { type LucideIcon, ArrowLeft, Clock, Calendar, CalendarDays, Hourglass, Shield, Scale, Flame, Lock, Banknote, TrendingUp, Rocket, LogOut, ArrowDownRight, Pause, ShoppingCart, PieChart, Zap, Flag, Globe, Globe2, XCircle, Minus, Equal, ArrowUp } from "lucide-react";
 import type { InvestorProfile } from "@/lib/portfolio/types";
+import { FinancialTooltip } from "@/components/ui/financial-tooltip";
+import { ONBOARDING_EXPLANATIONS } from "@/lib/financial-explanations";
 
 type OptionConfig = {
   value: string;
@@ -183,9 +185,18 @@ export function StepProfile({
       <div className="min-h-[340px]">
         {!showSlider ? (
           <div key={currentQ} className="animate-in fade-in duration-300">
-            <p className="text-center text-lg font-semibold mb-6 leading-snug">
-              {q.question}
-            </p>
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <p className="text-center text-lg font-semibold leading-snug">
+                {q.question}
+              </p>
+              {ONBOARDING_EXPLANATIONS[q.key] && (
+                <FinancialTooltip
+                  title={ONBOARDING_EXPLANATIONS[q.key].title}
+                  content={ONBOARDING_EXPLANATIONS[q.key].content}
+                  side="bottom"
+                />
+              )}
+            </div>
             <div className="space-y-3">
               {q.options.map((opt) => {
                 const Icon = opt.icon;
@@ -229,9 +240,16 @@ export function StepProfile({
           </div>
         ) : (
           <div key="slider" className="animate-in fade-in duration-300">
-            <p className="text-center text-lg font-semibold mb-2 leading-snug">
-              ¿Preferís dividendos o apreciación del capital?
-            </p>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <p className="text-center text-lg font-semibold leading-snug">
+                ¿Preferís dividendos o apreciación del capital?
+              </p>
+              <FinancialTooltip
+                title={ONBOARDING_EXPLANATIONS.income_vs_growth.title}
+                content={ONBOARDING_EXPLANATIONS.income_vs_growth.content}
+                side="bottom"
+              />
+            </div>
             <p className="text-center text-xs text-muted-foreground mb-8">
               Ajustá el balance según tu preferencia
             </p>

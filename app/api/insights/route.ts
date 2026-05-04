@@ -100,7 +100,9 @@ async function computeFullAnalysis(
   for (const p of bondPositions) bondUpperMap.set(p.symbol.toUpperCase(), p.symbol);
   for (const b of bondQuotes) {
     const posSymbol = bondUpperMap.get(b.symbol.toUpperCase()) ?? b.symbol;
-    const priceUsd = (b.c ?? 0) / mepRate;
+    const sym = posSymbol.toUpperCase();
+    const needsMepConversion = !sym.endsWith("C") && !sym.endsWith("D");
+    const priceUsd = needsMepConversion ? (b.c ?? 0) / mepRate : (b.c ?? 0);
     quoteMap.set(posSymbol, { price: priceUsd, name: b.symbol });
   }
   for (const p of bondPositions) {

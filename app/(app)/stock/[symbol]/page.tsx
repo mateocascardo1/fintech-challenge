@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Star, Plus, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, Star, Plus, TrendingUp, TrendingDown, Loader2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PriceChart } from "@/components/price-chart";
 import { PositionCard } from "@/components/stock/position-card";
@@ -58,6 +59,78 @@ export default function StockDetailPage({
   const [activeInfoTab, setActiveInfoTab] = useState<"news" | "about">("news");
   const [isBond, setIsBond] = useState(false);
   const [bondData, setBondData] = useState<BondQuote | null>(null);
+
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addQty, setAddQty] = useState("");
+  const [addSaving, setAddSaving] = useState(false);
+  const [addSuccess, setAddSuccess] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/watchlist")
+      .then((r) => r.json())
+      .then((items) => {
+        if (Array.isArray(items)) {
+          setInWatchlist(items.some((w: { symbol: string }) => w.symbol.toUpperCase() === symbol.toUpperCase()));
+        }
+      })
+      .catch(() => {});
+  }, [symbol]);
+
+  const toggleWatchlist = useCallback(async () => {
+    setWatchlistLoading(true);
+    try {
+      const method = inWatchlist ? "DELETE" : "POST";
+      const res = await fetch("/api/watchlist", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol: symbol.toUpperCase() }),
+      });
+      if (res.ok) setInWatchlist(!inWatchlist);
+    } catch { /* ignore */ }
+    setWatchlistLoading(false);
+  }, [symbol, inWatchlist]);
+
+  const guessAssetType = useCallback((): string => {
+    if (isBond) return "bond";
+    const KNOWN_ETFS = ["SPY","QQQ","DIA","IWM","VTI","VOO","VEA","VWO","EFA","IEMG","XLK","XLV","XLE","XLF","XLY","XLP","XLI","XLU","XLRE","XLC","TLT","LQD","AGG","SHY","HYG","IEF","GOVT"];
+    const sym = symbol.toUpperCase();
+    if (KNOWN_ETFS.includes(sym)) return "etf";
+    if (["TLT","LQD","AGG","SHY","HYG","IEF","GOVT"].includes(sym)) return "bond_etf";
+    return "equity";
+  }, [symbol, isBond]);
+
+  const addToPortfolio = useCallback(async () => {
+    if (!addQty || Number(addQty) <= 0) return;
+    setAddSaving(true);
+    setAddError("");
+    try {
+      const res = await fetch("/api/portfolio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol: symbol.toUpperCase(),
+          quantity: Number(addQty),
+          asset_type: guessAssetType(),
+        }),
+      });
+      if (res.ok) {
+        setAddSuccess(true);
+        setShowAddForm(false);
+        setAddQty("");
+        setAddError("");
+        setTimeout(() => setAddSuccess(false), 2000);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setAddError(err?.error ?? `Error ${res.status}`);
+      }
+    } catch {
+      setAddError("Error de red");
+    }
+    setAddSaving(false);
+  }, [symbol, addQty, guessAssetType]);
 
   useEffect(() => {
     const sym = symbol.toUpperCase();
@@ -146,6 +219,9 @@ export default function StockDetailPage({
     );
   }
 
+  const sym = symbol.toUpperCase();
+  const isTradeable = !sym.startsWith("^") && !sym.includes("=");
+
   const isPositive = quote.changePercent >= 0;
   const formatFn = isBond
     ? (v: number) => `$ ${new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}`
@@ -173,15 +249,59 @@ export default function StockDetailPage({
             <Badge variant="secondary" className="text-[10px] shrink-0">{fundamentals.sector}</Badge>
           )}
         </div>
-        <div className="ml-auto flex gap-2 shrink-0">
-          <Button variant="ghost" size="icon" className="rounded-full" disabled title="Próximamente">
-            <Star className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" disabled title="Próximamente">
-            <Plus className="h-3.5 w-3.5 mr-1" /> Agregar al portfolio
-          </Button>
-        </div>
+        {isTradeable && (
+          <div className="ml-auto flex gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              disabled={watchlistLoading}
+              onClick={toggleWatchlist}
+              title={inWatchlist ? "Quitar de favoritos" : "Agregar a favoritos"}
+            >
+              <Star className={`h-4 w-4 transition-colors ${inWatchlist ? "fill-yellow-400 text-yellow-400" : ""}`} />
+            </Button>
+            {addSuccess ? (
+              <Button variant="outline" size="sm" className="text-positive border-positive/30" disabled>
+                <Check className="h-3.5 w-3.5 mr-1" /> Agregado
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowAddForm(!showAddForm)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Agregar al portfolio
+              </Button>
+            )}
+          </div>
+        )}
       </div>
+
+      {isTradeable && showAddForm && (
+        <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/[0.03] px-4 py-3">
+            <span className="text-sm font-medium shrink-0">
+              {isBond ? "Cantidad de bonos (VN100)" : "Cantidad"}
+            </span>
+            <Input
+              type="number"
+              placeholder={isBond ? "Ej: 10" : "Ej: 5"}
+              value={addQty}
+              onChange={(e) => { setAddQty(e.target.value); setAddError(""); }}
+              min={1}
+              className="w-32"
+              autoFocus
+            />
+            <Button onClick={addToPortfolio} disabled={addSaving || !addQty || Number(addQty) <= 0} size="sm">
+              {addSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+              Agregar
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setShowAddForm(false); setAddQty(""); setAddError(""); }}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          {addError && (
+            <p className="text-xs text-destructive px-4">{addError}</p>
+          )}
+        </div>
+      )}
 
       {/* Price display */}
       <div className="flex items-end gap-4">
@@ -316,7 +436,7 @@ export default function StockDetailPage({
       {isBond && <BondCashflowCard symbol={symbol.toUpperCase()} />}
 
       {/* Position card */}
-      <PositionCard symbol={symbol.toUpperCase()} price={quote.price} />
+      {isTradeable && <PositionCard symbol={symbol.toUpperCase()} price={quote.price} />}
 
       {/* Equities-only cards */}
       {!isBond && (

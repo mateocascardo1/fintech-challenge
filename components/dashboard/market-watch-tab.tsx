@@ -189,7 +189,7 @@ export function MarketWatchTab() {
             placeholder="Buscar acciones, ETFs, bonos, cedears..."
             value={globalQuery}
             onChange={(e) => setGlobalQuery(e.target.value)}
-            className="pl-11 h-11 rounded-xl border-border/50 bg-card/60 backdrop-blur-sm text-sm placeholder:text-muted-foreground/50 focus-visible:ring-primary/30"
+            className="pl-11 h-11 rounded-xl border-primary/50 bg-card/60 backdrop-blur-sm text-sm placeholder:text-muted-foreground/50 focus-visible:ring-primary/30 ring-1 ring-primary/20"
           />
           {globalQuery && (
             <button

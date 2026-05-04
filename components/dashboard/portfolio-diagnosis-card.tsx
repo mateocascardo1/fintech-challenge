@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Activity, Loader2, RefreshCw, Shield, Target, BarChart3, TrendingDown, X } from "lucide-react";
+import { Activity, Loader2, RefreshCw, Shield, Target, BarChart3, TrendingDown, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FinancialTooltip } from "@/components/ui/financial-tooltip";
+import { SCORE_EXPLANATIONS } from "@/lib/financial-explanations";
 
 type DiagnosisItem = {
   id: string;
@@ -295,6 +297,13 @@ export function PortfolioDiagnosisCard() {
                   <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     {label}
                   </span>
+                  {SCORE_EXPLANATIONS[key] && (
+                    <FinancialTooltip
+                      title={SCORE_EXPLANATIONS[key].title}
+                      content={SCORE_EXPLANATIONS[key].content}
+                      side="bottom"
+                    />
+                  )}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -320,9 +329,12 @@ export function PortfolioDiagnosisCard() {
                     </p>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-muted-foreground/40 italic">
-                    Sin análisis disponible
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="h-3 w-3 text-primary/40 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-muted-foreground/50 leading-relaxed">
+                      Pronto nuestra IA analizará esta dimensión de tu portfolio.
+                    </p>
+                  </div>
                 )}
               </button>
             );

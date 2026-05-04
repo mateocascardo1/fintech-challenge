@@ -313,7 +313,7 @@ export function StepPositions({
               <div className="flex gap-2">
                 <Input
                   type="number"
-                  placeholder="Cantidad (láminas)"
+                  placeholder="Cantidad de bonos (VN100)"
                   value={bondQty}
                   onChange={(e) => setBondQty(e.target.value)}
                   min={1}

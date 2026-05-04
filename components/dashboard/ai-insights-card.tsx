@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Zap, Loader2, RefreshCw, TrendingUp, TrendingDown, ArrowRight, MoveRight,
+  Zap, Loader2, RefreshCw, TrendingUp, TrendingDown, ArrowRight, MoveRight, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FinancialTooltip } from "@/components/ui/financial-tooltip";
+import { ALLOCATION_EXPLANATIONS, INSTRUMENT_EXPLANATIONS, SELL_EXPLANATIONS } from "@/lib/financial-explanations";
 
 type InsightRow = {
   id: string;
@@ -201,20 +203,26 @@ export function AiInsightsCard() {
               <Zap className="h-4 w-4 text-yellow-400" />
               <p className="section-label">RECOMENDACIONES</p>
             </div>
+          </div>
+          <div className="flex flex-col items-center py-8 text-center">
+            <div className="h-12 w-12 rounded-full bg-yellow-400/10 flex items-center justify-center mb-4">
+              <Sparkles className="h-5 w-5 text-yellow-400/70" />
+            </div>
+            <p className="text-sm font-medium mb-1.5">Analizando tu portfolio...</p>
+            <p className="text-xs text-muted-foreground max-w-sm leading-relaxed mb-5">
+              Pronto tendrás recomendaciones personalizadas basadas en tu perfil de riesgo y composición actual.
+            </p>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={generateInsights}
               disabled={generating}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-xs"
             >
               <RefreshCw className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} />
-              Actualizar
+              Generar recomendaciones
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground py-6 text-center">
-            Hacé click en Actualizar para generar recomendaciones.
-          </p>
         </div>
       </div>
     );
@@ -253,9 +261,16 @@ export function AiInsightsCard() {
                 return (
                   <div key={move.id} className="flex items-center gap-3">
                     {/* Asset class */}
-                    <div className="flex items-center gap-2 w-28 shrink-0">
+                    <div className="flex items-center gap-2 w-32 shrink-0">
                       <span className={`h-2 w-2 rounded-full ${cls.dot}`} />
                       <span className="text-xs font-medium truncate">{cls.label}</span>
+                      {(() => {
+                        const expKey = `${move.direction}_${move.asset_class}`;
+                        const exp = ALLOCATION_EXPLANATIONS[expKey];
+                        return exp ? (
+                          <FinancialTooltip title={exp.title} content={exp.content} side="right" />
+                        ) : null;
+                      })()}
                     </div>
 
                     {/* Current -> Target bar */}
@@ -357,9 +372,16 @@ export function AiInsightsCard() {
                       <span className="text-xs text-foreground/70">{pick.reason}</span>
                     </div>
 
-                    {/* Improves badge */}
-                    <span className="shrink-0 text-[8px] font-medium text-muted-foreground/40 tracking-wide hidden lg:inline">
+                    {/* Improves badge + tooltip */}
+                    <span className="shrink-0 flex items-center gap-1 text-[8px] font-medium text-muted-foreground/40 tracking-wide hidden lg:inline-flex">
                       {IMPROVES_LABELS[pick.improves] ?? pick.improves}
+                      {(() => {
+                        const label = IMPROVES_LABELS[pick.improves] ?? pick.improves;
+                        const exp = isBuy
+                          ? (INSTRUMENT_EXPLANATIONS[label] ?? INSTRUMENT_EXPLANATIONS.default)
+                          : SELL_EXPLANATIONS;
+                        return <FinancialTooltip title={exp.title} content={exp.content} side="left" />;
+                      })()}
                     </span>
 
                     {/* Arrow + Score impact */}

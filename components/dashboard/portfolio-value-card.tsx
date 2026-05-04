@@ -12,6 +12,11 @@ function isArgBond(symbol: string): boolean {
   return /^[A-Z]{2,5}\d/i.test(symbol);
 }
 
+function isArsDenominated(symbol: string): boolean {
+  const s = symbol.toUpperCase();
+  return isArgBond(s) && !s.endsWith("C") && !s.endsWith("D");
+}
+
 export function PortfolioValueCard({ positions }: { positions: Position[] }) {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [mepRate, setMepRate] = useState<number>(1200);
@@ -66,7 +71,7 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
                 const posSymbol = upperToPosition.get(b.symbol.toUpperCase());
                 if (posSymbol) {
                   matched.add(posSymbol);
-                  const priceUsd = isArgBond(posSymbol) ? (b.c ?? 0) / rate : (b.c ?? 0);
+                  const priceUsd = isArsDenominated(posSymbol) ? (b.c ?? 0) / rate : (b.c ?? 0);
                   next[posSymbol] = {
                     symbol: posSymbol,
                     name: b.symbol,

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { PortfolioValueCard } from "./portfolio-value-card";
 import { PortfolioScoreCard } from "./portfolio-score-card";
-import { AllocationCard } from "./allocation-card";
+import { TopHoldingsCard } from "./top-holdings-card";
+import { SectorBreakdownCard } from "./sector-breakdown-card";
 import { PortfolioDiagnosisCard } from "./portfolio-diagnosis-card";
 import { AiInsightsCard } from "./ai-insights-card";
 import { MarketRecapCard } from "./market-recap-card";
@@ -67,8 +68,9 @@ export function OverviewTab() {
         <PortfolioScoreCard positions={positions} />
       </div>
 
-      <div className="animate-in fade-in duration-500" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
-        <AllocationCard positions={positions} />
+      <div className="grid gap-6 lg:grid-cols-2 animate-in fade-in duration-500" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+        <TopHoldingsCard positions={positions} />
+        <SectorBreakdownCard positions={positions} />
       </div>
 
       <div className="animate-in fade-in duration-500" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
@@ -79,7 +81,7 @@ export function OverviewTab() {
         <AiInsightsCard />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 animate-in fade-in duration-500" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
+      <div className="grid gap-6 lg:grid-cols-2 items-start animate-in fade-in duration-500" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
         <MarketRecapCard />
         <EarningsCalendarCard />
       </div>

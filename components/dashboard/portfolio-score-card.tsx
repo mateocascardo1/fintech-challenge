@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Shield, Target, BarChart3, TrendingDown } from "lucide-react";
+import { FinancialTooltip } from "@/components/ui/financial-tooltip";
+import { SCORE_EXPLANATIONS } from "@/lib/financial-explanations";
 
 type ScoreData = {
   total: number;
@@ -128,6 +130,13 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
                 <div className="flex items-center gap-1.5 mb-2">
                   <Icon className="h-3.5 w-3.5 text-muted-foreground/60" />
                   <span className="text-[11px] text-muted-foreground/80">{s.label}</span>
+                  {SCORE_EXPLANATIONS[s.key] && (
+                    <FinancialTooltip
+                      title={SCORE_EXPLANATIONS[s.key].title}
+                      content={SCORE_EXPLANATIONS[s.key].content}
+                      side="top"
+                    />
+                  )}
                   <span className="ml-auto text-[11px] tabular-nums font-semibold">{value}</span>
                 </div>
                 <div className="h-2 rounded-full bg-muted/30 overflow-hidden">

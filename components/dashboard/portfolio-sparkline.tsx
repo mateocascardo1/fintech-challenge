@@ -109,9 +109,11 @@ export function PortfolioSparkline({ positions }: { positions: Position[] }) {
           const json = await res.json();
           const rawPoints = json?.points ?? json ?? [];
           const isBond = bondSymbols.has(p.symbol.toUpperCase());
+          const sym = p.symbol.toUpperCase();
+          const needsMep = isBond && !sym.endsWith("C") && !sym.endsWith("D");
           const points = (rawPoints as HistoryPoint[]).map((pt) => ({
             ...pt,
-            close: isBond ? pt.close / mepRate : pt.close,
+            close: needsMep ? pt.close / mepRate : pt.close,
           }));
           return {
             symbol: p.symbol,
