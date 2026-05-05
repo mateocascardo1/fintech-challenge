@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SignalAI
 
-## Getting Started
+Plataforma de análisis cuantitativo de portfolios con inteligencia artificial. Cargá tus posiciones, recibí un score de 0 a 1000, diagnóstico multidimensional y recomendaciones accionables para optimizar diversificación, riesgo y retorno.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Portfolio Score** — Score compuesto de 0 a 1000 basado en 4 dimensiones: diversificación (HHI), risk match, Sharpe ratio y downside protection.
+- **Diagnóstico AI** — Análisis automático con severidad (Saludable / Atención / Crítico) y explicación fundamentada por categoría.
+- **Recomendaciones accionables** — Movimientos de allocation y picks de instrumentos específicos con impacto medible en puntos.
+- **Portfolio Builder** — Onboarding guiado que arma un portfolio según perfil de inversor, capital y preferencias. Calcula cantidades reales dividiendo por precios de mercado.
+- **Market Watch** — Seguimiento de mercados en tiempo real, watchlist personalizada, cotizaciones de acciones, ETFs y bonos argentinos.
+- **S&P 500 Heatmap** — Treemap interactivo con las principales empresas del S&P 500, filtrable por sector, con colores según variación diaria.
+- **Top Holdings & Sector Breakdown** — Visualización de concentración del portfolio y distribución por sector.
+- **Educación financiera** — Tooltips con justificación teórica en cada decisión y recomendación.
+- **Soporte multi-asset** — Acciones USA, ETFs sectoriales, ETFs de bonos, bonos soberanos argentinos (ARS y USD) y efectivo.
+
+## Tech Stack
+
+| Capa | Tecnología |
+|------|-----------|
+| Framework | Next.js 16 (App Router, React 19) |
+| UI | Tailwind CSS, Radix UI, Shadcn, Lucide Icons |
+| Auth & DB | Supabase (Auth + PostgreSQL) |
+| AI | Anthropic Claude (via Vercel AI SDK) |
+| Market Data | Yahoo Finance (acciones, ETFs), data912.com (bonos argentinos, tipo de cambio MEP) |
+| Charts | Lightweight Charts (TradingView) |
+| Deploy | Vercel |
+
+## Arquitectura
+
+```
+app/
+├── (public)/           # Landing page
+├── (app)/
+│   ├── dashboard/      # Dashboard principal (Overview, Holdings, Market Watch, Heatmap)
+│   ├── onboarding/     # Wizard de onboarding (perfil + portfolio builder)
+│   └── stock/[symbol]/ # Detalle de instrumento
+├── auth/               # Login / registro
+└── api/
+    ├── portfolio/      # CRUD de posiciones
+    ├── quote/          # Cotizaciones batch (Yahoo Finance)
+    ├── insights/       # Recomendaciones AI (Claude)
+    ├── portfolio/score/# Cálculo del score cuantitativo
+    ├── arg-market/     # Bonos argentinos y MEP (data912)
+    ├── chat/           # Chat AI contextual
+    └── market-recap/   # Resumen de mercado AI
+
+components/
+├── dashboard/          # Cards del dashboard (score, diagnosis, allocation, heatmap, etc.)
+├── onboarding/         # Steps del wizard (perfil, capital, selección, review)
+├── stock/              # Componentes de detalle de instrumento
+└── ui/                 # Primitivos (button, input, tooltip, financial-tooltip)
+
+lib/
+├── portfolio/          # Lógica de scoring, allocation, constantes
+├── providers/          # Yahoo Finance, data912, bond cashflows
+├── supabase/           # Cliente Supabase (server/client)
+├── financial-explanations.ts  # Diccionario de explicaciones teóricas
+├── sp500.ts            # Lista S&P 500 con sectores
+└── tickers.ts          # Validación de símbolos
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Requisitos
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 18+
+- Cuenta de Supabase (plan free funciona)
+- API key de Anthropic
 
-## Learn More
+### Variables de entorno
 
-To learn more about Next.js, take a look at the following resources:
+Crear un archivo `.env.local` con:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+NEXT_PUBLIC_SUPABASE_URL=tu_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
+ANTHROPIC_API_KEY=tu_anthropic_api_key
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Base de datos
 
-## Deploy on Vercel
+Ejecutar las migraciones en Supabase SQL Editor:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# En orden
+supabase/migrations/001_initial_schema.sql
+supabase/migrations/002_add_bond_cash_asset_types.sql
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Instalación
+
+```bash
+npm install
+npm run dev
+```
+
+La app corre en [http://localhost:3000](http://localhost:3000).
+
+## Flujo del usuario
+
+1. **Registro** — Email/password via Supabase Auth.
+2. **Onboarding** — Perfil de inversor (tolerancia al riesgo, horizonte, preferencias). Si no tiene portfolio, el builder lo arma automáticamente.
+3. **Dashboard** — Score, diagnóstico, recomendaciones, allocation, holdings, market watch y heatmap.
+4. **Accionar** — Cada recomendación muestra qué hacer, por qué, y cuántos puntos suma.
