@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignalAI — Presentación</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #22c55e;
+  --green-light: #dcfce7;
+  --green-mid: #86efac;
+  --green-dark: #16a34a;
+  --black: #111111;
+  --gray-900: #1a1a1a;
+  --gray-700: #444444;
+  --gray-500: #6b7280;
+  --gray-400: #9ca3af;
+  --gray-300: #d1d5db;
+  --gray-200: #e5e7eb;
+  --gray-100: #f3f4f6;
+  --gray-50: #f9fafb;
+  --white: #ffffff;
+  --red: #ef4444;
+  --red-light: #fef2f2;
+  --amber: #f59e0b;
+  --amber-light: #fffbeb;
+  --blue: #3b82f6;
+  --blue-light: #eff6ff;
+  --purple: #8b5cf6;
+  --purple-light: #f5f3ff;
+  --cyan: #06b6d4;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--white); color: var(--black); font-family: var(--font); }
+
+/* ===== DECK ===== */
+.deck { position: relative; width: 100%; height: 100%; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 80px 80px 60px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  transform: translateX(50px);
+  background: var(--white);
+}
+.slide.active { opacity: 1; pointer-events: auto; transform: translateX(0); }
+.slide.exit-left { opacity: 0; transform: translateX(-50px); }
+
+/* ===== LOGO (every slide) ===== */
+.slide-logo {
+  position: absolute; top: 24px; left: 32px; display: flex; align-items: center; gap: 10px; z-index: 10;
+}
+.slide-logo .logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--green-light); display: flex; align-items: center; justify-content: center;
+}
+.slide-logo .logo-text {
+  font-size: 15px; font-weight: 700; color: var(--black); letter-spacing: -0.02em;
+}
+
+/* ===== SECTION TAG ===== */
+.section-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--green-dark); background: var(--green-light); padding: 5px 14px; border-radius: 999px;
+}
+
+/* ===== TYPOGRAPHY ===== */
+.slide-title {
+  font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; color: var(--black);
+}
+.slide-subtitle {
+  color: var(--gray-500); line-height: 1.7; font-weight: 400;
+}
+.highlight { color: var(--green); }
+.text-center { text-align: center; }
+
+/* ===== FRAGMENT SYSTEM ===== */
+.fragment {
+  opacity: 0; transform: translateY(18px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+.fragment.visible {
+  opacity: 1; transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 24px 12px; display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(to top, white 70%, transparent);
+}
+.progress-bar .label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em;
+  color: var(--green-dark); white-space: nowrap;
+}
+.slide-blocks {
+  flex: 1; display: flex; align-items: center; gap: 2px; height: 6px;
+}
+.slide-block {
+  flex: 1; height: 100%; background: var(--gray-200); border: none; padding: 0;
+  cursor: pointer; transition: all 0.2s; border-radius: 1px;
+}
+.slide-block:hover { background: var(--gray-400); transform: scaleY(1.8); }
+.slide-block.active { background: var(--green); transform: scaleY(1.8); }
+.slide-block.visited { background: var(--green); }
+
+/* ===== NAV ===== */
+.nav-btn {
+  position: fixed; top: 50%; transform: translateY(-50%); z-index: 100;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--white); border: 1px solid var(--gray-200); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  color: var(--gray-500); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; font-size: 20px; line-height: 1;
+}
+.nav-btn:hover { background: var(--green-light); color: var(--green-dark); border-color: var(--green); }
+.nav-btn.prev { left: 20px; }
+.nav-btn.next { right: 20px; }
+.nav-btn.hidden { display: none; }
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: 16px; padding: 28px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.card-green { border-color: rgba(34,197,94,0.3); background: linear-gradient(135deg, var(--green-light), var(--white)); }
+.card-sm { padding: 16px 20px; border-radius: 12px; }
+
+/* ===== ICON BOX ===== */
+.icon-box {
+  display: flex; align-items: center; justify-content: center; border-radius: 14px;
+}
+
+/* ===== LAYOUT ===== */
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-col { display: flex; flex-direction: column; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
+.gap-5 { gap: 20px; } .gap-6 { gap: 24px; } .gap-8 { gap: 32px; } .gap-10 { gap: 40px; }
+.items-center { align-items: center; }
+.w-full { width: 100%; }
+.max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; } .max-w-lg { max-width: 32rem; }
+.max-w-xl { max-width: 36rem; } .max-w-2xl { max-width: 42rem; } .max-w-3xl { max-width: 48rem; }
+.max-w-4xl { max-width: 56rem; } .max-w-5xl { max-width: 64rem; }
+.mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; }
+.mt-6 { margin-top: 24px; } .mt-8 { margin-top: 32px; } .mt-10 { margin-top: 40px; }
+.mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; } .mb-8 { margin-bottom: 32px; } .mb-10 { margin-bottom: 40px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+.split-layout { display: flex; align-items: stretch; justify-content: center; gap: 48px; width: 100%; }
+.split-side { flex: 1; display: flex; flex-direction: column; }
+.split-divider { width: 1px; align-self: stretch; background: var(--gray-200); }
+
+/* ===== CALLOUT ===== */
+.callout {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 18px 22px; border-radius: 14px; font-size: 14px; line-height: 1.7;
+  background: var(--gray-50); border: 1px solid var(--gray-200); color: var(--gray-700);
+}
+.callout-green { background: var(--green-light); border-color: rgba(34,197,94,0.3); }
+.callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+
+/* ===== FORMULA BOX ===== */
+.formula-box {
+  padding: 16px 28px; border-radius: 14px; text-align: center;
+  background: var(--gray-50); border: 1px solid var(--gray-200);
+  font-size: 15px; color: var(--gray-700); line-height: 1.7;
+}
+.formula-box strong { color: var(--black); }
+.formula-box .formula-main {
+  font-size: 20px; font-weight: 700; color: var(--black); letter-spacing: -0.01em;
+  margin: 8px 0;
+}
+
+/* ===== STAT NUMBER ===== */
+.stat-big { font-size: 48px; font-weight: 800; color: var(--green); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ===== HHI BARS ===== */
+.hhi-tabs { display: flex; gap: 8px; }
+.hhi-tab {
+  padding: 7px 16px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--gray-200); background: var(--white); color: var(--gray-500); transition: all 0.2s;
+}
+.hhi-tab.active { background: var(--green); color: white; border-color: var(--green); }
+.hhi-bars { display: flex; align-items: flex-end; gap: 20px; height: 160px; justify-content: center; }
+.hhi-bar-col { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 80px; }
+.hhi-bar { width: 100%; border-radius: 8px 8px 0 0; transition: height 0.6s ease; }
+.hhi-bar-label { font-size: 10px; color: var(--gray-500); font-weight: 500; }
+.hhi-bar-value { font-size: 13px; font-weight: 700; }
+
+/* ===== GAUGE ===== */
+.gauge-ring { transition: stroke-dashoffset 1s ease; }
+
+/* ===== SCORE CARD MINI ===== */
+.score-card-mini { display: flex; flex-direction: column; gap: 6px; }
+.score-bar-track { height: 6px; border-radius: 3px; background: var(--gray-200); overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+.score-bar-header { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.score-bar-header .dot { width: 8px; height: 8px; border-radius: 3px; }
+.score-bar-header .lbl { color: var(--gray-500); font-weight: 500; }
+.score-bar-header .val { margin-left: auto; font-weight: 700; color: var(--black); font-variant-numeric: tabular-nums; }
+
+/* ===== DIAG ITEMS ===== */
+.diag-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; border-radius: 12px; border: 1px solid var(--gray-200);
+  font-size: 13px; color: var(--gray-700); line-height: 1.5;
+}
+.diag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ===== HEATMAP ===== */
+.heatmap-grid { display: flex; flex-wrap: wrap; gap: 5px; max-width: 400px; }
+.heatmap-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 8px; border: 1px solid rgba(0,0,0,0.06);
+}
+.heatmap-cell .sym { font-size: 9px; font-weight: 700; color: var(--gray-700); }
+.heatmap-cell .chg { font-size: 8px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.chg.pos { color: var(--green-dark); } .chg.neg { color: var(--red); }
+
+/* ===== CHAT ===== */
+.chat-msg {
+  padding: 12px 16px; border-radius: 16px; font-size: 13px; line-height: 1.6; max-width: 85%;
+}
+.chat-msg.user {
+  background: var(--green); color: white; align-self: flex-end; border-bottom-right-radius: 4px;
+}
+.chat-msg.ai {
+  background: var(--gray-100); border: 1px solid var(--gray-200);
+  color: var(--gray-700); align-self: flex-start; border-bottom-left-radius: 4px;
+}
+
+/* ===== BADGES ===== */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 700;
+}
+.badge.buy { background: var(--green-light); border: 1px solid rgba(34,197,94,0.3); color: var(--green-dark); }
+.badge.sell { background: var(--red-light); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
+
+/* ===== INDICATOR CARD ===== */
+.indicator-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-radius: 14px;
+  background: var(--white); border: 1px solid var(--gray-200); box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.indicator-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gray-500); font-weight: 600; }
+.indicator-value { font-size: 22px; font-weight: 800; color: var(--black); font-variant-numeric: tabular-nums; }
+.indicator-change {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.indicator-change.pos { background: var(--green-light); color: var(--green-dark); }
+.indicator-change.neg { background: var(--red-light); color: var(--red); }
+
+/* ===== FLOW NODES ===== */
+.flow-container { position: relative; width: 900px; height: 340px; }
+.flow-node {
+  position: absolute; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transform: translate(-50%, -50%);
+}
+.flow-node .node-icon {
+  width: 56px; height: 56px; border-radius: 14px;
+  border: 1px solid var(--gray-200); background: var(--white); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.flow-node .node-label { font-size: 12px; font-weight: 700; color: var(--black); white-space: nowrap; }
+.flow-node .node-sub { font-size: 10px; color: var(--gray-500); white-space: nowrap; }
+
+/* ===== ONBOARDING STEPS ===== */
+.onb-steps { display: flex; align-items: flex-start; gap: 12px; position: relative; max-width: 800px; }
+.onb-steps::before {
+  content: ''; position: absolute; top: 28px; left: 28px; right: 28px;
+  height: 2px; background: var(--gray-200);
+}
+.onb-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative; z-index: 1; }
+.onb-step .step-icon {
+  width: 56px; height: 56px; border-radius: 14px;
+  border: 1px solid var(--gray-200); background: var(--white); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.onb-step .step-label { font-size: 12px; font-weight: 700; color: var(--black); }
+.onb-step .step-desc { font-size: 10px; color: var(--gray-500); text-align: center; max-width: 100px; line-height: 1.5; }
+
+/* ===== TOKEN BLOCKS ===== */
+.token-block {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: 10px;
+  border: 1px solid var(--gray-200); font-size: 13px; color: var(--gray-700); font-weight: 500;
+}
+.token-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ===== TAB PILLS ===== */
+.tab-pills { display: flex; gap: 8px; }
+.tab-pill { padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+.tab-pill.active { background: var(--green); color: white; }
+.tab-pill.inactive { background: var(--gray-100); color: var(--gray-400); }
+
+/* ===== VOL CHART ===== */
+.vol-chart { position: relative; width: 100%; height: 100px; }
+
+/* ===== PROFILE CARDS ===== */
+.profile-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 24px 20px; border-radius: 16px; border: 1px solid var(--gray-200);
+  background: var(--white); box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  text-align: center;
+}
+.profile-card.active-card { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-light); }
+
+/* ===== SCALE BAR ===== */
+.scale-bar {
+  display: flex; height: 8px; border-radius: 4px; overflow: hidden; width: 100%;
+}
+
+/* ===== KBD ===== */
+kbd {
+  padding: 3px 10px; border-radius: 6px;
+  background: var(--gray-100); border: 1px solid var(--gray-200);
+  color: var(--gray-500); font-size: 11px; font-weight: 600;
+}
+
+/* ===== ALLOC BAR ===== */
+.alloc-row { display: flex; align-items: center; gap: 12px; }
+.alloc-label { font-size: 12px; font-weight: 600; color: var(--gray-700); width: 120px; }
+.alloc-track { flex: 1; height: 24px; background: var(--gray-100); border-radius: 6px; overflow: hidden; position: relative; }
+.alloc-fill { height: 100%; border-radius: 6px; transition: width 0.8s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: 700; color: white; }
+.alloc-pct { font-size: 12px; font-weight: 700; width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ===== LAYER FLOW ===== */
+.layer-box {
+  padding: 20px 24px; border-radius: 14px; border: 1px solid var(--gray-200);
+  background: var(--white); box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.layer-arrow { font-size: 24px; color: var(--gray-300); }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo">
+    <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <span class="logo-text">SignalAI</span>
+  </div>
+
+  <div class="fragment flex-col items-center gap-4" data-f="1">
+    <div style="width:88px;height:88px;border-radius:20px;background:var(--green-light);display:flex;align-items:center;justify-content:center;">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+  </div>
+  <h1 class="fragment slide-title text-center" data-f="2" style="font-size:72px;margin-top:16px;">Signal<span class="highlight">AI</span></h1>
+  <p class="fragment slide-subtitle text-center max-w-lg" data-f="3" style="font-size:22px;margin-top:20px;">Entendé tu portfolio con inteligencia artificial</p>
+  <div class="fragment" data-f="4" style="margin-top:56px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gray-400);">
+    <span>Usá</span><kbd>→</kbd><span>para avanzar</span>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 2: QUE ES INVERTIR ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Conceptos Básicos</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">¿Qué es invertir?</h2>
+
+  <div class="fragment callout max-w-2xl mt-6" data-f="2">
+    <span class="callout-icon">💰</span>
+    <div><strong style="color:var(--black);">Tenés plata ahorrada.</strong> Si la dejás quieta, la inflación la come. Cada año que pasa, tus ahorros compran menos cosas.</div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-4" data-f="3">
+    <span class="callout-icon">🌱</span>
+    <div><strong style="color:var(--green-dark);">Invertir = poner esa plata a trabajar para que crezca.</strong> Es como plantar una semilla: con tiempo y las condiciones correctas, tu dinero genera más dinero.</div>
+  </div>
+
+  <div class="fragment grid-3 max-w-3xl mt-8" data-f="4">
+    <div class="card text-center flex-col items-center gap-3" style="padding:24px;">
+      <div style="font-size:36px;">🛏️</div>
+      <span style="font-size:14px;font-weight:700;color:var(--black);">Colchón</span>
+      <span style="font-size:28px;font-weight:800;color:var(--red);">-30%</span>
+      <span style="font-size:12px;color:var(--gray-500);">Pierde valor con la inflación</span>
+    </div>
+    <div class="card text-center flex-col items-center gap-3" style="padding:24px;">
+      <div style="font-size:36px;">🏦</div>
+      <span style="font-size:14px;font-weight:700;color:var(--black);">Plazo fijo</span>
+      <span style="font-size:28px;font-weight:800;color:var(--amber);">~0%</span>
+      <span style="font-size:12px;color:var(--gray-500);">Apenas le empata a la inflación</span>
+    </div>
+    <div class="card card-green text-center flex-col items-center gap-3" style="padding:24px;">
+      <div style="font-size:36px;">📈</div>
+      <span style="font-size:14px;font-weight:700;color:var(--black);">Inversión</span>
+      <span style="font-size:28px;font-weight:800;color:var(--green);">+8%</span>
+      <span style="font-size:12px;color:var(--gray-500);">Crece por encima de la inflación</span>
+    </div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-6" data-f="5" style="font-size:14px;">Valores reales aproximados anuales en USD. El rendimiento pasado no garantiza rendimiento futuro.</p>
+</div>
+
+<!-- ==================== SLIDE: RETORNO ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Retorno</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">¿Cuánto ganás?</h2>
+
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">El <strong style="color:var(--black);">retorno</strong> es el porcentaje que crece (o decrece) tu inversión en un período de tiempo.</p>
+
+  <div class="fragment card max-w-2xl mt-8" data-f="3" style="padding:32px;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:40px;">
+      <div class="text-center">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;">Invertís</div>
+        <div style="font-size:32px;font-weight:800;color:var(--black);margin-top:4px;">$10,000</div>
+      </div>
+      <div style="font-size:28px;color:var(--gray-300);">→</div>
+      <div class="text-center">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;">Un año después</div>
+        <div style="font-size:32px;font-weight:800;color:var(--green);margin-top:4px;">$10,800</div>
+      </div>
+      <div style="font-size:28px;color:var(--gray-300);">→</div>
+      <div class="text-center">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;">Tu retorno</div>
+        <div style="font-size:32px;font-weight:800;color:var(--green);margin-top:4px;">+8%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment callout max-w-2xl mt-6" data-f="4">
+    <span class="callout-icon">⚠️</span>
+    <div><strong style="color:var(--black);">Pero el retorno solo no alcanza.</strong> Si ganaste 8%, ¿fue asumiendo mucho riesgo o poco? Necesitamos medir cuánto "sufrimiento" implicó llegar a ese número.</div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-4" data-f="5" style="font-size:14px;color:var(--green-dark);font-weight:600;">→ Para eso necesitamos entender el <strong>riesgo</strong>.</p>
+</div>
+
+<!-- ==================== SLIDE: RIESGO / VOLATILIDAD ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Riesgo</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">La Volatilidad</h2>
+
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">El riesgo se mide con la <strong style="color:var(--black);">volatilidad</strong> (desviación estándar): cuánto sube y baja el precio de una inversión.</p>
+
+  <div class="fragment grid-2 max-w-3xl mt-8" data-f="3">
+    <div class="card flex-col gap-4" style="padding:28px;text-align:center;">
+      <span style="font-size:14px;font-weight:700;">Baja volatilidad</span>
+      <svg width="100%" height="80" viewBox="0 0 300 80" preserveAspectRatio="none">
+        <path d="M0,60 C30,58 60,55 90,52 C120,49 150,45 180,42 C210,38 240,34 270,30 L300,28" fill="none" stroke="#22c55e" stroke-width="3"/>
+        <path d="M0,60 C30,58 60,55 90,52 C120,49 150,45 180,42 C210,38 240,34 270,30 L300,28 L300,80 L0,80Z" fill="url(#greenFade1)"/>
+        <defs><linearGradient id="greenFade1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22c55e" stop-opacity="0.15"/><stop offset="100%" stop-color="#22c55e" stop-opacity="0"/></linearGradient></defs>
+      </svg>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+        <span style="font-size:11px;color:var(--gray-500);">Volatilidad:</span>
+        <span style="font-size:16px;font-weight:800;color:var(--green);">8%</span>
+      </div>
+      <span style="font-size:12px;color:var(--gray-500);">Sube tranquilo, sin sobresaltos</span>
+    </div>
+    <div class="card flex-col gap-4" style="padding:28px;text-align:center;">
+      <span style="font-size:14px;font-weight:700;">Alta volatilidad</span>
+      <svg width="100%" height="80" viewBox="0 0 300 80" preserveAspectRatio="none">
+        <path d="M0,50 C15,30 30,65 50,40 C70,20 85,70 105,35 C125,10 140,60 160,30 C180,55 195,15 215,45 C235,25 255,55 275,20 L300,35" fill="none" stroke="#ef4444" stroke-width="3"/>
+        <path d="M0,50 C15,30 30,65 50,40 C70,20 85,70 105,35 C125,10 140,60 160,30 C180,55 195,15 215,45 C235,25 255,55 275,20 L300,35 L300,80 L0,80Z" fill="url(#redFade1)"/>
+        <defs><linearGradient id="redFade1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ef4444" stop-opacity="0.15"/><stop offset="100%" stop-color="#ef4444" stop-opacity="0"/></linearGradient></defs>
+      </svg>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+        <span style="font-size:11px;color:var(--gray-500);">Volatilidad:</span>
+        <span style="font-size:16px;font-weight:800;color:var(--red);">35%</span>
+      </div>
+      <span style="font-size:12px;color:var(--gray-500);">Sube y baja bruscamente</span>
+    </div>
+  </div>
+
+  <div class="fragment callout max-w-2xl mt-6" data-f="4">
+    <span class="callout-icon">🎯</span>
+    <div><strong style="color:var(--black);">Ambas inversiones pueden terminar con el mismo retorno.</strong> Pero la de alta volatilidad te hizo sufrir mucho más en el camino. La pregunta clave es: ¿cuánto retorno obtuviste por cada unidad de riesgo?</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: PREGUNTA RETORICA SHARPE ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="font-size:64px;margin-bottom:24px;">🤔</div>
+  <h2 class="fragment slide-title text-center max-w-3xl" data-f="1" style="font-size:44px;line-height:1.3;">Si dos inversiones ganan lo mismo,<br>¿cuál elegirías?</h2>
+
+  <div class="fragment grid-2 max-w-2xl mt-10" data-f="2" style="gap:32px;">
+    <div class="card flex-col gap-4 items-center text-center" style="padding:32px;">
+      <div style="font-size:48px;">😌</div>
+      <span style="font-size:16px;font-weight:800;">Inversión A</span>
+      <span style="font-size:13px;color:var(--gray-500);line-height:1.6;">Retorno: <strong style="color:var(--green);">+10%</strong><br>Volatilidad: <strong style="color:var(--green);">8%</strong><br>Dormiste tranquilo todo el año.</span>
+    </div>
+    <div class="card flex-col gap-4 items-center text-center" style="padding:32px;">
+      <div style="font-size:48px;">😰</div>
+      <span style="font-size:16px;font-weight:800;">Inversión B</span>
+      <span style="font-size:13px;color:var(--gray-500);line-height:1.6;">Retorno: <strong style="color:var(--green);">+10%</strong><br>Volatilidad: <strong style="color:var(--red);">35%</strong><br>Varias noches sin dormir.</span>
+    </div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-8 max-w-lg" data-f="3" style="font-size:16px;color:var(--green-dark);font-weight:600;">Mismo retorno, distinto sufrimiento. <strong>¿Cómo medimos eso?</strong></p>
+</div>
+
+<!-- ==================== SLIDE: SHARPE RATIO ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Sharpe Ratio</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:44px;">Retorno Ajustado por Riesgo</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">El Sharpe Ratio combina retorno y riesgo en un solo número: <strong style="color:var(--black);">cuánto ganás por cada unidad de riesgo que asumís.</strong></p>
+
+  <div class="fragment formula-box max-w-xl mt-8" data-f="3">
+    <div class="formula-main" style="font-size:24px;">Sharpe = (Retorno - Tasa libre) ÷ Volatilidad</div>
+    <div style="margin-top:12px;font-size:13px;color:var(--gray-500);line-height:1.7;">
+      <strong style="color:var(--gray-700);">Retorno:</strong> lo que ganó tu portfolio<br>
+      <strong style="color:var(--gray-700);">Tasa libre:</strong> lo que ganarías sin riesgo (ej: bonos del tesoro USA ~4%)<br>
+      <strong style="color:var(--gray-700);">Volatilidad:</strong> cuánto sube y baja tu portfolio
+    </div>
+  </div>
+
+  <div class="fragment max-w-2xl mt-8 w-full" data-f="4">
+    <div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Escala de referencia</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);border-radius:10px;overflow:hidden;">
+      <div style="padding:16px 12px;background:var(--red-light);text-align:center;">
+        <div style="font-size:20px;font-weight:800;color:var(--red);white-space:nowrap;">&lt; 0</div>
+        <div style="font-size:11px;color:var(--red);font-weight:500;margin-top:4px;">Malo</div>
+      </div>
+      <div style="padding:16px 12px;background:var(--amber-light);text-align:center;">
+        <div style="font-size:20px;font-weight:800;color:var(--amber);white-space:nowrap;">0 – 1</div>
+        <div style="font-size:11px;color:var(--amber);font-weight:500;margin-top:4px;">Aceptable</div>
+      </div>
+      <div style="padding:16px 12px;background:var(--green-light);text-align:center;">
+        <div style="font-size:20px;font-weight:800;color:var(--green);white-space:nowrap;">1 – 2</div>
+        <div style="font-size:11px;color:var(--green-dark);font-weight:500;margin-top:4px;">Bueno</div>
+      </div>
+      <div style="padding:16px 12px;background:linear-gradient(135deg,var(--green-light),#bbf7d0);text-align:center;">
+        <div style="font-size:20px;font-weight:800;color:var(--green-dark);white-space:nowrap;">&gt; 2</div>
+        <div style="font-size:11px;color:var(--green-dark);font-weight:500;margin-top:4px;">Excelente</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-6 max-w-lg" data-f="5" style="font-size:13px;">En SignalAI, normalizamos el Sharpe Ratio a un <strong style="color:var(--black);">score de 0 a 250 puntos.</strong></p>
+</div>
+
+<!-- ==================== SLIDE: PREGUNTA RETORICA PORTFOLIO ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="font-size:64px;margin-bottom:24px;">🤔</div>
+  <h2 class="fragment slide-title text-center max-w-3xl" data-f="1" style="font-size:44px;line-height:1.3;">¿Pondrías todos tus ahorros<br>en una sola acción?</h2>
+
+  <div class="fragment grid-2 max-w-2xl mt-10" data-f="2" style="gap:32px;">
+    <div class="card flex-col gap-4 items-center text-center" style="padding:32px;">
+      <div style="font-size:48px;">🎯</div>
+      <span style="font-size:16px;font-weight:800;">Todo en NVDA</span>
+      <span style="font-size:13px;color:var(--gray-500);line-height:1.6;">Si sube 50%, sos genio.<br>Si baja 40%, perdés casi la mitad.<br>Una sola apuesta.</span>
+    </div>
+    <div class="card card-green flex-col gap-4 items-center text-center" style="padding:32px;">
+      <div style="font-size:48px;">🌐</div>
+      <span style="font-size:16px;font-weight:800;">Repartir entre varias</span>
+      <span style="font-size:13px;color:var(--gray-500);line-height:1.6;">Si una baja, las otras compensan.<br>Retorno más estable en el tiempo.<br>Menos sorpresas.</span>
+    </div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-8 max-w-lg" data-f="3" style="font-size:16px;color:var(--green-dark);font-weight:600;">A eso le llamamos armar un <strong>portfolio</strong>.</p>
+</div>
+
+<!-- ==================== SLIDE 3: QUE ES UN PORTFOLIO ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Conceptos Básicos</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">¿Qué es un Portfolio?</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:18px;">Es el conjunto de todas tus inversiones — como una canasta donde ponés distintos tipos de activos.</p>
+
+  <div class="fragment grid-4 max-w-4xl mt-10" data-f="3">
+    <div class="card text-center flex-col items-center gap-3" style="padding:24px;">
+      <div class="icon-box" style="width:56px;height:56px;background:var(--blue-light);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:700;">Acciones</span>
+      <span style="font-size:12px;color:var(--gray-500);">Partes de empresas como Apple, Google, Mercado Libre</span>
+    </div>
+    <div class="card text-center flex-col items-center gap-3" style="padding:24px;">
+      <div class="icon-box" style="width:56px;height:56px;background:var(--purple-light);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="10" y1="9" x2="10" y2="21"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:700;">Bonos</span>
+      <span style="font-size:12px;color:var(--gray-500);">Préstamos a gobiernos o empresas que pagan interés</span>
+    </div>
+    <div class="card text-center flex-col items-center gap-3" style="padding:24px;">
+      <div class="icon-box" style="width:56px;height:56px;background:var(--green-light);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:700;">Efectivo</span>
+      <span style="font-size:12px;color:var(--gray-500);">Dólares o pesos líquidos disponibles</span>
+    </div>
+    <div class="card text-center flex-col items-center gap-3" style="padding:24px;">
+      <div class="icon-box" style="width:56px;height:56px;background:var(--amber-light);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M6 3h12l4 6-10 13L2 9z"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:700;">Commodities</span>
+      <span style="font-size:12px;color:var(--gray-500);">Oro, petróleo, soja — materias primas</span>
+    </div>
+  </div>
+
+  <div class="fragment max-w-4xl mt-6" data-f="4">
+    <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;">Indicadores que impactan tu portfolio</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div style="padding:12px 14px;border-radius:10px;border:1px solid var(--gray-200);"><div style="font-size:10px;color:var(--gray-500);font-weight:600;">S&P 500</div><div style="font-size:16px;font-weight:800;">5,823</div></div>
+      <div style="padding:12px 14px;border-radius:10px;border:1px solid var(--gray-200);"><div style="font-size:10px;color:var(--gray-500);font-weight:600;">Oro</div><div style="font-size:16px;font-weight:800;">US$ 2,418</div></div>
+      <div style="padding:12px 14px;border-radius:10px;border:1px solid var(--gray-200);"><div style="font-size:10px;color:var(--gray-500);font-weight:600;">Petróleo WTI</div><div style="font-size:16px;font-weight:800;">US$ 78.32</div></div>
+      <div style="padding:12px 14px;border-radius:10px;border:1px solid var(--gray-200);"><div style="font-size:10px;color:var(--gray-500);font-weight:600;">USD/ARS (MEP)</div><div style="font-size:16px;font-weight:800;">$ 1,285</div></div>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-4" data-f="5">
+    <span class="callout-icon">💡</span>
+    <div><strong style="color:var(--green-dark);">La clave no es solo QUÉ comprás, sino CÓMO lo combinás.</strong> Un buen portfolio equilibra activos de distinto tipo para reducir el riesgo sin sacrificar el retorno.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 5: POR QUE DIVERSIFICAR ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Diversificación</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">¿Por qué diversificar?</h2>
+
+  <div class="fragment callout max-w-2xl mt-4" data-f="2">
+    <span class="callout-icon">🥚</span>
+    <div><strong style="color:var(--black);">"No pongas todos los huevos en la misma canasta."</strong><br>Si la canasta se cae, perdés todo. Si repartís en varias, un golpe solo afecta una parte.</div>
+  </div>
+
+  <div class="fragment grid-2 max-w-3xl mt-6" data-f="3">
+    <div class="card flex-col gap-4" style="padding:28px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--red);"></div>
+        <span style="font-size:14px;font-weight:700;">Portfolio concentrado</span>
+      </div>
+      <div style="font-size:13px;color:var(--gray-500);line-height:1.6;">100% en acciones tecnológicas.<br>Cuando el sector tech cae un 40%...</div>
+      <div style="text-align:center;">
+        <span style="font-size:44px;font-weight:800;color:var(--red);">-40%</span>
+        <div style="font-size:12px;color:var(--gray-500);margin-top:4px;">Todo tu portfolio cae igual</div>
+      </div>
+    </div>
+    <div class="card card-green flex-col gap-4" style="padding:28px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--green);"></div>
+        <span style="font-size:14px;font-weight:700;">Portfolio diversificado</span>
+      </div>
+      <div style="font-size:13px;color:var(--gray-500);line-height:1.6;">40% tech, 20% salud, 25% bonos, 15% cash.<br>Cuando el sector tech cae un 40%...</div>
+      <div style="text-align:center;">
+        <span style="font-size:44px;font-weight:800;color:var(--green);">-12%</span>
+        <div style="font-size:12px;color:var(--gray-500);margin-top:4px;">Los otros activos amortiguan la caída</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-6" data-f="4">
+    <span class="callout-icon">✅</span>
+    <div><strong style="color:var(--green-dark);">Diversificar reduce el riesgo sin necesariamente sacrificar el retorno.</strong> Es la única "comida gratis" en finanzas — así lo describió Harry Markowitz, premio Nobel de Economía.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 6: FRONTERA EFICIENTE DE MARKOWITZ ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Teoría Moderna del Portfolio</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">La Frontera Eficiente de Markowitz</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:15px;">En 1952, Harry Markowitz demostró matemáticamente que <strong style="color:var(--black);">combinando activos de forma óptima, podés obtener más retorno con menos riesgo.</strong></p>
+
+  <div class="fragment max-w-3xl mt-6" data-f="3" style="display:flex;align-items:flex-start;gap:40px;">
+    <!-- CHART -->
+    <div style="flex:1.3;position:relative;">
+      <svg viewBox="0 0 420 320" width="100%" style="overflow:visible;">
+        <!-- Axes -->
+        <line x1="60" y1="280" x2="400" y2="280" stroke="#d1d5db" stroke-width="1.5"/>
+        <line x1="60" y1="280" x2="60" y2="30" stroke="#d1d5db" stroke-width="1.5"/>
+        <!-- Axis labels -->
+        <text x="230" y="310" text-anchor="middle" fill="#6b7280" font-size="12" font-weight="600" font-family="Inter">Riesgo (Volatilidad) →</text>
+        <text x="20" y="155" text-anchor="middle" fill="#6b7280" font-size="12" font-weight="600" font-family="Inter" transform="rotate(-90 20 155)">Retorno →</text>
+        <!-- Grid lines -->
+        <line x1="60" y1="220" x2="400" y2="220" stroke="#f3f4f6" stroke-width="1"/>
+        <line x1="60" y1="160" x2="400" y2="160" stroke="#f3f4f6" stroke-width="1"/>
+        <line x1="60" y1="100" x2="400" y2="100" stroke="#f3f4f6" stroke-width="1"/>
+        <line x1="140" y1="30" x2="140" y2="280" stroke="#f3f4f6" stroke-width="1"/>
+        <line x1="220" y1="30" x2="220" y2="280" stroke="#f3f4f6" stroke-width="1"/>
+        <line x1="300" y1="30" x2="300" y2="280" stroke="#f3f4f6" stroke-width="1"/>
+
+        <!-- Cloud of individual portfolios (gray dots) -->
+        <circle cx="200" cy="200" r="3" fill="#d1d5db"/>
+        <circle cx="240" cy="190" r="3" fill="#d1d5db"/>
+        <circle cx="180" cy="220" r="3" fill="#d1d5db"/>
+        <circle cx="260" cy="170" r="3" fill="#d1d5db"/>
+        <circle cx="220" cy="210" r="3" fill="#d1d5db"/>
+        <circle cx="280" cy="160" r="3" fill="#d1d5db"/>
+        <circle cx="300" cy="140" r="3" fill="#d1d5db"/>
+        <circle cx="150" cy="230" r="3" fill="#d1d5db"/>
+        <circle cx="170" cy="215" r="3" fill="#d1d5db"/>
+        <circle cx="250" cy="180" r="3" fill="#d1d5db"/>
+        <circle cx="310" cy="150" r="3" fill="#d1d5db"/>
+        <circle cx="330" cy="120" r="3" fill="#d1d5db"/>
+        <circle cx="290" cy="165" r="3" fill="#d1d5db"/>
+        <circle cx="230" cy="195" r="3" fill="#d1d5db"/>
+        <circle cx="210" cy="205" r="3" fill="#d1d5db"/>
+        <circle cx="270" cy="175" r="3" fill="#d1d5db"/>
+        <circle cx="190" cy="225" r="3" fill="#d1d5db"/>
+        <circle cx="340" cy="110" r="3" fill="#d1d5db"/>
+        <circle cx="160" cy="240" r="3" fill="#d1d5db"/>
+        <circle cx="350" cy="95" r="3" fill="#d1d5db"/>
+        <circle cx="320" cy="130" r="3" fill="#d1d5db"/>
+        <!-- Below the frontier (suboptimal) -->
+        <circle cx="250" cy="230" r="3" fill="#e5e7eb"/>
+        <circle cx="280" cy="220" r="3" fill="#e5e7eb"/>
+        <circle cx="300" cy="210" r="3" fill="#e5e7eb"/>
+        <circle cx="320" cy="200" r="3" fill="#e5e7eb"/>
+        <circle cx="220" cy="250" r="3" fill="#e5e7eb"/>
+        <circle cx="260" cy="240" r="3" fill="#e5e7eb"/>
+        <circle cx="340" cy="180" r="3" fill="#e5e7eb"/>
+        <circle cx="200" cy="255" r="3" fill="#e5e7eb"/>
+        <circle cx="290" cy="230" r="3" fill="#e5e7eb"/>
+        <circle cx="350" cy="170" r="3" fill="#e5e7eb"/>
+
+        <!-- Efficient Frontier curve (thick green) -->
+        <path d="M120,240 C130,215 140,195 155,178 C175,155 200,130 240,105 C280,82 330,62 380,50" fill="none" stroke="#22c55e" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- Shaded area above frontier (green glow) -->
+        <path d="M120,240 C130,215 140,195 155,178 C175,155 200,130 240,105 C280,82 330,62 380,50 L380,30 L60,30 L60,280 L120,280Z" fill="#22c55e" fill-opacity="0.04"/>
+
+        <!-- Key points on frontier -->
+        <!-- Minimum variance portfolio -->
+        <circle cx="120" cy="240" r="7" fill="#22c55e" stroke="white" stroke-width="2"/>
+        <text x="105" y="260" fill="#22c55e" font-size="9" font-weight="700" font-family="Inter">Mínimo</text>
+        <text x="103" y="270" fill="#22c55e" font-size="9" font-weight="700" font-family="Inter">riesgo</text>
+
+        <!-- Optimal portfolio (tangent) -->
+        <circle cx="200" cy="130" r="9" fill="#22c55e" stroke="white" stroke-width="3"/>
+        <text x="208" y="124" fill="#22c55e" font-size="10" font-weight="800" font-family="Inter">Portfolio</text>
+        <text x="208" y="136" fill="#22c55e" font-size="10" font-weight="800" font-family="Inter">Óptimo ★</text>
+
+        <!-- Max return -->
+        <circle cx="380" cy="50" r="7" fill="#22c55e" stroke="white" stroke-width="2"/>
+        <text x="345" y="43" fill="#22c55e" font-size="9" font-weight="700" font-family="Inter">Máximo retorno</text>
+
+        <!-- Suboptimal point -->
+        <circle cx="280" cy="220" r="7" fill="#ef4444" stroke="white" stroke-width="2"/>
+        <text x="288" y="218" fill="#ef4444" font-size="9" font-weight="700" font-family="Inter">Subóptimo</text>
+        <text x="288" y="228" fill="#ef4444" font-size="9" font-weight="600" font-family="Inter">(mismo riesgo,</text>
+        <text x="288" y="238" fill="#ef4444" font-size="9" font-weight="600" font-family="Inter">menos retorno)</text>
+
+        <!-- Frontier label -->
+        <text x="315" y="70" fill="#16a34a" font-size="11" font-weight="800" font-family="Inter">Frontera</text>
+        <text x="315" y="82" fill="#16a34a" font-size="11" font-weight="800" font-family="Inter">Eficiente</text>
+      </svg>
+    </div>
+
+    <!-- EXPLANATION -->
+    <div class="flex-col gap-4" style="flex:1;">
+      <div class="callout" style="padding:14px 16px;">
+        <span class="callout-icon" style="font-size:16px;">🟢</span>
+        <div style="font-size:13px;line-height:1.6;"><strong style="color:var(--black);">Frontera Eficiente</strong> — la curva verde. Cada punto es la <em>mejor</em> combinación posible de activos para ese nivel de riesgo.</div>
+      </div>
+      <div class="callout" style="padding:14px 16px;">
+        <span class="callout-icon" style="font-size:16px;">⭐</span>
+        <div style="font-size:13px;line-height:1.6;"><strong style="color:var(--black);">Portfolio Óptimo</strong> — el punto donde obtenés el mejor retorno por unidad de riesgo (máximo Sharpe Ratio).</div>
+      </div>
+      <div class="callout" style="padding:14px 16px;">
+        <span class="callout-icon" style="font-size:16px;">🔴</span>
+        <div style="font-size:13px;line-height:1.6;"><strong style="color:var(--black);">Puntos debajo de la curva</strong> son ineficientes: asumís el mismo riesgo pero ganás menos. Diversificar te lleva hacia la curva.</div>
+      </div>
+      <div class="callout" style="padding:14px 16px;">
+        <span class="callout-icon" style="font-size:16px;">⚫</span>
+        <div style="font-size:13px;line-height:1.6;"><strong style="color:var(--black);">Cada punto gris</strong> es un portfolio posible. Hay miles de combinaciones, pero solo la curva verde es eficiente.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-3xl mt-6" data-f="4">
+    <span class="callout-icon">💡</span>
+    <div><strong style="color:var(--green-dark);">SignalAI busca acercar tu portfolio a esta frontera.</strong> Calcula tu posición actual, identifica ineficiencias, y te recomienda movimientos para llegar a la combinación óptima según tu perfil de riesgo.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 6b: PORTFOLIO OPTIMO (ALLOCATION) ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Portfolio Óptimo</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">¿Cómo se ve en la práctica?</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:15px;">El punto óptimo de Markowitz se traduce en una <strong style="color:var(--black);">distribución concreta de activos</strong> que depende de tu perfil de riesgo.</p>
+
+  <div class="fragment max-w-2xl mt-6 w-full" data-f="3">
+    <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Distribución Base (Perfil Moderado)</div>
+    <div class="flex-col gap-3">
+      <div class="alloc-row"><span class="alloc-label">US Equities</span><div class="alloc-track"><div class="alloc-fill" style="width:55%;background:var(--blue);">55%</div></div></div>
+      <div class="alloc-row"><span class="alloc-label">Bonos</span><div class="alloc-track"><div class="alloc-fill" style="width:25%;background:var(--purple);">25%</div></div></div>
+      <div class="alloc-row"><span class="alloc-label">Internacional</span><div class="alloc-track"><div class="alloc-fill" style="width:10%;background:var(--cyan);">10%</div></div></div>
+      <div class="alloc-row"><span class="alloc-label">Efectivo</span><div class="alloc-track"><div class="alloc-fill" style="width:10%;background:var(--green);">10%</div></div></div>
+    </div>
+  </div>
+
+  <div class="fragment grid-3 max-w-3xl mt-6" data-f="4" style="gap:12px;">
+    <div class="card-sm card text-center" style="padding:16px;">
+      <div style="font-size:11px;font-weight:600;color:var(--gray-500);">🛡️ Conservador</div>
+      <div style="font-size:12px;font-weight:700;margin-top:4px;">-15% equity, +15% bonos</div>
+      <div style="font-size:10px;color:var(--gray-400);margin-top:2px;">Más a la izquierda de la curva</div>
+    </div>
+    <div class="card-sm card text-center" style="padding:16px;border-color:var(--green);background:var(--green-light);">
+      <div style="font-size:11px;font-weight:600;color:var(--green-dark);">⚖️ Moderado</div>
+      <div style="font-size:12px;font-weight:700;margin-top:4px;">Distribución base</div>
+      <div style="font-size:10px;color:var(--green-dark);margin-top:2px;">Punto óptimo ★</div>
+    </div>
+    <div class="card-sm card text-center" style="padding:16px;">
+      <div style="font-size:11px;font-weight:600;color:var(--gray-500);">🔥 Agresivo</div>
+      <div style="font-size:12px;font-weight:700;margin-top:4px;">+15% equity, -10% bonos</div>
+      <div style="font-size:10px;color:var(--gray-400);margin-top:2px;">Más a la derecha de la curva</div>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-6" data-f="5">
+    <span class="callout-icon">📊</span>
+    <div><strong style="color:var(--green-dark);">SignalAI compara tu allocation real vs. la óptima</strong> y te dice exactamente qué mover. Cada perfil ocupa un punto diferente sobre la frontera eficiente.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: PREGUNTA RETORICA HHI ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="font-size:64px;margin-bottom:24px;">🤔</div>
+  <h2 class="fragment slide-title text-center max-w-3xl" data-f="1" style="font-size:48px;line-height:1.3;">¿Cómo sabés si tu portfolio está<br>realmente diversificado?</h2>
+</div>
+
+<!-- ==================== SLIDE 5: HHI ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Índice Herfindahl-Hirschman</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:44px;">HHI: Midiendo la Concentración</h2>
+
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">El HHI es un número que mide qué tan concentrada está tu inversión. Se usa en economía para medir monopolios, y nosotros lo aplicamos a tu portfolio.</p>
+
+  <div class="fragment grid-3 max-w-4xl mt-6 w-full" data-f="3" style="gap:16px;">
+    <!-- Monopolio -->
+    <div class="card flex-col gap-4" style="padding:24px;border-color:var(--red);border-top:3px solid var(--red);">
+      <div class="text-center">
+        <span style="font-size:13px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:0.1em;">Monopolio</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:100px;justify-content:center;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--amber);">100%</span>
+          <div style="width:100%;height:90px;border-radius:6px 6px 0 0;background:var(--amber);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp A</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--blue);">0%</span>
+          <div style="width:100%;height:2px;border-radius:6px 6px 0 0;background:var(--blue);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp B</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--purple);">0%</span>
+          <div style="width:100%;height:2px;border-radius:6px 6px 0 0;background:var(--purple);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp C</span>
+        </div>
+      </div>
+      <div class="text-center" style="border-top:1px solid var(--gray-200);padding-top:12px;">
+        <div style="font-size:10px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;">HHI</div>
+        <div style="font-size:28px;font-weight:800;color:var(--red);">10,000</div>
+        <div style="font-size:11px;color:var(--red);font-weight:600;">Concentración máxima</div>
+      </div>
+    </div>
+    <!-- Dominante -->
+    <div class="card flex-col gap-4" style="padding:24px;border-color:var(--amber);border-top:3px solid var(--amber);">
+      <div class="text-center">
+        <span style="font-size:13px;font-weight:800;color:var(--amber);text-transform:uppercase;letter-spacing:0.1em;">Dominante</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:100px;justify-content:center;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--amber);">70%</span>
+          <div style="width:100%;height:63px;border-radius:6px 6px 0 0;background:var(--amber);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp A</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--blue);">20%</span>
+          <div style="width:100%;height:18px;border-radius:6px 6px 0 0;background:var(--blue);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp B</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--purple);">10%</span>
+          <div style="width:100%;height:9px;border-radius:6px 6px 0 0;background:var(--purple);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp C</span>
+        </div>
+      </div>
+      <div class="text-center" style="border-top:1px solid var(--gray-200);padding-top:12px;">
+        <div style="font-size:10px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;">HHI</div>
+        <div style="font-size:28px;font-weight:800;color:var(--amber);">5,400</div>
+        <div style="font-size:11px;color:var(--amber);font-weight:600;">Alta concentración</div>
+      </div>
+    </div>
+    <!-- Equilibrado -->
+    <div class="card card-green flex-col gap-4" style="padding:24px;border-color:var(--green);border-top:3px solid var(--green);">
+      <div class="text-center">
+        <span style="font-size:13px;font-weight:800;color:var(--green-dark);text-transform:uppercase;letter-spacing:0.1em;">Equilibrado</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:100px;justify-content:center;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--amber);">33%</span>
+          <div style="width:100%;height:30px;border-radius:6px 6px 0 0;background:var(--amber);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp A</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--blue);">33%</span>
+          <div style="width:100%;height:30px;border-radius:6px 6px 0 0;background:var(--blue);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp B</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:50px;">
+          <span style="font-size:11px;font-weight:700;color:var(--purple);">33%</span>
+          <div style="width:100%;height:30px;border-radius:6px 6px 0 0;background:var(--purple);"></div>
+          <span style="font-size:9px;color:var(--gray-500);">Emp C</span>
+        </div>
+      </div>
+      <div class="text-center" style="border-top:1px solid var(--gray-200);padding-top:12px;">
+        <div style="font-size:10px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;">HHI</div>
+        <div style="font-size:28px;font-weight:800;color:var(--green);">3,333</div>
+        <div style="font-size:11px;color:var(--green-dark);font-weight:600;">Bien diversificado</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment formula-box max-w-xl mt-6" data-f="4">
+    <strong>Fórmula:</strong> HHI = Σ (participación%)² de cada posición<br>
+    <div class="formula-main" style="margin-top:8px;">Rango: 0 (perfecto) → 10,000 (todo en una sola)</div>
+    <span style="font-size:13px;color:var(--gray-500);">En SignalAI, promediamos HHI por posición y por sector → Score de Diversificación (0-250 pts)</span>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 9a: PREGUNTA RETORICA RIESGO ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="font-size:64px;margin-bottom:24px;">🤔</div>
+  <h2 class="fragment slide-title text-center max-w-3xl" data-f="1" style="font-size:44px;line-height:1.3;">¿Va a buscar el mismo riesgo un jubilado que un chico de 18 años con sus primeros ahorros?</h2>
+
+  <div class="fragment grid-2 max-w-2xl mt-10" data-f="2" style="gap:32px;">
+    <div class="card flex-col gap-4 items-center text-center" style="padding:32px;">
+      <div style="font-size:48px;">👴</div>
+      <span style="font-size:16px;font-weight:800;">Jubilado</span>
+      <span style="font-size:13px;color:var(--gray-500);line-height:1.6;">Necesita sus ahorros para vivir.<br>No puede darse el lujo de perder.<br>Horizonte corto.</span>
+    </div>
+    <div class="card flex-col gap-4 items-center text-center" style="padding:32px;">
+      <div style="font-size:48px;">🧑‍💻</div>
+      <span style="font-size:16px;font-weight:800;">Joven de 18</span>
+      <span style="font-size:13px;color:var(--gray-500);line-height:1.6;">Tiene décadas por delante.<br>Puede aguantar caídas temporales.<br>Horizonte largo.</span>
+    </div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-8 max-w-lg" data-f="3" style="font-size:16px;color:var(--green-dark);font-weight:600;">Cada persona necesita un nivel de riesgo diferente. → Por eso existe el <strong>Risk Match</strong>.</p>
+</div>
+
+<!-- ==================== SLIDE 9b: RISK MATCH ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Risk Match</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:44px;">Tu Perfil Importa</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">No todos toleran el mismo riesgo. Un jubilado y un joven de 25 años tienen necesidades y horizontes distintos.</p>
+
+  <div class="fragment grid-3 max-w-4xl mt-8" data-f="3">
+    <div class="profile-card">
+      <div style="width:48px;height:48px;border-radius:12px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:24px;">🛡️</div>
+      <span style="font-size:16px;font-weight:800;color:var(--green-dark);">Conservador</span>
+      <div style="font-size:12px;color:var(--gray-500);line-height:1.6;">Prioriza preservar capital. Prefiere estabilidad sobre crecimiento.</div>
+      <div style="width:100%;border-top:1px solid var(--gray-200);padding-top:12px;margin-top:4px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:var(--gray-500);">Beta objetivo</span><span style="font-weight:700;">0.6</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;"><span style="color:var(--gray-500);">Vol. objetivo</span><span style="font-weight:700;">8%</span></div>
+      </div>
+    </div>
+    <div class="profile-card active-card">
+      <div style="width:48px;height:48px;border-radius:12px;background:var(--amber-light);display:flex;align-items:center;justify-content:center;font-size:24px;">⚖️</div>
+      <span style="font-size:16px;font-weight:800;color:var(--amber);">Moderado</span>
+      <div style="font-size:12px;color:var(--gray-500);line-height:1.6;">Balance entre crecimiento y seguridad. El perfil más común.</div>
+      <div style="width:100%;border-top:1px solid var(--gray-200);padding-top:12px;margin-top:4px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:var(--gray-500);">Beta objetivo</span><span style="font-weight:700;">1.0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;"><span style="color:var(--gray-500);">Vol. objetivo</span><span style="font-weight:700;">15%</span></div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div style="width:48px;height:48px;border-radius:12px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-size:24px;">🔥</div>
+      <span style="font-size:16px;font-weight:800;color:var(--red);">Agresivo</span>
+      <div style="font-size:12px;color:var(--gray-500);line-height:1.6;">Busca máximo crecimiento. Tolera caídas fuertes a corto plazo.</div>
+      <div style="width:100%;border-top:1px solid var(--gray-200);padding-top:12px;margin-top:4px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:var(--gray-500);">Beta objetivo</span><span style="font-weight:700;">1.3</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;"><span style="color:var(--gray-500);">Vol. objetivo</span><span style="font-weight:700;">22%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-8" data-f="4">
+    <span class="callout-icon">📊</span>
+    <div><strong style="color:var(--green-dark);">SignalAI mide qué tan alineado está tu portfolio con TU perfil.</strong> Un inversor conservador con acciones agresivas recibe score bajo, y viceversa. El objetivo es que tu riesgo real coincida con tu tolerancia. Score de 0 a 250 puntos.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 10a: INTRO ACTIVOS DEFENSIVOS ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Protección ante Caídas</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:44px;">¿Qué pasa cuando el mercado cae?</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">En 2020, el S&P 500 cayó un <strong style="color:var(--red);">34% en 23 días</strong>. Los que tenían activos defensivos perdieron mucho menos.</p>
+
+  <div class="fragment grid-2 max-w-3xl mt-8" data-f="3" style="gap:24px;">
+    <!-- Activo agresivo -->
+    <div class="card flex-col gap-3" style="padding:28px;border-top:3px solid var(--red);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-size:18px;">📉</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;">Acción de tech (TSLA)</div>
+          <div style="font-size:11px;color:var(--gray-500);">Activo agresivo — sin protección</div>
+        </div>
+      </div>
+      <svg width="100%" height="100" viewBox="0 0 300 100" preserveAspectRatio="none">
+        <path d="M0,30 C30,28 60,25 80,22 C100,20 110,20 120,25 C130,30 140,50 160,70 C180,85 200,90 220,88 C240,85 260,82 280,78 L300,75" fill="none" stroke="#ef4444" stroke-width="3"/>
+        <path d="M0,30 C30,28 60,25 80,22 C100,20 110,20 120,25 C130,30 140,50 160,70 C180,85 200,90 220,88 C240,85 260,82 280,78 L300,75 L300,100 L0,100Z" fill="url(#redCrash)"/>
+        <defs><linearGradient id="redCrash" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ef4444" stop-opacity="0.15"/><stop offset="100%" stop-color="#ef4444" stop-opacity="0"/></linearGradient></defs>
+        <line x1="120" y1="0" x2="120" y2="100" stroke="#ef4444" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+        <text x="125" y="14" fill="#ef4444" font-size="9" font-weight="600" font-family="Inter">Crisis</text>
+      </svg>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--gray-500);">Durante la caída:</span>
+        <span style="font-size:24px;font-weight:800;color:var(--red);">-60%</span>
+      </div>
+      <span style="font-size:11px;color:var(--gray-500);line-height:1.5;">Se desploma con el mercado. Tarda meses o años en recuperarse. Máximo dolor.</span>
+    </div>
+    <!-- Activo defensivo -->
+    <div class="card card-green flex-col gap-3" style="padding:28px;border-top:3px solid var(--green);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:18px;">🛡️</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;">Bono del tesoro (TLT)</div>
+          <div style="font-size:11px;color:var(--gray-500);">Activo defensivo — amortigua caídas</div>
+        </div>
+      </div>
+      <svg width="100%" height="100" viewBox="0 0 300 100" preserveAspectRatio="none">
+        <path d="M0,55 C30,54 60,52 80,50 C100,48 110,48 120,45 C130,40 140,35 160,30 C180,28 200,30 220,32 C240,34 260,36 280,38 L300,40" fill="none" stroke="#22c55e" stroke-width="3"/>
+        <path d="M0,55 C30,54 60,52 80,50 C100,48 110,48 120,45 C130,40 140,35 160,30 C180,28 200,30 220,32 C240,34 260,36 280,38 L300,40 L300,100 L0,100Z" fill="url(#greenSafe)"/>
+        <defs><linearGradient id="greenSafe" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22c55e" stop-opacity="0.12"/><stop offset="100%" stop-color="#22c55e" stop-opacity="0"/></linearGradient></defs>
+        <line x1="120" y1="0" x2="120" y2="100" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+        <text x="125" y="14" fill="#22c55e" font-size="9" font-weight="600" font-family="Inter">Crisis</text>
+      </svg>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--gray-500);">Durante la caída:</span>
+        <span style="font-size:24px;font-weight:800;color:var(--green);">+15%</span>
+      </div>
+      <span style="font-size:11px;color:var(--gray-500);line-height:1.5;">Sube cuando todo cae. Actúa como "seguro" del portfolio. La gente huye a activos seguros.</span>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-6" data-f="4">
+    <span class="callout-icon">💡</span>
+    <div><strong style="color:var(--green-dark);">Tener activos defensivos es como tener un paraguas.</strong> No lo necesitás todos los días, pero cuando llueve, la diferencia es enorme. El mercado cae en promedio una vez cada 2-3 años.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 10b: DOWNSIDE PROTECTION ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Downside Protection</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:44px;">¿Estás preparado para una caída?</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">Los mercados caen. Es inevitable. La pregunta es: <strong style="color:var(--black);">¿qué tan protegido estás cuando eso pasa?</strong></p>
+
+  <div class="fragment max-w-3xl mt-8" data-f="3">
+    <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Activos defensivos — amortiguan las caídas</div>
+    <div class="grid-3" style="gap:12px;">
+      <div class="card-sm card flex-col gap-2 items-center text-center" style="padding:16px;">
+        <span style="font-size:20px;">🏥</span>
+        <span style="font-size:12px;font-weight:700;">Salud</span>
+        <span style="font-size:10px;color:var(--gray-500);">JNJ, UNH, XLV</span>
+      </div>
+      <div class="card-sm card flex-col gap-2 items-center text-center" style="padding:16px;">
+        <span style="font-size:20px;">🔌</span>
+        <span style="font-size:12px;font-weight:700;">Utilities</span>
+        <span style="font-size:10px;color:var(--gray-500);">XLU — servicios básicos</span>
+      </div>
+      <div class="card-sm card flex-col gap-2 items-center text-center" style="padding:16px;">
+        <span style="font-size:20px;">🛒</span>
+        <span style="font-size:12px;font-weight:700;">Consumo básico</span>
+        <span style="font-size:10px;color:var(--gray-500);">KO, PEP, PG</span>
+      </div>
+      <div class="card-sm card flex-col gap-2 items-center text-center" style="padding:16px;">
+        <span style="font-size:20px;">📜</span>
+        <span style="font-size:12px;font-weight:700;">Bonos</span>
+        <span style="font-size:10px;color:var(--gray-500);">TLT, AGG, GD30</span>
+      </div>
+      <div class="card-sm card flex-col gap-2 items-center text-center" style="padding:16px;">
+        <span style="font-size:20px;">💵</span>
+        <span style="font-size:12px;font-weight:700;">Efectivo</span>
+        <span style="font-size:10px;color:var(--gray-500);">Liquidez inmediata</span>
+      </div>
+      <div class="card-sm card flex-col gap-2 items-center text-center" style="padding:16px;">
+        <span style="font-size:20px;">🥇</span>
+        <span style="font-size:12px;font-weight:700;">Oro</span>
+        <span style="font-size:10px;color:var(--gray-500);">GLD — refugio histórico</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-6" data-f="4">
+    <span class="callout-icon">🛡️</span>
+    <div><strong style="color:var(--green-dark);">SignalAI recomienda al menos 40% en activos defensivos.</strong> Mide cuánto peso tenés en estos sectores + la correlación entre tus activos (si todos se mueven juntos, no estás protegido). Score de 0 a 250 puntos.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: PREGUNTA RETORICA SCORE ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="font-size:64px;margin-bottom:24px;">🤔</div>
+  <h2 class="fragment slide-title text-center max-w-3xl" data-f="1" style="font-size:44px;line-height:1.3;">Entonces, ¿cómo mido<br>todo esto junto?</h2>
+
+  <p class="fragment slide-subtitle text-center max-w-xl mt-8" data-f="2" style="font-size:18px;line-height:1.8;">Que esté <strong style="color:var(--black);">diversificado</strong>...<br>que sea <strong style="color:var(--black);">congruente con mi perfil de riesgo</strong>...<br>que el <strong style="color:var(--black);">retorno justifique el riesgo</strong>...<br>y que tenga <strong style="color:var(--black);">protección ante caídas</strong>.</p>
+
+  <p class="fragment slide-subtitle text-center mt-8 max-w-lg" data-f="3" style="font-size:16px;color:var(--green-dark);font-weight:600;">Necesitamos <strong>un solo número</strong> que resuma la salud de tu portfolio.</p>
+</div>
+
+<!-- ==================== SLIDE 11: LOS 4 SCORES JUNTOS ==================== -->
+<div class="slide" data-section="Finanzas">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Portfolio Score</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:44px;">4 Dimensiones = 1 Score</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl mb-8" data-f="2" style="font-size:16px;">Tu portfolio recibe un score de <strong style="color:var(--black);">0 a 1000</strong>, compuesto por 4 sub-scores de 250 puntos cada uno.</p>
+
+  <div class="fragment" data-f="3" style="display:flex;align-items:center;gap:48px;">
+    <div>
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#22c55e" stroke-width="10" stroke-linecap="round" stroke-dasharray="477.52" stroke-dashoffset="133.3" transform="rotate(-90 90 90)"/>
+        <text x="90" y="84" text-anchor="middle" fill="#22c55e" font-size="40" font-weight="900" font-family="Inter">720</text>
+        <text x="90" y="106" text-anchor="middle" fill="#9ca3af" font-size="14">/1000</text>
+      </svg>
+    </div>
+    <div class="flex-col gap-5" style="width:300px;">
+      <div class="score-card-mini"><div class="score-bar-header"><div class="dot" style="background:#22c55e;"></div><span class="lbl">Diversificación (HHI)</span><span class="val">195/250</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:78%;background:#22c55e;"></div></div></div>
+      <div class="score-card-mini"><div class="score-bar-header"><div class="dot" style="background:#3b82f6;"></div><span class="lbl">Risk Match</span><span class="val">210/250</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:84%;background:#3b82f6;"></div></div></div>
+      <div class="score-card-mini"><div class="score-bar-header"><div class="dot" style="background:#f59e0b;"></div><span class="lbl">Sharpe Ratio</span><span class="val">165/250</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:66%;background:#f59e0b;"></div></div></div>
+      <div class="score-card-mini"><div class="score-bar-header"><div class="dot" style="background:#8b5cf6;"></div><span class="lbl">Downside Protection</span><span class="val">150/250</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:60%;background:#8b5cf6;"></div></div></div>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-8" data-f="4">
+    <span class="callout-icon">💡</span>
+    <div><strong style="color:var(--green-dark);">El score total te dice de un vistazo la salud de tu portfolio.</strong> Cada sub-score señala exactamente dónde mejorar: ¿necesitás diversificar? ¿ajustar el riesgo? ¿más protección ante caídas?</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 14: TRANSICION TECH ==================== -->
+<div class="slide" data-section="Tecnología">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
+    <div style="width:64px;height:2px;background:linear-gradient(to right,transparent,var(--green));"></div>
+    <span style="font-size:20px;color:var(--gray-300);">→</span>
+    <div style="width:64px;height:2px;background:linear-gradient(to left,transparent,var(--green));"></div>
+  </div>
+  <h2 class="fragment slide-title text-center" data-f="2" style="font-size:48px;line-height:1.3;">¿Y cómo la <span class="highlight">tecnología</span><br>puede ayudarnos?</h2>
+  <p class="fragment slide-subtitle mt-6 max-w-md text-center" data-f="3" style="font-size:18px;">Veamos cómo la inteligencia artificial transforma el análisis financiero.</p>
+</div>
+
+<!-- ==================== SLIDE 15: QUE ES LA IA ==================== -->
+<div class="slide" data-section="Tecnología">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Inteligencia Artificial</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">¿Qué es la IA?</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">Un programa que aprende de datos. <strong style="color:var(--black);">No es magia — es matemática aplicada a escala masiva.</strong></p>
+
+  <div class="fragment max-w-4xl mt-10" data-f="3" style="display:flex;align-items:center;justify-content:center;gap:24px;">
+    <div class="flex-col gap-3 items-center" style="width:200px;">
+      <div class="icon-box" style="width:64px;height:64px;background:var(--green-light);border-radius:16px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:700;">Input</span>
+      <span style="font-size:12px;color:var(--gray-500);text-align:center;line-height:1.5;">"Analizá mi portfolio de 8 acciones tech"</span>
+    </div>
+    <div style="display:flex;align-items:center;"><div style="width:48px;height:2px;background:var(--green);"></div><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:10px solid var(--green);"></div></div>
+    <div class="flex-col gap-3 items-center" style="width:200px;">
+      <div class="icon-box" style="width:80px;height:80px;background:var(--green-light);border-radius:20px;border:2px solid var(--green);">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:700;">Modelo de IA</span>
+      <span style="font-size:12px;color:var(--gray-500);text-align:center;line-height:1.5;">Procesa, analiza y razona</span>
+    </div>
+    <div style="display:flex;align-items:center;"><div style="width:48px;height:2px;background:var(--green);"></div><div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:10px solid var(--green);"></div></div>
+    <div class="flex-col gap-3 items-center" style="width:200px;">
+      <div class="icon-box" style="width:64px;height:64px;background:var(--green-light);border-radius:16px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:700;">Output</span>
+      <span style="font-size:12px;color:var(--gray-500);text-align:center;line-height:1.5;">"Estás concentrado en tech. Diversificá con bonos."</span>
+    </div>
+  </div>
+
+  <div class="fragment callout max-w-2xl mt-8" data-f="4">
+    <span class="callout-icon">⚡</span>
+    <div><strong style="color:var(--black);">Lo que la hace poderosa:</strong> puede procesar en segundos lo que un analista humano tardaría semanas. Lee reportes, datos de mercado, noticias y tu portfolio completo — todo al mismo tiempo.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 16: QUE ES UN MODELO ==================== -->
+<div class="slide" data-section="Tecnología">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Modelos</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">¿Qué es un Modelo?</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">Es una <strong style="color:var(--black);">red neuronal</strong> — un programa entrenado con millones de textos, datos y ejemplos que aprende a identificar patrones.</p>
+
+  <div class="fragment card max-w-2xl mt-8" data-f="3" style="padding:32px;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.8;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.5;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.7;"></div>
+      </div>
+      <svg width="60" height="80" viewBox="0 0 60 80"><line x1="10" y1="10" x2="50" y2="10" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="10" x2="50" y2="30" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="10" x2="50" y2="50" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="40" x2="50" y2="10" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="40" x2="50" y2="30" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="40" x2="50" y2="50" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="70" x2="50" y2="30" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="70" x2="50" y2="50" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="70" x2="50" y2="70" stroke="#e5e7eb" stroke-width="1"/></svg>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.6;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.8;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.4;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.7;"></div>
+      </div>
+      <svg width="60" height="80" viewBox="0 0 60 80"><line x1="10" y1="10" x2="50" y2="10" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="10" x2="50" y2="30" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="10" x2="50" y2="50" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="30" x2="50" y2="10" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="30" x2="50" y2="30" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="50" x2="50" y2="30" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="50" x2="50" y2="50" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="70" x2="50" y2="30" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="70" x2="50" y2="50" stroke="#e5e7eb" stroke-width="1"/></svg>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.5;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.9;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.4;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.6;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.8;"></div>
+      </div>
+      <svg width="60" height="80" viewBox="0 0 60 80"><line x1="10" y1="10" x2="50" y2="20" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="10" x2="50" y2="40" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="30" x2="50" y2="20" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="30" x2="50" y2="40" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="50" x2="50" y2="40" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="50" x2="50" y2="60" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="70" x2="50" y2="40" stroke="#e5e7eb" stroke-width="1"/><line x1="10" y1="70" x2="50" y2="60" stroke="#e5e7eb" stroke-width="1"/></svg>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.7;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.5;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:var(--green);opacity:0.8;"></div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--gray-500);">Capa de entrada → Capas ocultas → Capa de salida</div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-6" data-f="4">
+    <span class="callout-icon">🧠</span>
+    <div><strong style="color:var(--green-dark);">SignalAI usa Claude (Anthropic) — Sonnet 4.</strong> Es un modelo especializado en razonamiento complejo, ideal para analizar datos financieros y generar diagnósticos detallados.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: PREGUNTA RETORICA CONTEXTO ==================== -->
+<div class="slide" data-section="Tecnología">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="font-size:64px;margin-bottom:24px;">🤔</div>
+  <h2 class="fragment slide-title text-center max-w-3xl" data-f="1" style="font-size:44px;line-height:1.3;">¿Cómo sabe la IA<br>qué pasa con <em>tu</em> portfolio?</h2>
+</div>
+
+<!-- ==================== SLIDE 17: CONTEXTO ==================== -->
+<div class="slide" data-section="Tecnología">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Ventana de Contexto</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">¿Qué es el Contexto?</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:16px;">Es toda la información que la IA puede "ver" al momento de responder. <strong style="color:var(--black);">Más contexto relevante = mejores decisiones.</strong></p>
+
+  <div class="fragment flex-col gap-3 max-w-md mt-8 w-full" data-f="3">
+    <div class="token-block" style="background:var(--amber-light);border-color:rgba(245,158,11,0.2);"><div class="token-dot" style="background:var(--amber);"></div><strong>Perfil de riesgo</strong> — conservador, moderado o agresivo</div>
+    <div class="token-block" style="background:var(--blue-light);border-color:rgba(59,130,246,0.2);"><div class="token-dot" style="background:var(--blue);"></div><strong>Tus posiciones</strong> — qué acciones y bonos tenés</div>
+    <div class="token-block" style="background:var(--green-light);border-color:rgba(34,197,94,0.2);"><div class="token-dot" style="background:var(--green);"></div><strong>Precios actuales</strong> — cotizaciones en tiempo real</div>
+    <div class="token-block" style="background:var(--purple-light);border-color:rgba(139,92,246,0.2);"><div class="token-dot" style="background:var(--purple);"></div><strong>Noticias del mercado</strong> — eventos que afectan precios</div>
+    <div class="token-block" style="background:rgba(6,182,212,0.08);border-color:rgba(6,182,212,0.2);"><div class="token-dot" style="background:var(--cyan);"></div><strong>Indicadores macro</strong> — inflación, tasas, commodities</div>
+    <div class="token-block" style="background:var(--red-light);border-color:rgba(239,68,68,0.2);"><div class="token-dot" style="background:var(--red);"></div><strong>Tu score actual</strong> — para saber qué mejorar</div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-6 max-w-lg" data-f="4" style="font-size:13px;">SignalAI le da al modelo <strong style="color:var(--black);">TODO</strong> tu portfolio + datos de mercado en vivo. Por eso sus recomendaciones son tan específicas.</p>
+</div>
+
+<!-- ==================== SLIDE: PREGUNTA RETORICA IA FINANZAS ==================== -->
+<div class="slide" data-section="Tecnología">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="font-size:64px;margin-bottom:24px;">🤔</div>
+  <h2 class="fragment slide-title text-center max-w-3xl" data-f="1" style="font-size:44px;line-height:1.3;">¿Puede una máquina tomar mejores<br>decisiones financieras que un humano?</h2>
+</div>
+
+<!-- ==================== SLIDE 18: IA EN FINANZAS ==================== -->
+<div class="slide" data-section="Tecnología">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Aplicaciones</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:48px;">¿Por qué la IA es buena en finanzas?</h2>
+
+  <div class="fragment grid-3 max-w-4xl mt-8" data-f="2">
+    <div class="card flex-col gap-4 items-center" style="padding:32px 24px;text-align:center;">
+      <div class="icon-box" style="width:56px;height:56px;background:var(--green-light);border-radius:14px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <span style="font-size:16px;font-weight:800;">Diagnóstico</span>
+      <p style="font-size:13px;color:var(--gray-500);line-height:1.6;">Lee tu portfolio completo, detecta debilidades en diversificación, riesgo y retorno.</p>
+    </div>
+    <div class="card flex-col gap-4 items-center" style="padding:32px 24px;text-align:center;">
+      <div class="icon-box" style="width:56px;height:56px;background:var(--amber-light);border-radius:14px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
+      </div>
+      <span style="font-size:16px;font-weight:800;">Recomendaciones</span>
+      <p style="font-size:13px;color:var(--gray-500);line-height:1.6;">Sugiere ajustes específicos: qué comprar, qué vender, y cuánto impacta cada movimiento.</p>
+    </div>
+    <div class="card flex-col gap-4 items-center" style="padding:32px 24px;text-align:center;">
+      <div class="icon-box" style="width:56px;height:56px;background:var(--blue-light);border-radius:14px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>
+      </div>
+      <span style="font-size:16px;font-weight:800;">Resumen Diario</span>
+      <p style="font-size:13px;color:var(--gray-500);line-height:1.6;">Cada día resume los movimientos más importantes: índices, commodities, noticias clave.</p>
+    </div>
+  </div>
+
+  <div class="fragment callout max-w-2xl mt-8" data-f="3">
+    <span class="callout-icon">🔄</span>
+    <div><strong style="color:var(--black);">Procesa datos de decenas de fuentes simultáneamente.</strong> Cotizaciones, fundamentals, noticias, ratios — todo en segundos.</div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-3" data-f="4">
+    <span class="callout-icon">🧘</span>
+    <div><strong style="color:var(--green-dark);">No tiene sesgos emocionales.</strong> No entra en pánico cuando el mercado baja. No se engolosina cuando sube. Analiza con datos, no con emociones.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: TRANSICION SISTEMA ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
+    <div style="width:64px;height:2px;background:linear-gradient(to right,transparent,var(--green));"></div>
+    <span style="font-size:20px;color:var(--gray-300);">→</span>
+    <div style="width:64px;height:2px;background:linear-gradient(to left,transparent,var(--green));"></div>
+  </div>
+  <h2 class="fragment slide-title text-center" data-f="2" style="font-size:48px;line-height:1.3;">Veamos <span class="highlight">SignalAI</span><br>en acción</h2>
+  <p class="fragment slide-subtitle mt-6 max-w-lg text-center" data-f="3" style="font-size:18px;">Ya vimos los conceptos financieros y la IA. Ahora veamos cómo se aplican en la plataforma, paso a paso.</p>
+</div>
+
+<!-- ==================== SLIDE: PERFIL DEL INVERSOR ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Paso 1</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">Definí tu perfil de inversor</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl" data-f="2" style="font-size:15px;">Antes de armar tu portfolio, necesitamos conocerte. Unas preguntas simples definen tu <strong style="color:var(--black);">tolerancia al riesgo</strong> — lo que vimos con el Risk Match.</p>
+
+  <div class="fragment max-w-2xl mt-8 w-full" data-f="3">
+    <div class="card flex-col gap-5" style="padding:28px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--green-dark);">1</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;">¿Cuál es tu horizonte de inversión?</div><div style="font-size:11px;color:var(--gray-500);">Corto (1-2 años) · Mediano (3-5) · Largo (5-10) · Muy largo (+10)</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--green-dark);">2</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;">¿Cuál es tu objetivo principal?</div><div style="font-size:11px;color:var(--gray-500);">Preservar capital · Generar ingresos · Crecimiento · Crecimiento agresivo</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--green-dark);">3</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;">Si tu portfolio cae 20%, ¿qué hacés?</div><div style="font-size:11px;color:var(--gray-500);">Vendo todo · Vendo parcial · No hago nada · Compro más</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--green-dark);">4</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;">¿Qué porcentaje de tu patrimonio vas a invertir?</div><div style="font-size:11px;color:var(--gray-500);">Menos del 25% · 25-50% · 50-75% · Más del 75%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment callout callout-green max-w-2xl mt-6" data-f="4">
+    <span class="callout-icon">🎯</span>
+    <div><strong style="color:var(--green-dark);">Con estas respuestas, el sistema determina tu perfil</strong> (conservador, moderado o agresivo) y calcula los targets de beta y volatilidad contra los que se mide tu portfolio.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: CARGAR PORTFOLIO ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Paso 2</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">Cargá tu portfolio</h2>
+
+  <div class="fragment grid-2 max-w-3xl mt-8" data-f="2" style="gap:24px;">
+    <div class="card flex-col gap-4" style="padding:28px;border-top:3px solid var(--blue);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:28px;">📋</div>
+        <span style="font-size:16px;font-weight:800;">Ya tengo portfolio</span>
+      </div>
+      <span style="font-size:13px;color:var(--gray-500);line-height:1.6;">Cargá manualmente tus posiciones actuales: ticker, cantidad, tipo de activo.</span>
+      <div class="card-sm" style="background:var(--gray-50);border:1px solid var(--gray-200);padding:12px 16px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--gray-200);padding-bottom:6px;margin-bottom:6px;"><span style="font-weight:700;color:var(--gray-500);">Ticker</span><span style="font-weight:700;color:var(--gray-500);">Cant.</span><span style="font-weight:700;color:var(--gray-500);">Tipo</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-700);margin-bottom:3px;"><span style="font-weight:600;">AAPL</span><span>15</span><span style="color:var(--blue);">Equity</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-700);margin-bottom:3px;"><span style="font-weight:600;">TLT</span><span>20</span><span style="color:var(--purple);">Bond ETF</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-700);"><span style="font-weight:600;">GD30</span><span>50</span><span style="color:var(--amber);">Bond ARG</span></div>
+      </div>
+    </div>
+    <div class="card card-green flex-col gap-4" style="padding:28px;border-top:3px solid var(--green);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:28px;">🪄</div>
+        <span style="font-size:16px;font-weight:800;">Quiero que me armen uno</span>
+      </div>
+      <span style="font-size:13px;color:var(--gray-500);line-height:1.6;">El wizard te guía paso a paso: elegís capital, seleccionás acciones, bonos, y el sistema calcula las cantidades óptimas.</span>
+      <div class="onb-steps" style="max-width:100%;gap:4px;">
+        <div class="onb-step" style="gap:6px;"><div class="step-icon" style="width:36px;height:36px;font-size:14px;background:var(--green-light);">💰</div><span class="step-label" style="font-size:10px;">Capital</span></div>
+        <div class="onb-step" style="gap:6px;"><div class="step-icon" style="width:36px;height:36px;font-size:14px;background:var(--amber-light);">📈</div><span class="step-label" style="font-size:10px;">Acciones</span></div>
+        <div class="onb-step" style="gap:6px;"><div class="step-icon" style="width:36px;height:36px;font-size:14px;background:var(--purple-light);">🏦</div><span class="step-label" style="font-size:10px;">Bonos</span></div>
+        <div class="onb-step" style="gap:6px;"><div class="step-icon" style="width:36px;height:36px;font-size:14px;background:var(--blue-light);">🔍</div><span class="step-label" style="font-size:10px;">Otros</span></div>
+        <div class="onb-step" style="gap:6px;"><div class="step-icon" style="width:36px;height:36px;font-size:14px;background:var(--green-light);">✅</div><span class="step-label" style="font-size:10px;">Listo</span></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-6 max-w-lg" data-f="3" style="font-size:13px;">En ambos casos, el sistema calcula automáticamente el valor en USD usando precios en vivo (Yahoo Finance + Data912 para bonos ARG).</p>
+</div>
+
+<!-- ==================== SLIDE: DASHBOARD SCORE ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Paso 3</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">Tu Score y Diagnóstico</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl mb-6" data-f="2" style="font-size:15px;">El dashboard te muestra en tiempo real los 4 scores que aprendimos, con diagnóstico de la IA.</p>
+
+  <div class="fragment" data-f="3" style="display:flex;align-items:center;gap:40px;">
+    <div class="card flex-col gap-4 items-center" style="padding:28px;">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="58" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+        <circle cx="70" cy="70" r="58" fill="none" stroke="#22c55e" stroke-width="8" stroke-linecap="round" stroke-dasharray="364.42" stroke-dashoffset="102" transform="rotate(-90 70 70)"/>
+        <text x="70" y="66" text-anchor="middle" fill="#22c55e" font-size="30" font-weight="900" font-family="Inter">720</text>
+        <text x="70" y="84" text-anchor="middle" fill="#9ca3af" font-size="11">/1000</text>
+      </svg>
+      <div class="flex-col gap-3 w-full" style="width:220px;">
+        <div class="score-card-mini"><div class="score-bar-header"><div class="dot" style="background:#22c55e;"></div><span class="lbl">Diversif.</span><span class="val">195</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:78%;background:#22c55e;"></div></div></div>
+        <div class="score-card-mini"><div class="score-bar-header"><div class="dot" style="background:#3b82f6;"></div><span class="lbl">Risk Match</span><span class="val">210</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:84%;background:#3b82f6;"></div></div></div>
+        <div class="score-card-mini"><div class="score-bar-header"><div class="dot" style="background:#f59e0b;"></div><span class="lbl">Sharpe</span><span class="val">165</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:66%;background:#f59e0b;"></div></div></div>
+        <div class="score-card-mini"><div class="score-bar-header"><div class="dot" style="background:#8b5cf6;"></div><span class="lbl">Downside</span><span class="val">150</span></div><div class="score-bar-track"><div class="score-bar-fill" style="width:60%;background:#8b5cf6;"></div></div></div>
+      </div>
+    </div>
+    <div class="flex-col gap-4" style="max-width:360px;">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--gray-400);font-weight:600;">Diagnóstico AI</div>
+      <div class="diag-item" style="background:var(--green-light);"><div class="diag-dot" style="background:#22c55e;"></div>Buena alineación con tu perfil moderado</div>
+      <div class="diag-item" style="background:var(--amber-light);"><div class="diag-dot" style="background:#f59e0b;"></div>Baja exposición a activos defensivos (28% vs 40% recomendado)</div>
+      <div class="diag-item" style="background:var(--blue-light);"><div class="diag-dot" style="background:#3b82f6;"></div>Agregar bonos (AGG, TLT) mejoraría tu downside en ~30 pts</div>
+      <div class="diag-item" style="background:var(--purple-light);"><div class="diag-dot" style="background:#8b5cf6;"></div>Sharpe podría mejorar reduciendo peso en TSLA (-2.1% ytd)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: RECOMENDACIONES + SCORE IMPACT ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Paso 4</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">Recomendaciones + Score Impact</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl mb-6" data-f="2" style="font-size:15px;">La IA analiza tu portfolio y simula <strong style="color:var(--black);">"si compro $5,000 de este activo, cuánto sube mi score"</strong> para cada candidato.</p>
+
+  <div class="fragment max-w-4xl w-full" data-f="3" style="display:flex;gap:24px;align-items:flex-start;">
+    <div class="card flex-col gap-3" style="flex:1;padding:20px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:18px;">🏆</div>
+        <span style="font-size:13px;font-weight:800;">Top recomendaciones por impacto</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--green-light);">
+          <span style="font-size:13px;font-weight:800;width:44px;">AGG</span>
+          <span style="font-size:11px;color:var(--gray-600);flex:1;">iShares Core US Aggregate Bond</span>
+          <span style="font-size:14px;font-weight:900;color:var(--green);">+38 pts</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--green-light);">
+          <span style="font-size:13px;font-weight:800;width:44px;">XLV</span>
+          <span style="font-size:11px;color:var(--gray-600);flex:1;">Health Care Select Sector</span>
+          <span style="font-size:14px;font-weight:900;color:var(--green);">+31 pts</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--gray-50);">
+          <span style="font-size:13px;font-weight:800;width:44px;">VEA</span>
+          <span style="font-size:11px;color:var(--gray-600);flex:1;">Vanguard FTSE Developed Markets</span>
+          <span style="font-size:14px;font-weight:900;color:var(--green);">+24 pts</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--gray-50);">
+          <span style="font-size:13px;font-weight:800;width:44px;">XLE</span>
+          <span style="font-size:11px;color:var(--gray-600);flex:1;">Energy Select Sector</span>
+          <span style="font-size:14px;font-weight:900;color:var(--green);">+19 pts</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--gray-50);">
+          <span style="font-size:13px;font-weight:800;width:44px;">TLT</span>
+          <span style="font-size:11px;color:var(--gray-600);flex:1;">iShares 20+ Year Treasury Bond</span>
+          <span style="font-size:14px;font-weight:900;color:var(--green);">+15 pts</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex-col gap-4" style="flex:0.7;">
+      <div class="fragment card flex-col gap-3" data-f="4" style="padding:20px;">
+        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;">Simulación: comprás AGG</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="text-align:center;"><div style="font-size:10px;color:var(--gray-500);">Antes</div><div style="font-size:24px;font-weight:900;color:var(--gray-400);">720</div></div>
+          <div style="font-size:20px;color:var(--green);">→</div>
+          <div style="text-align:center;"><div style="font-size:10px;color:var(--gray-500);">Después</div><div style="font-size:24px;font-weight:900;color:var(--green);">758</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;"><span style="color:var(--gray-500);">Diversificación</span><span style="color:var(--green);font-weight:700;">+12</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;"><span style="color:var(--gray-500);">Risk Match</span><span style="color:var(--green);font-weight:700;">+4</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;"><span style="color:var(--gray-500);">Sharpe</span><span style="color:var(--green);font-weight:700;">+6</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;"><span style="color:var(--gray-500);">Downside</span><span style="color:var(--green);font-weight:700;">+16</span></div>
+        </div>
+      </div>
+      <div class="fragment callout callout-green" data-f="5" style="padding:12px 14px;">
+        <span class="callout-icon" style="font-size:14px;">⚡</span>
+        <div style="font-size:11px;line-height:1.5;"><strong style="color:var(--green-dark);">Simula 46 candidatos</strong> (acciones, ETFs sectoriales, ETFs de bonos, internacionales) y te muestra los que más mejoran tu score.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: MARKET RECAP + EARNINGS ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Market Watch</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">Resumen del Mercado + Earnings</h2>
+
+  <div class="fragment grid-2 max-w-4xl mt-6 w-full" data-f="2" style="gap:24px;align-items:stretch;">
+    <div class="card flex-col gap-4" style="padding:28px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:20px;">📰</div>
+        <span style="font-size:14px;font-weight:800;">Resumen de ayer</span>
+        <span style="font-size:11px;color:var(--gray-400);margin-left:auto;">Generado por IA</span>
+      </div>
+      <div style="font-size:13px;color:var(--gray-700);line-height:1.7;background:var(--gray-50);padding:16px;border-radius:10px;border:1px solid var(--gray-200);">
+        <strong>Wall Street cerró mixto.</strong> El S&P 500 subió +0.3% impulsado por tech, mientras que el Dow cayó -0.1%. NVDA lideró las ganancias tras resultados mejor de lo esperado. El petróleo bajó a US$78 por preocupaciones de demanda china. <strong style="color:var(--green-dark);">Para tu portfolio:</strong> TLT subió +0.4%, buena señal para tu posición en bonos.
+      </div>
+    </div>
+    <div class="card flex-col gap-4" style="padding:28px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:20px;">📅</div>
+        <span style="font-size:14px;font-weight:800;">Earnings esta semana</span>
+      </div>
+      <div class="flex-col gap-2">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--green-light);">
+          <span style="font-size:12px;font-weight:800;width:50px;">AAPL</span>
+          <span style="font-size:11px;color:var(--gray-600);">Mar 7 May — After hours</span>
+          <span class="badge buy" style="margin-left:auto;padding:3px 8px;font-size:9px;">En tu portfolio</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--gray-50);">
+          <span style="font-size:12px;font-weight:800;width:50px;">DIS</span>
+          <span style="font-size:11px;color:var(--gray-600);">Mié 8 May — Before open</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--gray-50);">
+          <span style="font-size:12px;font-weight:800;width:50px;">SHOP</span>
+          <span style="font-size:11px;color:var(--gray-600);">Jue 9 May — Before open</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--green-light);">
+          <span style="font-size:12px;font-weight:800;width:50px;">NVDA</span>
+          <span style="font-size:11px;color:var(--gray-600);">Vie 10 May — After hours</span>
+          <span class="badge buy" style="margin-left:auto;padding:3px 8px;font-size:9px;">En tu portfolio</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="fragment slide-subtitle text-center mt-6 max-w-lg" data-f="3" style="font-size:13px;">El resumen se genera automáticamente cada día con IA. Los earnings que afectan tu portfolio se resaltan.</p>
+</div>
+
+<!-- ==================== SLIDE: HEATMAP ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Heat Map</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">S&P 500 de un vistazo</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl mb-6" data-f="2" style="font-size:15px;">Tamaño = capitalización de mercado. Color = variación del día. Click en cualquier acción para ver su detalle.</p>
+
+  <div class="fragment" data-f="3" style="display:flex;align-items:flex-start;gap:32px;">
+    <div class="heatmap-grid" id="heatmap" style="max-width:440px;"></div>
+    <div class="flex-col gap-3" style="width:240px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="badge buy">&#9650; Comprar AGG</span>
+        <span class="badge sell">&#9660; Reducir TSLA</span>
+        <span class="badge buy">&#9650; Comprar XLV</span>
+      </div>
+      <span style="font-size:11px;color:var(--gray-500);line-height:1.5;">Recomendaciones generadas por la IA según el análisis de tu portfolio y las condiciones actuales del mercado.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: DETALLE ACCION ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Detalle de Acción</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">Todo sobre cada activo</h2>
+
+  <div class="fragment max-w-4xl mt-6 w-full" data-f="2" style="display:flex;gap:24px;">
+    <div class="card flex-col gap-4" style="flex:1;padding:24px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;">AAPL</div>
+        <div><div style="font-size:14px;font-weight:800;">Apple Inc.</div><div style="font-size:11px;color:var(--gray-500);">NASDAQ · Technology</div></div>
+        <div style="margin-left:auto;text-align:right;"><div style="font-size:18px;font-weight:800;">$189.84</div><div style="font-size:12px;color:var(--green);font-weight:600;">+2.14%</div></div>
+      </div>
+      <svg width="100%" height="60" viewBox="0 0 300 60" preserveAspectRatio="none">
+        <path d="M0,40 C20,38 40,35 60,30 C80,26 100,28 120,22 C140,18 160,20 180,16 C200,14 220,18 240,12 C260,10 280,14 300,8" fill="none" stroke="#22c55e" stroke-width="2"/>
+        <path d="M0,40 C20,38 40,35 60,30 C80,26 100,28 120,22 C140,18 160,20 180,16 C200,14 220,18 240,12 C260,10 280,14 300,8 L300,60 L0,60Z" fill="url(#aaplFill)"/>
+        <defs><linearGradient id="aaplFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22c55e" stop-opacity="0.12"/><stop offset="100%" stop-color="#22c55e" stop-opacity="0"/></linearGradient></defs>
+      </svg>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        <div style="padding:8px;background:var(--gray-50);border-radius:8px;text-align:center;"><div style="font-size:9px;color:var(--gray-500);font-weight:600;">P/E</div><div style="font-size:14px;font-weight:800;">29.4</div></div>
+        <div style="padding:8px;background:var(--gray-50);border-radius:8px;text-align:center;"><div style="font-size:9px;color:var(--gray-500);font-weight:600;">Market Cap</div><div style="font-size:14px;font-weight:800;">2.9T</div></div>
+        <div style="padding:8px;background:var(--gray-50);border-radius:8px;text-align:center;"><div style="font-size:9px;color:var(--gray-500);font-weight:600;">Div. Yield</div><div style="font-size:14px;font-weight:800;">0.56%</div></div>
+      </div>
+    </div>
+    <div class="flex-col gap-3" style="flex:1;">
+      <div class="fragment card-sm card flex-col gap-2" data-f="3" style="padding:14px;">
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:14px;">📰</span><span style="font-size:12px;font-weight:700;">Noticias</span></div>
+        <div style="font-size:11px;color:var(--gray-600);line-height:1.5;">Apple reporta ingresos récord en servicios. Vision Pro 2 en camino. Recompra de acciones por $90B anunciada.</div>
+      </div>
+      <div class="fragment card-sm card flex-col gap-2" data-f="4" style="padding:14px;">
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:14px;">📊</span><span style="font-size:12px;font-weight:700;">Financials</span></div>
+        <div style="font-size:11px;color:var(--gray-600);line-height:1.5;">Revenue: $94.9B (+5% YoY). Gross margin: 46.6%. Free cash flow: $28.4B. Deuda neta negativa.</div>
+      </div>
+      <div class="fragment card-sm card flex-col gap-2" data-f="5" style="padding:14px;">
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:14px;">🕵️</span><span style="font-size:12px;font-weight:700;">Insider Trading</span></div>
+        <div style="font-size:11px;color:var(--gray-600);line-height:1.5;">Tim Cook vendió 100K acciones (plan pre-programado). CFO compró 5K acciones en el open market.</div>
+      </div>
+      <div class="fragment card-sm card flex-col gap-2" data-f="6" style="padding:14px;">
+        <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:14px;">🎯</span><span style="font-size:12px;font-weight:700;">Analyst Ratings</span></div>
+        <div style="font-size:11px;color:var(--gray-600);line-height:1.5;">Consensus: Buy. Price target promedio: $210 (+10.6%). 28 Buy, 6 Hold, 2 Sell.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: DETALLE BONO ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Detalle de Bono</span>
+  <h2 class="fragment slide-title text-center mb-3" data-f="1" style="font-size:40px;">Vista especializada para bonos</h2>
+
+  <div class="fragment max-w-4xl mt-6 w-full" data-f="2" style="display:flex;gap:24px;">
+    <div class="card flex-col gap-4" style="flex:1;padding:24px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--purple-light);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:var(--purple);">GD30</div>
+        <div><div style="font-size:14px;font-weight:800;">Global 2030</div><div style="font-size:11px;color:var(--gray-500);">Bono soberano argentino · USD</div></div>
+        <div style="margin-left:auto;text-align:right;"><div style="font-size:18px;font-weight:800;">US$ 56.20</div><div style="font-size:12px;color:var(--green);font-weight:600;">+0.8%</div></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.1em;">Cashflow proyectado</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:100px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Jul 25</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Ene 26</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Jul 26</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Ene 27</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Jul 27</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Ene 28</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Jul 28</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Ene 29</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:20px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Jul 29</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="width:100%;height:80px;background:var(--green);border-radius:4px 4px 0 0;"></div><span style="font-size:8px;color:var(--gray-500);">Jul 30</span></div>
+      </div>
+      <span style="font-size:10px;color:var(--gray-500);">Cupones semestrales + devolución de capital al vencimiento</span>
+    </div>
+    <div class="flex-col gap-3" style="flex:0.7;">
+      <div class="fragment card-sm card" data-f="3" style="padding:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><div style="font-size:9px;color:var(--gray-500);font-weight:600;">TIR (Yield)</div><div style="font-size:16px;font-weight:800;color:var(--green);">12.4%</div></div>
+          <div><div style="font-size:9px;color:var(--gray-500);font-weight:600;">Duration</div><div style="font-size:16px;font-weight:800;">3.2 años</div></div>
+          <div><div style="font-size:9px;color:var(--gray-500);font-weight:600;">Paridad</div><div style="font-size:16px;font-weight:800;">56.2%</div></div>
+          <div><div style="font-size:9px;color:var(--gray-500);font-weight:600;">Tipo</div><div style="font-size:16px;font-weight:800;">Ley NY</div></div>
+        </div>
+      </div>
+      <div class="fragment callout callout-green" data-f="4" style="padding:14px 16px;">
+        <span class="callout-icon" style="font-size:16px;">💡</span>
+        <div style="font-size:12px;line-height:1.6;"><strong style="color:var(--green-dark);">Los bonos argentinos</strong> se valúan en USD usando el tipo de cambio MEP de Data912. El cashflow muestra los cupones futuros y la amortización.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: INVESTMENT ADVISOR CHAT ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <span class="fragment section-tag mb-4" data-f="1">Investment Advisor</span>
+  <h2 class="fragment slide-title text-center mb-2" data-f="1" style="font-size:36px;">Tu asesor financiero con IA</h2>
+  <p class="fragment slide-subtitle text-center max-w-xl mb-4" data-f="2" style="font-size:13px;">Un chat que conoce tu portfolio, tus scores, tus posiciones y el mercado en tiempo real.</p>
+
+  <div class="fragment max-w-4xl w-full" data-f="3" style="display:flex;gap:20px;align-items:flex-start;">
+    <div class="card flex-col gap-2" style="flex:1;padding:18px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <div style="width:22px;height:22px;border-radius:6px;background:var(--green-light);display:flex;align-items:center;justify-content:center;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <span style="font-size:11px;font-weight:700;">SignalAI Advisor</span>
+      </div>
+      <div class="chat-msg user" style="font-size:11px;padding:8px 12px;">Mi portfolio bajó 5% esta semana. ¿Debería vender todo? Estoy preocupado.</div>
+      <div class="fragment chat-msg ai" data-f="4" style="font-size:11px;padding:10px 14px;line-height:1.6;">Entiendo tu preocupación. Miremos los datos:<br><br>
+      <strong>1.</strong> Tu portfolio bajó 4.8%, el S&P bajó 4.2%. No es un problema tuyo, es una corrección general.<br><br>
+      <strong>2.</strong> Los fundamentals siguen sólidos: AAPL superó expectativas, MSFT mantiene márgenes del 44%, NVDA creció revenue 122% YoY.<br><br>
+      <strong>3.</strong> Tu perfil es moderado, horizonte 5-10 años. El mercado se recupera de caídas del 5% en 1-2 meses promedio.</div>
+    </div>
+    <div class="card flex-col gap-2" style="flex:1;padding:18px;">
+      <div class="fragment chat-msg user" data-f="5" style="font-size:11px;padding:8px 12px;">¿Entonces no hago nada?</div>
+      <div class="fragment chat-msg ai" data-f="6" style="font-size:11px;padding:10px 14px;line-height:1.6;">No exactamente "nada". Te sugiero:<br><br>
+      <strong>1.</strong> Tu downside protection está en 150/250. Agregar <strong>AGG</strong> (bonos investment grade) la sube a ~180 pts.<br><br>
+      <strong>2.</strong> TSLA bajó 12% y es el 14% de tu portfolio. Reducir a 8% y redirigir a <strong>XLV</strong> (salud, defensivo, +2% esta semana).<br><br>
+      Esto mejoraría tu score de <strong>720 → ~770</strong> sin cambiar tu perfil de retorno.</div>
+      <div class="fragment" data-f="7" style="display:flex;gap:6px;margin-top:4px;">
+        <span class="badge buy" style="font-size:9px;padding:3px 8px;">&#9650; Comprar AGG</span>
+        <span class="badge sell" style="font-size:9px;padding:3px 8px;">&#9660; Reducir TSLA</span>
+        <span class="badge buy" style="font-size:9px;padding:3px 8px;">&#9650; Comprar XLV</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE: CIERRE ==================== -->
+<div class="slide" data-section="Sistema">
+  <div class="slide-logo"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="logo-text">SignalAI</span></div>
+
+  <div class="fragment" data-f="1" style="display:flex;align-items:center;gap:12px;">
+    <div style="width:48px;height:48px;border-radius:14px;background:var(--green-light);display:flex;align-items:center;justify-content:center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <h2 class="slide-title" style="font-size:36px;margin:0;">Signal<span class="highlight">AI</span></h2>
+  </div>
+
+  <div class="fragment max-w-4xl mt-6 w-full" data-f="2" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+    <div style="padding:14px 16px;border-radius:10px;background:var(--green-light);border:1px solid rgba(34,197,94,0.15);">
+      <div style="font-size:16px;margin-bottom:4px;">📊</div>
+      <div style="font-size:12px;font-weight:700;">Portfolio Score</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">4 scores: diversificación, risk match, sharpe y downside. Un número de 0 a 1000.</div>
+    </div>
+    <div style="padding:14px 16px;border-radius:10px;background:var(--green-light);border:1px solid rgba(34,197,94,0.15);">
+      <div style="font-size:16px;margin-bottom:4px;">🧠</div>
+      <div style="font-size:12px;font-weight:700;">Diagnóstico con IA</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">Claude analiza tu portfolio y genera recomendaciones de rebalanceo personalizadas.</div>
+    </div>
+    <div style="padding:14px 16px;border-radius:10px;background:var(--green-light);border:1px solid rgba(34,197,94,0.15);">
+      <div style="font-size:16px;margin-bottom:4px;">💬</div>
+      <div style="font-size:12px;font-weight:700;">Investment Advisor</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">Chat con IA que conoce tu portfolio, el mercado en vivo y responde dudas financieras.</div>
+    </div>
+    <div style="padding:14px 16px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-200);">
+      <div style="font-size:16px;margin-bottom:4px;">📈</div>
+      <div style="font-size:12px;font-weight:700;">Análisis de Acciones</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">Noticias, financials, insider trading, analyst ratings, price targets y gráficos históricos.</div>
+    </div>
+    <div style="padding:14px 16px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-200);">
+      <div style="font-size:16px;margin-bottom:4px;">🏦</div>
+      <div style="font-size:12px;font-weight:700;">Análisis de Bonos</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">Cashflow proyectado, TIR, duration, paridad. Bonos argentinos con cotización MEP vía Data912.</div>
+    </div>
+    <div style="padding:14px 16px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-200);">
+      <div style="font-size:16px;margin-bottom:4px;">🔥</div>
+      <div style="font-size:12px;font-weight:700;">Heat Map S&P 500</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">Visualización del mercado completo por capitalización y variación diaria.</div>
+    </div>
+    <div style="padding:14px 16px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-200);">
+      <div style="font-size:16px;margin-bottom:4px;">📰</div>
+      <div style="font-size:12px;font-weight:700;">Market Recap Diario</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">Resumen generado con IA sobre qué pasó ayer en el mercado y cómo te afecta.</div>
+    </div>
+    <div style="padding:14px 16px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-200);">
+      <div style="font-size:16px;margin-bottom:4px;">📅</div>
+      <div style="font-size:12px;font-weight:700;">Earnings Calendar</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">Resultados trimestrales de la semana, con alerta sobre los que están en tu portfolio.</div>
+    </div>
+    <div style="padding:14px 16px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-200);">
+      <div style="font-size:16px;margin-bottom:4px;">🌐</div>
+      <div style="font-size:12px;font-weight:700;">Indicadores Macro</div>
+      <div style="font-size:10px;color:var(--gray-500);line-height:1.5;margin-top:2px;">S&P 500, Oro, Petróleo WTI, USD/ARS MEP actualizados en tiempo real.</div>
+    </div>
+  </div>
+
+  <div class="fragment flex-col gap-3 items-center mt-6" data-f="3">
+    <div style="height:2px;width:96px;background:linear-gradient(to right,transparent,var(--green),transparent);"></div>
+    <span class="slide-title" style="font-size:28px;color:var(--green);">Gracias</span>
+    <span style="font-size:14px;color:var(--gray-500);">¿Preguntas?</span>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div class="progress-bar">
+  <span class="label" id="section-label">Finanzas</span>
+  <div class="slide-blocks" id="slide-blocks"></div>
+</div>
+<button class="nav-btn prev hidden" id="btn-prev" onclick="go(-1)">&#8249;</button>
+<button class="nav-btn next" id="btn-next" onclick="go(1)">&#8250;</button>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+let currentFragment = 0;
+
+function getFragments(slideEl) {
+  const frags = slideEl.querySelectorAll('.fragment');
+  const maxF = Math.max(0, ...Array.from(frags).map(f => parseInt(f.dataset.f) || 0));
+  return maxF;
+}
+
+function revealFragments(slideEl, upToStep) {
+  slideEl.querySelectorAll('.fragment').forEach(f => {
+    const step = parseInt(f.dataset.f) || 0;
+    f.classList.toggle('visible', step <= upToStep);
+  });
+}
+
+function render() {
+  slides.forEach((s, i) => {
+    s.classList.remove('active', 'exit-left');
+    if (i === current) {
+      s.classList.add('active');
+      revealFragments(s, currentFragment);
+    } else if (i < current) {
+      s.classList.add('exit-left');
+      revealFragments(s, 999);
+    } else {
+      revealFragments(s, 0);
+    }
+  });
+
+  const s = slides[current];
+  const label = s.dataset.section || '';
+  document.getElementById('section-label').textContent = label;
+
+  document.getElementById('btn-prev').classList.toggle('hidden', current === 0 && currentFragment === 0);
+  document.getElementById('btn-next').classList.toggle('hidden', current === total - 1 && currentFragment >= getFragments(slides[current]));
+
+  const blks = document.querySelectorAll('.slide-block');
+  blks.forEach((b, i) => {
+    b.classList.remove('active', 'visited');
+    if (i === current) b.classList.add('active');
+    else if (i < current) b.classList.add('visited');
+  });
+}
+
+function go(delta) {
+  if (delta > 0) {
+    const maxF = getFragments(slides[current]);
+    if (currentFragment < maxF) {
+      currentFragment++;
+    } else if (current < total - 1) {
+      current++;
+      currentFragment = 0;
+    }
+  } else {
+    if (currentFragment > 0) {
+      currentFragment--;
+    } else if (current > 0) {
+      current--;
+      currentFragment = getFragments(slides[current]);
+    }
+  }
+  render();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); go(-1); }
+});
+
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(diff) > 50) go(diff < 0 ? 1 : -1);
+});
+
+// Build slide blocks
+const blocksContainer = document.getElementById('slide-blocks');
+for (let i = 0; i < total; i++) {
+  const block = document.createElement('button');
+  block.className = 'slide-block';
+  block.title = (i + 1) + '. ' + (slides[i].dataset.section || '');
+  block.addEventListener('click', () => goToSlide(i));
+  blocksContainer.appendChild(block);
+}
+
+function goToSlide(idx) {
+  current = Math.max(0, Math.min(total - 1, idx));
+  currentFragment = getFragments(slides[current]);
+  render();
+}
+
+render();
+
+// ---- HEATMAP ----
+const heatData = [
+  {s:'AAPL',c:2.1,w:110,h:76},{s:'MSFT',c:-0.8,w:110,h:76},{s:'GOOGL',c:1.5,w:90,h:64},{s:'AMZN',c:-1.2,w:90,h:64},
+  {s:'NVDA',c:3.4,w:72,h:50},{s:'META',c:0.9,w:72,h:50},{s:'TSLA',c:-2.8,w:56,h:38},{s:'JPM',c:0.6,w:56,h:38},
+  {s:'V',c:1.1,w:56,h:38},{s:'JNJ',c:-0.3,w:56,h:38},{s:'XOM',c:1.8,w:38,h:26},{s:'PG',c:0.2,w:38,h:26},
+  {s:'UNH',c:-0.5,w:38,h:26},{s:'KO',c:0.4,w:38,h:26},{s:'DIS',c:-1.6,w:38,h:26},{s:'BA',c:2.3,w:38,h:26},
+];
+function cellColor(c) {
+  if (c > 2) return 'rgba(34,197,94,0.25)';
+  if (c > 0) return 'rgba(34,197,94,0.12)';
+  if (c > -1) return 'rgba(239,68,68,0.10)';
+  return 'rgba(239,68,68,0.20)';
+}
+const hm = document.getElementById('heatmap');
+if (hm) {
+  heatData.forEach(d => {
+    hm.innerHTML += '<div class="heatmap-cell" style="width:'+d.w+'px;height:'+d.h+'px;background:'+cellColor(d.c)+';"><span class="sym">'+d.s+'</span><span class="chg '+(d.c>=0?'pos':'neg')+'">'+(d.c>=0?'+':'')+d.c+'%</span></div>';
+  });
+}
+</script>
+</body>
+</html>
