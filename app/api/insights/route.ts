@@ -216,6 +216,15 @@ async function computeFullAnalysis(
   }
   const modelAlloc = computeModelAllocation(investorProfile);
 
+  // Cap model cash at 15% — higher targets produce nonsensical sell-everything recommendations
+  if (modelAlloc.cash > 0.15) {
+    const excess = modelAlloc.cash - 0.10;
+    modelAlloc.cash = 0.10;
+    const eqRatio = modelAlloc.us_equities / (modelAlloc.us_equities + modelAlloc.bonds || 1);
+    modelAlloc.us_equities += excess * eqRatio;
+    modelAlloc.bonds += excess * (1 - eqRatio);
+  }
+
   return {
     total, sub_scores, currentAlloc, modelAlloc, totalValue, enriched,
     metrics: {
