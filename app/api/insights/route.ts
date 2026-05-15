@@ -309,67 +309,99 @@ export async function POST() {
     return `${cls}: actual ${current.toFixed(1)}% vs modelo ${target.toFixed(1)}% (gap: ${(current - target).toFixed(1)}%)`;
   }).join("\n");
 
-  const prompt = `Sos un equipo de dos analistas financieros expertos. Generá un JSON con TRES secciones basándote EXCLUSIVAMENTE en los datos determinísticos que te paso. NO inventes números: usá los scores y métricas exactos que te doy.
+  // Identify the weakest sub-score to prioritize recommendations
+  const scoreEntries = [
+    { key: "diversification", score: sub_scores.diversification },
+    { key: "risk_match", score: sub_scores.risk_match },
+    { key: "risk_adjusted_return", score: sub_scores.risk_adjusted_return },
+    { key: "downside_protection", score: sub_scores.downside_protection },
+  ].sort((a, b) => a.score - b.score);
+  const weakestPillar = scoreEntries[0].key;
+  const strongestPillar = scoreEntries[3].key;
 
-=== DATOS DETERMINÍSTICOS DEL PORTFOLIO ===
+  // Build actionable fix hints per pillar
+  const fixHints: Record<string, string> = {
+    diversification: metrics.hhi > 0.15
+      ? `HHI alto (${metrics.hhi.toFixed(3)}). Reducir peso de ${metrics.largestSymbol} (${(metrics.largestWeight * 100).toFixed(0)}%) y agregar posiciones en sectores sub-representados.`
+      : `Diversificación sectorial mejorable: HHI sectorial ${metrics.sectorHhi.toFixed(3)} con ${metrics.sectorCount} sectores.`,
+    risk_match: Math.abs(metrics.portfolioBeta - metrics.targetBeta) > 0.15
+      ? `Beta actual ${metrics.portfolioBeta.toFixed(2)} vs target ${metrics.targetBeta.toFixed(2)}. ${metrics.portfolioBeta > metrics.targetBeta ? "Reducir beta vendiendo high-beta y comprando bond ETFs de duración corta (SHY, BIL)." : "Incrementar beta comprando ETFs de equity (VTI, QQQ, SPY)."}`
+      : `Volatilidad ${(metrics.portfolioVolatility * 100).toFixed(1)}% vs target ${(metrics.targetVolatility * 100).toFixed(1)}%. Ajustar mix equity/bonds.`,
+    risk_adjusted_return: `Sharpe ${metrics.sharpeRatio.toFixed(2)}. ${metrics.sharpeRatio < 0.8 ? "Mejorar reemplazando posiciones con bajo retorno/riesgo por ETFs diversificados (VTI, QQQ) o dividend aristocrats." : "Buen ratio, mantener."}`,
+    downside_protection: `Peso defensivo ${(metrics.defensiveWeight * 100).toFixed(0)}% (ideal ~40%). Correlación promedio ${metrics.avgCorrelation.toFixed(2)}. ${metrics.defensiveWeight < 0.3 ? "Agregar bond ETFs o sectores defensivos (XLV, XLP)." : "Reducir correlación diversificando sectores."}`,
+  };
 
-Posiciones:
-${positionsSummary}
+  const prompt = `Sos un analista financiero CFA Level III. Tu trabajo: generar recomendaciones PRECISAS y COHERENTES para mejorar el Portfolio Score de este inversor.
 
-Score total: ${total}/1000
-Sub-scores:
-  - Diversificación: ${sub_scores.diversification}/250
-  - Risk Match: ${sub_scores.risk_match}/250
-  - Sharpe (Risk-Adjusted Return): ${sub_scores.risk_adjusted_return}/250
-  - Downside Protection: ${sub_scores.downside_protection}/250
+## PORTFOLIO ACTUAL
 
-Métricas de diversificación:
-  - HHI posiciones: ${metrics.hhi.toFixed(4)}
-  - HHI sectorial: ${metrics.sectorHhi.toFixed(4)}
-  - Cantidad de posiciones: ${metrics.positionCount}
-  - Cantidad de sectores: ${metrics.sectorCount}
-  - Mayor peso: ${metrics.largestSymbol} con ${(metrics.largestWeight * 100).toFixed(1)}%
+Posiciones: ${positionsSummary}
 
-Métricas de riesgo:
-  - Beta portfolio: ${metrics.portfolioBeta.toFixed(2)} (target: ${metrics.targetBeta.toFixed(2)})
-  - Volatilidad: ${(metrics.portfolioVolatility * 100).toFixed(1)}% (target: ${(metrics.targetVolatility * 100).toFixed(1)}%)
-  - Sharpe Ratio: ${metrics.sharpeRatio.toFixed(2)} (benchmark: 0.5 avg, 1.0 bueno, 2.0 excelente)
+## SCORES (cada pilar max 250, total max 1000)
 
-Métricas defensivas:
-  - Peso defensivo: ${(metrics.defensiveWeight * 100).toFixed(1)}%
-  - Correlación promedio estimada: ${metrics.avgCorrelation.toFixed(2)}
+| Pilar | Score | Métrica clave |
+|-------|-------|---------------|
+| Diversificación | ${sub_scores.diversification}/250 | HHI pos: ${metrics.hhi.toFixed(3)}, HHI sect: ${metrics.sectorHhi.toFixed(3)}, ${metrics.positionCount} pos, ${metrics.sectorCount} sectores, max: ${metrics.largestSymbol} ${(metrics.largestWeight * 100).toFixed(0)}% |
+| Risk Match | ${sub_scores.risk_match}/250 | β=${metrics.portfolioBeta.toFixed(2)} (target ${metrics.targetBeta.toFixed(2)}), vol=${(metrics.portfolioVolatility * 100).toFixed(1)}% (target ${(metrics.targetVolatility * 100).toFixed(1)}%) |
+| Risk-Adj Return | ${sub_scores.risk_adjusted_return}/250 | Sharpe=${metrics.sharpeRatio.toFixed(2)} |
+| Downside Protection | ${sub_scores.downside_protection}/250 | Defensivo=${(metrics.defensiveWeight * 100).toFixed(0)}%, corr=${metrics.avgCorrelation.toFixed(2)} |
 
-Allocation gap (varianza actual vs modelo):
+**TOTAL: ${total}/1000** — Pilar más débil: **${weakestPillar}** (${scoreEntries[0].score}/250)
+
+## CÓMO SE CALCULA CADA PILAR (para que tus recs sean accionables)
+
+- **Diversificación** = (1 - avgHHI) × 250 donde avgHHI = (posHHI + sectorHHI) / 2. Mejorar: más posiciones, sectores diferentes, pesos más parejos.
+- **Risk Match** = promedio(betaScore, volScore) × 250. betaScore = max(0, 1 - |β_actual - β_target| / 0.5). Mejorar: acercar beta a target.
+- **Risk-Adj Return** = ((sharpe + 0.5) / 2.5) × 250. Mejorar: subir retorno esperado o bajar volatilidad.
+- **Downside Protection** = (corrScore×0.6 + defScore×0.4) × 250. corrScore = 1 - avgCorr. defScore = min(1, defensiveWeight / 0.4). Mejorar: bajar correlación entre sectores, subir peso defensivo hasta 40%.
+
+## DIAGNÓSTICO AUTOMÁTICO (usá esto para diagnosis)
+
+- ${weakestPillar}: ${fixHints[weakestPillar]}
+- ${scoreEntries[1].key}: ${fixHints[scoreEntries[1].key]}
+- ${scoreEntries[2].key}: ${fixHints[scoreEntries[2].key]}
+- ${strongestPillar}: ${fixHints[strongestPillar]}
+
+## ALLOCATION
+
 ${allocGaps}
 
-Perfil: ${investorProfile.risk_tolerance ?? "moderate"} | horizonte ${investorProfile.investment_horizon ?? "medium"} | objetivo ${investorProfile.objective ?? "growth"} | bonos ${investorProfile.bond_preference ?? "medium"} | geo ${investorProfile.geo_preference ?? "us_intl"}
+Perfil: ${investorProfile.risk_tolerance ?? "moderate"} | horizonte: ${investorProfile.investment_horizon ?? "medium"} | objetivo: ${investorProfile.objective ?? "growth"}
 
-${bondMarketContext ? `Bonos argentinos más operados hoy:\n${bondMarketContext}` : ""}
+## INSTRUMENTOS PERMITIDOS PARA RECOMENDAR
 
-=== INSTRUCCIONES ===
+ETFs de equity: SPY, QQQ, VTI, DIA, IWM, VGT, XLK, XLV, XLP, XLE, XLF, XLI, XLU, ARKK, VIG
+ETFs de bonos (bond_etf): TLT, AGG, LQD, SHY, BIL, SGOV, VGSH, IEF, GOVT, HYG
+Acciones individuales: cualquier ticker US listado
 
-Generá SOLO un JSON (sin markdown) con estas 3 secciones:
+## OUTPUT: JSON con 3 secciones (sin markdown, sin comentarios)
 
-1. "diagnosis": EXACTAMENTE 4 objetos, uno por cada sub-score.
-   Cada objeto: { "category": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection", "title": "título corto en español (max 5 palabras)", "body": "explicación de 1-2 oraciones usando SOLO las métricas que te di (HHI, beta, volatilidad, etc). NO menciones el score numérico X/250 en el body — el score ya se muestra en la UI." }
-   REGLA CRÍTICA: NUNCA escribas "Score de X", "X/250", "Score perfecto", ni ningún número de score en title o body. Solo explicá POR QUÉ está bien o mal usando las métricas subyacentes.
+{
+  "diagnosis": [exactamente 4 objetos, uno por pilar],
+  "allocation_moves": [1-3 movimientos],
+  "instrument_picks": [3-5 instrumentos]
+}
 
-2. "allocation_moves": 2-4 movimientos de rebalanceo a nivel asset class.
-   Cada objeto: { "asset_class": "bonds"|"us_equities"|"intl_equities"|"cash", "direction": "increase"|"decrease", "current_pct": number, "target_pct": number, "score_impact": number, "title": "acción corta", "body": "explicación de por qué y qué score mejora" }
-   - Solo incluir clases con gap material (>5%)
-   - NUNCA repetir la misma asset_class más de una vez. Cada asset_class debe aparecer como máximo 1 vez.
-   - Si necesitás recomendar aumento de cash, preferí decir "increase bonds" con bonos de corta duración (SHY, BIL) en el body. Evitá recomendar grandes incrementos de cash puro.
-   - score_impact debe ser realista basado en los gaps que ves
+### Schemas:
 
-3. "instrument_picks": 3-5 instrumentos específicos para comprar o vender.
-   Cada objeto: { "action": "buy"|"sell", "symbol": "TICKER", "asset_type": "equity"|"etf"|"bond_etf", "name": "nombre completo", "reason": "1 oración sobre qué sub-score mejora", "score_impact": number, "priority": "high"|"medium"|"low", "improves": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection" }
-   - Priorizar instrumentos que cierren el mayor gap de allocation primero
-   - NUNCA recomendar CASH-USD ni asset_type "cash". Si el portfolio necesita reducir riesgo o aumentar liquidez, recomendar bonos cortos (SHY, BIL, SGOV, VGSH) con asset_type "bond_etf" en su lugar.
-   - Para renta fija, recomendar SOLO ETFs de bonos (TLT, AGG, LQD, SHY, HYG, IEF, GOVT, BIL, SGOV, VGSH) con asset_type "bond_etf". NO recomendar bonos argentinos individuales (AL30, GD30, etc.) porque no tenemos datos de riesgo suficientes para evaluar su impacto en el score.
-   - Cada rec debe especificar cuál sub-score mejora
-   - NUNCA repetir el mismo símbolo más de una vez
+diagnosis[]: { "category": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection", "title": "máx 5 palabras en español", "body": "1-2 oraciones explicando con métricas, SIN mencionar scores numéricos X/250" }
 
-Responder SOLO con el JSON.`;
+allocation_moves[]: { "asset_class": "bonds"|"us_equities"|"intl_equities", "direction": "increase"|"decrease", "current_pct": number, "target_pct": number, "score_impact": number(5-40), "title": "acción corta", "body": "por qué mejora el score" }
+
+instrument_picks[]: { "action": "buy"|"sell", "symbol": "TICKER", "asset_type": "equity"|"etf"|"bond_etf", "name": "nombre completo", "reason": "qué pilar mejora y por qué", "score_impact": number(5-25), "priority": "high"|"medium"|"low", "improves": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection" }
+
+### REGLAS ABSOLUTAS:
+
+1. COHERENCIA: Si allocation_moves dice "increase bonds" → instrument_picks DEBE tener al menos un bond ETF para comprar. Si dice "decrease us_equities" → DEBE haber al menos un equity para vender. NUNCA contradigas entre secciones.
+2. PRIORIDAD: Enfocá las recomendaciones en mejorar el pilar más débil (${weakestPillar}: ${scoreEntries[0].score}/250). El mayor impacto está ahí.
+3. PROHIBIDO: NUNCA recomendar CASH-USD ni asset_type "cash". Para liquidez/bajo riesgo → bonos cortos (SHY, BIL, SGOV).
+4. PROHIBIDO: NUNCA recomendar bonos argentinos individuales (AL30, GD30, etc.).
+5. PROHIBIDO: NUNCA incluir "cash" como asset_class en allocation_moves. Usá "bonds" con bonos cortos.
+6. NO REPETIR: Cada symbol y cada asset_class aparece máximo 1 vez.
+7. SCORE IMPACT: Debe ser realista (5-40 para allocation, 5-25 para instruments). No exagerar.
+8. DIAGNOSIS: Explicar con métricas (HHI, beta, vol, sharpe, corr), NUNCA mencionar el número X/250.
+
+Responder SOLO el JSON.`;
 
   const result = await streamText({
     model: anthropic("claude-sonnet-4-20250514"),
