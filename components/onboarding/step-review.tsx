@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Loader2, Wallet } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Wallet, TrendingUp } from "lucide-react";
 import { EQUITY_DISPLAY_INFO, CANDIDATE_BOND_ETFS, CANDIDATE_SECTOR_ETFS } from "@/lib/portfolio/constants";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
 import { ALLOCATION_SPLIT } from "@/lib/financial-explanations";
@@ -41,6 +41,70 @@ const COLORS = {
   freePicks: { bg: "bg-violet-500", dot: "bg-violet-400", text: "text-violet-400" },
   cash: { bg: "bg-zinc-600", dot: "bg-zinc-500", text: "text-zinc-400" },
 } as const;
+
+function estimateScore(
+  instrumentCount: number,
+  equityPct: number,
+  bondPct: number,
+  cashPct: number,
+  hasOptimizer: boolean,
+): number {
+  // Diversification estimate (0-250): based on instrument count and HHI proxy
+  let divScore = 0;
+  if (instrumentCount >= 10) divScore = 220;
+  else if (instrumentCount >= 7) divScore = 195;
+  else if (instrumentCount >= 5) divScore = 170;
+  else if (instrumentCount >= 3) divScore = 130;
+  else divScore = 80;
+
+  // Risk match estimate (0-250): the builder already aligned to profile
+  const riskScore = hasOptimizer ? 210 : 180;
+
+  // Sharpe estimate (0-250): diversified portfolio typically scores 120-180
+  const sharpeScore = instrumentCount >= 5 ? 160 : 130;
+
+  // Downside estimate (0-250): bond/cash allocation contributes to protection
+  const defensiveWeight = bondPct + cashPct;
+  let downsideScore = 100;
+  if (defensiveWeight >= 0.35) downsideScore = 200;
+  else if (defensiveWeight >= 0.25) downsideScore = 170;
+  else if (defensiveWeight >= 0.15) downsideScore = 140;
+  else if (defensiveWeight >= 0.05) downsideScore = 110;
+
+  return Math.min(1000, divScore + riskScore + sharpeScore + downsideScore);
+}
+
+function EstimatedScoreBadge({
+  instrumentCount,
+  equityPct,
+  bondPct,
+  cashPct,
+  hasOptimizer,
+}: {
+  instrumentCount: number;
+  equityPct: number;
+  bondPct: number;
+  cashPct: number;
+  hasOptimizer: boolean;
+}) {
+  const estimated = estimateScore(instrumentCount, equityPct, bondPct, cashPct, hasOptimizer);
+  const color = estimated >= 750 ? "text-positive" : estimated >= 500 ? "text-chart-2" : "text-yellow-400";
+
+  return (
+    <div className="pt-3 border-t border-border/30">
+      <div className="flex items-center justify-center gap-3">
+        <TrendingUp className="h-4 w-4 text-primary/70" />
+        <div className="text-center">
+          <div className="flex items-baseline gap-1 justify-center">
+            <span className={`text-lg font-bold tabular-nums ${color}`}>~{estimated}</span>
+            <span className="text-xs text-muted-foreground/50">/1000</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground/60">Score estimado del portfolio</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function StepReview({
   capital,
@@ -386,7 +450,7 @@ export function StepReview({
         </div>
       </div>
 
-      {/* Summary stats */}
+      {/* Summary stats + estimated score */}
       <div className="noise-overlay rounded-xl border border-border/50 bg-card/50 p-5 space-y-4">
         <div className="text-center">
           <p className="section-label mb-1">Capital total</p>
@@ -415,6 +479,14 @@ export function StepReview({
             </p>
           </div>
         </div>
+
+        <EstimatedScoreBadge
+          instrumentCount={totalInstruments}
+          equityPct={allocation.pcts.eq}
+          bondPct={allocation.pcts.bd}
+          cashPct={allocation.pcts.ca}
+          hasOptimizer={!!hasWeights}
+        />
       </div>
 
       {/* Navigation */}

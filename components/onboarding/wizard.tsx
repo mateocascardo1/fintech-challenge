@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { StepHasPortfolio } from "./step-has-portfolio";
 import { StepPositions } from "./step-positions";
 import { StepProfile } from "./step-profile";
@@ -10,6 +9,7 @@ import { StepSelectEquities } from "./step-select-equities";
 import { StepSelectBonds } from "./step-select-bonds";
 import { StepFreeSelect } from "./step-free-select";
 import { StepReview } from "./step-review";
+import { StepScoreReveal } from "./step-score-reveal";
 import type { InvestorProfile } from "@/lib/portfolio/types";
 import { computeModelAllocation } from "@/lib/portfolio/allocation";
 import { CANDIDATE_BOND_ETFS, CANDIDATE_SECTOR_ETFS, CANDIDATE_BROAD_ETFS } from "@/lib/portfolio/constants";
@@ -41,7 +41,7 @@ export function OnboardingWizard() {
   const [freePicks, setFreePicks] = useState<FreePick[]>([]);
   const [optimizedWeights, setOptimizedWeights] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
-  const router = useRouter();
+  const [showScoreReveal, setShowScoreReveal] = useState(false);
 
   const isBuilderFlow = hasPortfolio === false;
 
@@ -138,7 +138,7 @@ export function OnboardingWizard() {
         alert(`No se pudieron guardar: ${errors.join(", ")}. El capital no invertido se asignó a efectivo.`);
       }
 
-      router.push("/dashboard");
+      setShowScoreReveal(true);
     } catch (err) {
       console.error("Save failed:", err);
       alert("Error al crear el portfolio. Intentá de nuevo.");
@@ -362,6 +362,20 @@ export function OnboardingWizard() {
     if (step === 7) return "Selección libre";
     if (step === 8) return "Revisión";
     return "";
+  }
+
+  if (showScoreReveal) {
+    return (
+      <div>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">
+            Signal<span className="text-primary">AI</span>
+          </h1>
+          <p className="mt-1.5 text-xs text-muted-foreground">Tu portfolio está listo</p>
+        </div>
+        <StepScoreReveal isBuilder={isBuilderFlow} />
+      </div>
+    );
   }
 
   return (
