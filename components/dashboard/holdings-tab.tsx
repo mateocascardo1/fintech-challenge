@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Trash2, X, DollarSign, Loader2 } from "lucide-react";
+import { Plus, Search, Trash2, X, DollarSign, Loader2, MinusCircle } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 
@@ -90,6 +90,12 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
   const [cashAmount, setCashAmount] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  // Sell state
+  const [showSell, setShowSell] = useState(false);
+  const [sellSymbol, setSellSymbol] = useState("");
+  const [sellQty, setSellQty] = useState("");
+  const [sellError, setSellError] = useState("");
 
   const fetchPositionsAndQuotes = useCallback(() => {
     setLoading(true);
@@ -297,6 +303,49 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
     setSaveError("");
   }
 
+  async function sellPosition() {
+    if (!sellSymbol || !sellQty || Number(sellQty) <= 0) return;
+    const pos = positions.find((p) => p.symbol === sellSymbol);
+    if (!pos) return;
+
+    const qtyToSell = Number(sellQty);
+    setSaving(true);
+    setSellError("");
+
+    try {
+      if (qtyToSell >= pos.quantity) {
+        const res = await fetch(`/api/portfolio/${encodeURIComponent(sellSymbol)}`, { method: "DELETE" });
+        if (!res.ok) { setSellError("Error al eliminar posición"); return; }
+      } else {
+        const newQty = Math.round((pos.quantity - qtyToSell) * 10000) / 10000;
+        const res = await fetch(`/api/portfolio/${encodeURIComponent(sellSymbol)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quantity: newQty }),
+        });
+        if (!res.ok) { setSellError("Error al actualizar posición"); return; }
+      }
+      setShowSell(false);
+      setSellSymbol("");
+      setSellQty("");
+      setSellError("");
+      fetchPositionsAndQuotes();
+      onPortfolioChange?.();
+    } catch {
+      setSellError("Error de red");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openSell(symbol: string) {
+    setShowSell(true);
+    setShowAdd(false);
+    setSellSymbol(symbol);
+    setSellQty("");
+    setSellError("");
+  }
+
   function selectStock(r: SearchResult) {
     setSelectedSymbol(r.symbol);
     setSelectedName(r.name);
@@ -390,10 +439,16 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
-          {showAdd ? "Cerrar" : "Agregar"}
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => { setShowSell(!showSell); setShowAdd(false); }}>
+            {showSell ? <X className="h-3.5 w-3.5 mr-1" /> : <MinusCircle className="h-3.5 w-3.5 mr-1" />}
+            {showSell ? "Cerrar" : "Vender"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setShowAdd(!showAdd); setShowSell(false); }}>
+            {showAdd ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+            {showAdd ? "Cerrar" : "Agregar"}
+          </Button>
+        </div>
       </div>
 
       {/* Add position panel */}
@@ -629,6 +684,91 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
         </div>
       )}
 
+      {/* Sell panel */}
+      {showSell && (
+        <div className="rounded-2xl border border-destructive/20 bg-card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MinusCircle className="h-4 w-4 text-destructive" />
+              <span className="font-medium text-sm">Vender posición</span>
+            </div>
+            {sellSymbol && (
+              <button
+                type="button"
+                onClick={() => setSellSymbol("")}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                ← Cambiar
+              </button>
+            )}
+          </div>
+
+          {!sellSymbol ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {positions.filter((p) => p.asset_type !== "cash").map((p) => (
+                <button
+                  key={p.symbol}
+                  type="button"
+                  onClick={() => openSell(p.symbol)}
+                  className="surface-elevated rounded-xl px-4 py-3 text-left hover:ring-1 hover:ring-destructive/40 transition-all"
+                >
+                  <span className="block text-sm font-bold">{p.symbol}</span>
+                  <span className="block text-[11px] text-muted-foreground mt-0.5 tabular-nums">
+                    {p.quantity} unid.
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="flex-shrink-0">
+                  <p className="font-bold text-base">{sellSymbol}</p>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">
+                    Tenés: {positions.find((p) => p.symbol === sellSymbol)?.quantity ?? 0}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="Cant."
+                  value={sellQty}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, "");
+                    setSellQty(val);
+                  }}
+                  min={1}
+                  step={1}
+                  className="w-20 text-center tabular-nums"
+                  autoFocus
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSellQty(String(Math.floor(positions.find((p) => p.symbol === sellSymbol)?.quantity ?? 0)))}
+                  className="text-[11px] text-muted-foreground hover:text-foreground whitespace-nowrap"
+                >
+                  Todo
+                </Button>
+                <Button
+                  onClick={sellPosition}
+                  disabled={saving || !sellQty || Number(sellQty) <= 0}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Vender"}
+                </Button>
+              </div>
+              {sellError && (
+                <p className="text-xs text-destructive">{sellError}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Holdings table */}
       {loading ? (
         <TableSkeleton />
@@ -639,17 +779,18 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
             <tr className="border-b border-border text-left">
               {[
                 { key: "symbol" as SortKey, label: "Ticker" },
+                { key: "value" as SortKey, label: "Cantidad" },
                 { key: "value" as SortKey, label: "Valor" },
                 { key: "weight" as SortKey, label: "Peso %" },
                 { key: "changePercent" as SortKey, label: "Cambio" },
-              ].map((col) => (
+              ].map((col, idx) => (
                 <th
-                  key={col.key}
+                  key={`${col.key}-${idx}`}
                   className="py-2 px-3 font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                  onClick={() => toggleSort(col.key)}
+                  onClick={() => idx !== 1 ? toggleSort(col.key) : undefined}
                 >
                   {col.label}{" "}
-                  {sortKey === col.key && (sortDir === "asc" ? "↑" : "↓")}
+                  {idx !== 1 && sortKey === col.key && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
               ))}
               <th className="py-2 px-3 w-10" />
@@ -658,7 +799,7 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
           <tbody>
             {enriched.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                   No hay posiciones. Usá el botón &quot;Agregar&quot; para empezar.
                 </td>
               </tr>
@@ -681,6 +822,13 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
                       {p.asset_type === "bond" ? "bono" : p.asset_type === "cash" ? "cash" : p.asset_type}
                     </Badge>
                   </Link>
+                </td>
+                <td className="py-3 px-3 tabular-nums text-muted-foreground">
+                  {p.asset_type === "cash"
+                    ? `$${p.quantity.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+                    : p.quantity % 1 === 0
+                      ? p.quantity.toLocaleString("en-US")
+                      : p.quantity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
                 </td>
                 <td className="py-3 px-3 tabular-nums">
                   {formatPrice(p.value)}

@@ -121,13 +121,27 @@ export function AiInsightsCard() {
       .catch(() => setLoading(false));
   }, [fetchInsights, generateInsights]);
 
-  const allocMoves = allInsights
-    .filter((i) => i.type === "alloc_move")
-    .map(parseAllocMove);
+  const allocMoves = (() => {
+    const raw = allInsights.filter((i) => i.type === "alloc_move").map(parseAllocMove);
+    const seen = new Set<string>();
+    return raw.filter((m) => {
+      if (seen.has(m.asset_class)) return false;
+      seen.add(m.asset_class);
+      return true;
+    });
+  })();
 
-  const instrumentPicks = allInsights
-    .filter((i) => i.type === "instrument_pick")
-    .map(parseInstrumentPick);
+  const instrumentPicks = (() => {
+    const raw = allInsights.filter((i) => i.type === "instrument_pick").map(parseInstrumentPick);
+    const seen = new Set<string>();
+    return raw.filter((p) => {
+      const key = `${p.action}-${p.symbol}`;
+      if (seen.has(key) || seen.has(p.symbol)) return false;
+      seen.add(key);
+      seen.add(p.symbol);
+      return true;
+    });
+  })();
 
   const hasContent = allocMoves.length > 0 || instrumentPicks.length > 0;
 

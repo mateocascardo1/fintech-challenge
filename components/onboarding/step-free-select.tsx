@@ -4,12 +4,23 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, X, ArrowLeft, Loader2 } from "lucide-react";
+import { Search, Plus, X, ArrowLeft, Loader2, ShoppingBag } from "lucide-react";
 
 type Pick = { symbol: string; name: string; asset_type: string };
 
 type SearchResultItem = { symbol: string; name: string; type?: string };
 type BondResult = { symbol: string; c: number; pct_change: number; sub_type: string };
+
+const QUICK_PICKS = [
+  { symbol: "NFLX", name: "Netflix Inc.", emoji: "🎬" },
+  { symbol: "SPOT", name: "Spotify Technology", emoji: "🎵" },
+  { symbol: "UBER", name: "Uber Technologies", emoji: "🚗" },
+  { symbol: "MELI", name: "MercadoLibre Inc.", emoji: "🛒" },
+  { symbol: "DIS",  name: "Walt Disney Co.", emoji: "🏰" },
+  { symbol: "SBUX", name: "Starbucks Corp.", emoji: "☕" },
+  { symbol: "NKE",  name: "Nike Inc.", emoji: "👟" },
+  { symbol: "ABNB", name: "Airbnb Inc.", emoji: "🏠" },
+];
 
 interface StepFreeSelectProps {
   selected: Pick[];
@@ -140,6 +151,44 @@ export function StepFreeSelect({
         <p className="text-sm text-muted-foreground">
           Buscá cualquier acción, ETF o bono que quieras incluir
         </p>
+      </div>
+
+      {/* "Invest in what you use" banner */}
+      <div className="surface-elevated rounded-xl p-4 border border-primary/15">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <ShoppingBag className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Invertí en lo que usás todos los días
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              Las mejores ideas de inversión pueden venir de los productos y servicios que ya conocés y usás.
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {QUICK_PICKS.map((qp) => {
+            const alreadyAdded = picks.some((p) => p.symbol === qp.symbol) || excludeSet.has(qp.symbol);
+            return (
+              <button
+                key={qp.symbol}
+                type="button"
+                disabled={alreadyAdded}
+                onClick={() => addPick({ symbol: qp.symbol, name: qp.name, asset_type: "equity" })}
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
+                  alreadyAdded
+                    ? "bg-primary/10 text-primary/50 cursor-default"
+                    : "bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary cursor-pointer"
+                }`}
+              >
+                {qp.emoji} {qp.symbol}
+                {!alreadyAdded && <Plus className="h-3 w-3 ml-0.5" />}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Search bar */}

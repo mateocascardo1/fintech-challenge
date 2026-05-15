@@ -10,7 +10,7 @@ import {
   computePortfolioScore,
 } from "@/lib/portfolio/scoring";
 import { computeModelAllocation } from "@/lib/portfolio/allocation";
-import { ASSET_CLASS_MAP, SECTOR_MAP } from "@/lib/portfolio/constants";
+import { ASSET_CLASS_MAP, SECTOR_MAP, SYMBOL_FINANCIALS, EQUITY_DISPLAY_INFO, getSectorCorrelation } from "@/lib/portfolio/constants";
 import type {
   PositionWithMarket,
   InvestorProfile,
@@ -124,7 +124,7 @@ export async function GET() {
         changePercent: q?.changePercent ?? 0,
         value: price * p.quantity,
         weight: 0,
-        sector: SECTOR_MAP[p.symbol],
+        sector: SECTOR_MAP[p.symbol] ?? EQUITY_DISPLAY_INFO[p.symbol]?.sector,
       };
     },
   );
@@ -136,18 +136,43 @@ export async function GET() {
 
   const diversification = computeDiversificationScore(enriched);
 
-  const ASSET_BETA: Record<string, number> = {
+  const ASSET_BETA_FALLBACK: Record<string, number> = {
     equity: 1.0,
     etf: 0.9,
     bond: 0.3,
     bond_etf: 0.4,
     cash: 0,
   };
-  const portfolioBeta = enriched.reduce(
-    (s, p) => s + p.weight * (ASSET_BETA[p.asset_type] ?? 1.0),
-    0,
-  );
-  const portfolioVolatility = 0.15;
+  const RISK_FREE_RATE = 0.04;
+  const EQUITY_PREMIUM = 0.06;
+  const MARKET_VOL = 0.16;
+
+  const portfolioBeta = enriched.reduce((s, p) => {
+    const symbolBeta = SYMBOL_FINANCIALS[p.symbol]?.beta;
+    const beta = symbolBeta ?? ASSET_BETA_FALLBACK[p.asset_type] ?? 1.0;
+    return s + p.weight * beta;
+  }, 0);
+
+  let avgCorrelation = 1.0;
+  if (enriched.length > 1) {
+    let corrSum = 0;
+    let weightSum = 0;
+    for (let i = 0; i < enriched.length; i++) {
+      for (let j = i + 1; j < enriched.length; j++) {
+        const sectorA = enriched[i].sector ?? EQUITY_DISPLAY_INFO[enriched[i].symbol]?.sector ?? "Other";
+        const sectorB = enriched[j].sector ?? EQUITY_DISPLAY_INFO[enriched[j].symbol]?.sector ?? "Other";
+        const pairWeight = enriched[i].weight * enriched[j].weight;
+        corrSum += getSectorCorrelation(sectorA, sectorB) * pairWeight;
+        weightSum += pairWeight;
+      }
+    }
+    avgCorrelation = weightSum > 0 ? corrSum / weightSum : 0.5;
+  }
+
+  const n = enriched.length;
+  const diversificationFactor = n > 1 ? Math.sqrt(1 / n + (1 - 1 / n) * avgCorrelation) : 1;
+  const portfolioVolatility = Math.max(0.03, Math.abs(portfolioBeta) * MARKET_VOL * diversificationFactor);
+
   const investorProfile: InvestorProfile = {
     investment_horizon: profile?.investment_horizon ?? null,
     risk_tolerance: profile?.risk_tolerance ?? null,
@@ -170,19 +195,27 @@ export async function GET() {
     portfolioVolatility,
   );
 
-  const avgReturn = 0.08;
-  const riskFreeRate = 0.04;
+  const portfolioReturn = enriched.reduce((s, p) => {
+    const fin = SYMBOL_FINANCIALS[p.symbol];
+    if (fin) {
+      const expRet = RISK_FREE_RATE + Math.max(0, fin.beta) * EQUITY_PREMIUM + fin.dividendYield;
+      return s + p.weight * expRet;
+    }
+    if (p.asset_type === "cash") return s + p.weight * RISK_FREE_RATE;
+    return s + p.weight * 0.06;
+  }, 0);
+
   const sharpeRatio =
     portfolioVolatility > 0
-      ? (avgReturn - riskFreeRate) / portfolioVolatility
+      ? (portfolioReturn - RISK_FREE_RATE) / portfolioVolatility
       : 0;
   const riskAdjustedReturn = computeRiskAdjustedReturnScore(sharpeRatio);
 
-  const avgCorrelation = enriched.length > 1 ? 0.5 : 1.0;
   const defensiveWeight = enriched
     .filter(
       (p) =>
         DEFENSIVE_SECTORS.has(p.sector ?? "") ||
+        SYMBOL_FINANCIALS[p.symbol]?.isDefensive ||
         p.asset_type === "bond" ||
         p.asset_type === "bond_etf" ||
         p.asset_type === "cash",

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
+import { Check, ArrowLeft, Sparkles, Loader2, Shield, Info } from "lucide-react";
 import {
   CANDIDATE_BOND_ETFS,
   EQUITY_DISPLAY_INFO,
 } from "@/lib/portfolio/constants";
+import type { InvestorProfile } from "@/lib/portfolio/types";
+import { getRecommendedBonds, getProfileSummary } from "@/lib/portfolio/recommend";
 
 type ArgBond = {
   symbol: string;
@@ -22,9 +24,8 @@ interface StepSelectBondsProps {
   capital: number;
   bondPercent: number;
   bondPreference: string | null;
+  profile: Partial<InvestorProfile>;
 }
-
-const RECOMMENDED = ["AGG", "TLT", "SHY"] as const;
 
 export function StepSelectBonds({
   selected: initialSelected,
@@ -33,20 +34,30 @@ export function StepSelectBonds({
   capital,
   bondPercent,
   bondPreference,
+  profile,
 }: StepSelectBondsProps) {
   const [selected, setSelected] = useState<string[]>(initialSelected);
   const [argBonds, setArgBonds] = useState<ArgBond[]>([]);
   const [argLoading, setArgLoading] = useState(false);
   const [argError, setArgError] = useState(false);
+  const [showRecommendationCard, setShowRecommendationCard] = useState(false);
 
-  // Auto-skip if user chose no bonds (useLayoutEffect avoids visual flash)
+  const recommendations = useMemo(() => {
+    if (!profile.risk_tolerance) return [];
+    return getRecommendedBonds(profile as InvestorProfile, 3);
+  }, [profile]);
+
+  const profileSummary = useMemo(
+    () => getProfileSummary(profile as InvestorProfile),
+    [profile],
+  );
+
   useLayoutEffect(() => {
     if (bondPreference === "none") {
       onComplete([]);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch Argentine bonds on mount
   const fetchArgBonds = useCallback(async () => {
     setArgLoading(true);
     setArgError(false);
@@ -76,11 +87,13 @@ export function StepSelectBonds({
   };
 
   const selectRecommended = () => {
+    const recSymbols = recommendations.map((r) => r.symbol);
     setSelected((prev) => {
       const next = new Set(prev);
-      for (const s of RECOMMENDED) next.add(s);
+      for (const s of recSymbols) next.add(s);
       return [...next];
     });
+    setShowRecommendationCard(true);
   };
 
   const bondAllocation = capital * bondPercent;
@@ -94,6 +107,16 @@ export function StepSelectBonds({
       return `$${n.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`;
     return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
+
+  const riskLabel: Record<string, string> = {
+    conservative: "Conservador",
+    moderate: "Moderado",
+    aggressive: "Agresivo",
+  };
+
+  const btnLabel = profile.risk_tolerance
+    ? `Recomendados para perfil ${riskLabel[profile.risk_tolerance] ?? ""}`
+    : "Seleccionar recomendados";
 
   return (
     <div className="space-y-8 animate-fade-in-up">
@@ -118,9 +141,39 @@ export function StepSelectBonds({
             className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Seleccionar recomendados
+            {btnLabel}
           </button>
         </div>
+
+        {/* Recommendation summary card */}
+        {showRecommendationCard && recommendations.length > 0 && (
+          <div className="surface-elevated rounded-xl p-4 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                <Shield className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  Selección personalizada de renta fija
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  {profileSummary} Elegimos ETFs de bonos que priorizan{" "}
+                  {profile.risk_tolerance === "conservative"
+                    ? "estabilidad y preservación de capital"
+                    : profile.risk_tolerance === "aggressive"
+                      ? "mayor rendimiento con bonos de alto yield"
+                      : "un balance entre rendimiento y seguridad"}
+                  {profile.investment_horizon === "short" || profile.liquidity_need === "frequent"
+                    ? ", con duración corta por tu necesidad de liquidez"
+                    : profile.investment_horizon === "very_long"
+                      ? ", con duración larga para maximizar rendimiento"
+                      : ""}
+                  .
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {CANDIDATE_BOND_ETFS.map((ticker) => {
@@ -157,7 +210,17 @@ export function StepSelectBonds({
 
       {/* Section 2: Argentine Bonds */}
       <section className="space-y-3 animate-fade-in-up-delay-2">
-        <span className="section-label">Bonos argentinos</span>
+        <div className="flex items-center justify-between">
+          <span className="section-label">Bonos argentinos</span>
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            <Info className="h-3 w-3" />
+            Selección manual
+          </span>
+        </div>
+
+        <p className="text-xs text-muted-foreground -mt-1 leading-relaxed">
+          Los bonos argentinos no se incluyen en las recomendaciones automáticas porque no contamos con datos de riesgo suficientes. Podés agregarlos manualmente si los conocés.
+        </p>
 
         {argLoading && (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
@@ -233,7 +296,6 @@ export function StepSelectBonds({
 
       {/* Footer */}
       <div className="space-y-4 animate-fade-in-up-delay-3">
-        {/* Selection count */}
         {selected.length > 0 && (
           <p className="text-center text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">
@@ -243,7 +305,6 @@ export function StepSelectBonds({
           </p>
         )}
 
-        {/* Navigation */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-1" />

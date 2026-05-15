@@ -62,7 +62,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 gap-8">
       <Card className="w-full max-w-md card-revolut">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold tracking-tight">
@@ -138,6 +138,24 @@ export default function AuthPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Disclaimer */}
+      <div className="hidden lg:flex w-full max-w-xs flex-col gap-4 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-6">
+        <div className="flex items-center gap-2 text-yellow-400">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span className="text-sm font-semibold">Aviso Legal</span>
+        </div>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          SignalAI es una herramienta educativa y de análisis. La información presentada <strong className="text-foreground">no constituye asesoramiento financiero</strong>, recomendación de inversión, ni oferta de compra o venta de valores.
+        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Las decisiones de inversión son responsabilidad exclusiva del usuario. Rentabilidades pasadas no garantizan resultados futuros. Consultá a un asesor financiero matriculado antes de invertir.
+        </p>
+      </div>
     </div>
   );
 }

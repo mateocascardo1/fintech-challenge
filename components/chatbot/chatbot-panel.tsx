@@ -13,10 +13,10 @@ function extractTextContent(parts: Array<{ type: string; text?: string }>): stri
     .join("");
 }
 
-export function ChatbotPanel({ onClose }: { onClose: () => void }) {
-  const [input, setInput] = useState("");
+export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; initialInput?: string }) {
+  const [input, setInput] = useState(initialInput ?? "");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const transport = useMemo(
     () => new DefaultChatTransport({ body: { mode: "advisor" } }),
     [],
@@ -237,19 +237,26 @@ export function ChatbotPanel({ onClose }: { onClose: () => void }) {
         <div className="shrink-0 border-t border-white/[0.06] p-4">
           <form onSubmit={handleSubmit} className="flex gap-2">
             <div className="relative flex-1">
-              <input
+              <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e as unknown as FormEvent);
+                  }
+                }}
                 placeholder="Escribí tu pregunta..."
                 disabled={isLoading}
-                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 focus:ring-1 focus:ring-primary/20 disabled:opacity-50 transition-all"
+                rows={2}
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 focus:ring-1 focus:ring-primary/20 disabled:opacity-50 transition-all resize-none"
               />
             </div>
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="h-[46px] w-[46px] rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:shadow-[0_0_20px_-5px_rgba(34,197,94,0.4)] active:scale-95"
+              className="self-end h-[46px] w-[46px] rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:shadow-[0_0_20px_-5px_rgba(34,197,94,0.4)] active:scale-95"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

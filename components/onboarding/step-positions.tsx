@@ -219,9 +219,28 @@ export function StepPositions({
             </Card>
           )}
           {selectedSymbol && (
-            <div className="flex gap-2">
-              <Input type="number" placeholder="Cantidad" value={quantity} onChange={(e) => setQuantity(e.target.value)} min={1} className="w-32" />
-              <Button onClick={addEquityPosition}><Plus className="h-4 w-4 mr-1" /> Agregar</Button>
+            <div className="surface-elevated rounded-xl p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-bold text-base">{selectedSymbol.symbol}</span>
+                <span className="text-sm text-muted-foreground truncate">{selectedSymbol.name}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="Cant."
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, "");
+                    setQuantity(val);
+                  }}
+                  min={0.01}
+                  step="any"
+                  className="w-24 text-center tabular-nums"
+                  autoFocus
+                />
+                <Button onClick={addEquityPosition} size="sm"><Plus className="h-4 w-4 mr-1" /> Agregar</Button>
+              </div>
             </div>
           )}
         </div>
@@ -394,9 +413,14 @@ export function StepPositions({
         </Button>
       </div>
 
-      <p className="text-center text-xs text-muted-foreground/60 mt-4">
-        Próximamente: integración con Cocos Capital, Interactive Brokers, PPI y más.
-      </p>
+      <div className="mt-6 surface-elevated rounded-xl p-4 text-center border border-border/50">
+        <p className="text-sm font-medium text-muted-foreground">
+          Próximamente
+        </p>
+        <p className="text-xs text-muted-foreground/70 mt-1">
+          Integración con Cocos Capital, Interactive Brokers, PPI y más.
+        </p>
+      </div>
     </div>
   );
 }

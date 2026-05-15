@@ -95,6 +95,7 @@ export function SearchCommand() {
         onOpenChange={setOpen}
         title="Buscar"
         description="Buscá acciones, ETFs o bonos argentinos"
+        shouldFilter={false}
       >
         <CommandInput
           placeholder="AAPL, Tesla, AL30, GD30..."

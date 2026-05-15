@@ -59,11 +59,11 @@ function getTargetBeta(profile: InvestorProfile): number {
 
 function getTargetVolatility(profile: InvestorProfile): number {
   const base: Record<string, number> = {
-    conservative: 0.08,
-    moderate: 0.15,
-    aggressive: 0.22,
+    conservative: 0.06,
+    moderate: 0.10,
+    aggressive: 0.14,
   };
-  return base[profile.risk_tolerance ?? "moderate"] ?? 0.15;
+  return base[profile.risk_tolerance ?? "moderate"] ?? 0.10;
 }
 
 export function computeRiskAdjustedReturnScore(sharpeRatio: number): number {

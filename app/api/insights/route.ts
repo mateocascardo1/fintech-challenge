@@ -317,13 +317,15 @@ Generá SOLO un JSON (sin markdown) con estas 3 secciones:
 2. "allocation_moves": 2-4 movimientos de rebalanceo a nivel asset class.
    Cada objeto: { "asset_class": "bonds"|"us_equities"|"intl_equities"|"cash", "direction": "increase"|"decrease", "current_pct": number, "target_pct": number, "score_impact": number, "title": "acción corta", "body": "explicación de por qué y qué score mejora" }
    - Solo incluir clases con gap material (>5%)
+   - NUNCA repetir la misma asset_class más de una vez. Cada asset_class debe aparecer como máximo 1 vez.
    - score_impact debe ser realista basado en los gaps que ves
 
 3. "instrument_picks": 3-5 instrumentos específicos para comprar o vender.
-   Cada objeto: { "action": "buy"|"sell", "symbol": "TICKER", "asset_type": "equity"|"etf"|"bond"|"cash", "name": "nombre completo", "reason": "1 oración sobre qué sub-score mejora", "score_impact": number, "priority": "high"|"medium"|"low", "improves": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection" }
+   Cada objeto: { "action": "buy"|"sell", "symbol": "TICKER", "asset_type": "equity"|"etf"|"bond_etf"|"cash", "name": "nombre completo", "reason": "1 oración sobre qué sub-score mejora", "score_impact": number, "priority": "high"|"medium"|"low", "improves": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection" }
    - Priorizar instrumentos que cierren el mayor gap de allocation primero
-   - Para bonos argentinos, usar tickers reales (GD30, AL30, GD35, AL35, AE38)
+   - Para renta fija, recomendar SOLO ETFs de bonos (TLT, AGG, LQD, SHY, HYG, IEF, GOVT) con asset_type "bond_etf". NO recomendar bonos argentinos individuales (AL30, GD30, etc.) porque no tenemos datos de riesgo suficientes para evaluar su impacto en el score.
    - Cada rec debe especificar cuál sub-score mejora
+   - NUNCA repetir el mismo símbolo más de una vez
 
 Responder SOLO con el JSON.`;
 

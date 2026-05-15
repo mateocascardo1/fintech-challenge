@@ -67,6 +67,7 @@ export default function StockDetailPage({
   const [addSaving, setAddSaving] = useState(false);
   const [addSuccess, setAddSuccess] = useState(false);
   const [addError, setAddError] = useState("");
+  const [periodReturn, setPeriodReturn] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/watchlist")
@@ -222,7 +223,8 @@ export default function StockDetailPage({
   const sym = symbol.toUpperCase();
   const isTradeable = !sym.startsWith("^") && !sym.includes("=");
 
-  const isPositive = quote.changePercent >= 0;
+  const displayReturn = periodReturn ?? quote.changePercent;
+  const isPositive = displayReturn >= 0;
   const formatFn = isBond
     ? (v: number) => `$ ${new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}`
     : (v: number) => formatPrice(v, quote.currency);
@@ -308,20 +310,20 @@ export default function StockDetailPage({
         <span className="text-5xl font-bold tabular-nums tracking-tight leading-none">
           {formatFn(quote.price)}
         </span>
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors duration-300 ${
           isPositive
             ? "bg-positive/10 text-positive"
             : "bg-negative/10 text-negative"
         }`}>
           {isPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-          {formatPercent(quote.changePercent, { withSign: true })}
+          {formatPercent(displayReturn, { withSign: true })}
         </div>
       </div>
 
       {/* Chart + Sidebar */}
       <div className={`grid gap-6 ${!isBond ? "lg:grid-cols-[1fr_320px]" : ""}`}>
         {/* Chart container */}
-        {!isBond && <ChartWrapper symbol={symbol.toUpperCase()} />}
+        {!isBond && <ChartWrapper symbol={symbol.toUpperCase()} onPeriodReturn={setPeriodReturn} />}
 
         {/* Sidebar: News / About - height locked to chart */}
         {!isBond && (
@@ -456,7 +458,7 @@ export default function StockDetailPage({
   );
 }
 
-function ChartWrapper({ symbol }: { symbol: string }) {
+function ChartWrapper({ symbol, onPeriodReturn }: { symbol: string; onPeriodReturn?: (pct: number) => void }) {
   const [visible, setVisible] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -486,7 +488,7 @@ function ChartWrapper({ symbol }: { symbol: string }) {
 
   return (
     <div ref={ref} className="h-[420px] rounded-2xl border border-border bg-card p-4">
-      <PriceChart symbol={symbol} />
+      <PriceChart symbol={symbol} onPeriodReturn={onPeriodReturn} />
     </div>
   );
 }

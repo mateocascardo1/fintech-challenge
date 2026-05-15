@@ -345,10 +345,19 @@ type SearchResponse = {
   }>;
 };
 
+const INDEX_TO_ETF: Record<string, { symbol: string; name: string }> = {
+  "^GSPC": { symbol: "SPY", name: "SPDR S&P 500 ETF (replica S&P 500)" },
+  "^DJI":  { symbol: "DIA", name: "SPDR Dow Jones Industrial ETF (replica Dow Jones)" },
+  "^IXIC": { symbol: "QQQ", name: "Invesco QQQ ETF (replica Nasdaq-100)" },
+  "^RUT":  { symbol: "IWM", name: "iShares Russell 2000 ETF (replica Russell 2000)" },
+  "^VIX":  { symbol: "VIXY", name: "ProShares VIX Short-Term Futures ETF" },
+};
+
 export async function searchSymbols(query: string): Promise<SearchResult[]> {
   if (!query.trim()) return [];
-  const res = (await yahooFinance.search(query, { quotesCount: 10, newsCount: 0 })) as SearchResponse;
+  const res = (await yahooFinance.search(query, { quotesCount: 15, newsCount: 0 })) as SearchResponse;
   const out: SearchResult[] = [];
+  const seen = new Set<string>();
   for (const q of res.quotes) {
     if ("symbol" in q && typeof q.symbol === "string") {
       const item = q as {
@@ -358,6 +367,20 @@ export async function searchSymbols(query: string): Promise<SearchResult[]> {
         quoteType?: string;
         exchange?: string;
       };
+      if (item.quoteType === "FUTURE") continue;
+
+      // Convert indices to their investable ETF equivalents
+      if (item.symbol.startsWith("^") || item.quoteType === "INDEX") {
+        const etf = INDEX_TO_ETF[item.symbol];
+        if (etf && !seen.has(etf.symbol)) {
+          seen.add(etf.symbol);
+          out.push({ symbol: etf.symbol, name: etf.name, exchange: "NYSE", type: "ETF" });
+        }
+        continue;
+      }
+
+      if (seen.has(item.symbol)) continue;
+      seen.add(item.symbol);
       out.push({
         symbol: item.symbol,
         name: item.shortname ?? item.longname ?? item.symbol,
@@ -366,6 +389,6 @@ export async function searchSymbols(query: string): Promise<SearchResult[]> {
       });
     }
   }
-  return out;
+  return out.slice(0, 10);
 }
 

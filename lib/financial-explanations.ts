@@ -145,64 +145,59 @@ export const ONBOARDING_EXPLANATIONS: Record<string, Explanation> = {
   investment_horizon: {
     title: "¿Por qué importa el horizonte?",
     content:
-      "El tiempo es el factor más importante en la construcción de un portfolio. " +
-      "Con horizontes largos podés tolerar mayor volatilidad porque las caídas temporales se recuperan. " +
-      "Con horizontes cortos, la prioridad es preservar capital.",
+      "El tiempo es clave. Si necesitás la plata pronto, conviene invertir en cosas estables. " +
+      "Si podés esperar varios años, las caídas temporales se recuperan y podés apuntar a más crecimiento.",
   },
   risk_tolerance: {
-    title: "¿Por qué importa la tolerancia al riesgo?",
+    title: "¿Por qué importa el riesgo?",
     content:
-      "Tu tolerancia define cuánta volatilidad podés soportar sin tomar decisiones impulsivas. " +
-      "Un portfolio demasiado arriesgado para tu perfil puede llevarte a vender en el peor momento. " +
-      "Alinear el riesgo a tu perfil protege de errores emocionales.",
+      "Tu portfolio va a subir y bajar de valor. Esta pregunta nos ayuda a entender cuánto movimiento " +
+      "podés aguantar sin preocuparte. Si un portfolio es demasiado arriesgado para vos, " +
+      "podrías vender en el peor momento por miedo.",
   },
   objective: {
     title: "¿Por qué importa el objetivo?",
     content:
-      "Preservar capital, generar ingresos y crecimiento agresivo requieren estrategias muy distintas. " +
-      "El objetivo determina qué mix de activos es óptimo: más bonos para ingresos, " +
-      "más acciones para crecimiento, o un balance para preservación.",
+      "Proteger tu plata, recibir ingresos regulares y buscar crecimiento agresivo requieren " +
+      "estrategias muy distintas. Tu objetivo nos dice qué tipo de inversiones priorizar.",
   },
   drawdown_reaction: {
     title: "¿Qué revela esta pregunta?",
     content:
-      "Tu reacción ante una caída del 20% revela tu verdadera capacidad de asumir riesgo, " +
-      "más allá de lo que crees teóricamente. Si venderías en pánico, tu portfolio necesita ser más conservador " +
-      "para evitar cristalizar pérdidas en el peor momento.",
+      "Tu reacción real ante una caída dice más que cualquier otra respuesta. " +
+      "Nos ayuda a calibrar cuánto riesgo poner en tu portfolio para que no tomes decisiones impulsivas.",
   },
   patrimony_percentage: {
     title: "¿Por qué importa el % de patrimonio?",
     content:
-      "Si este portfolio representa la mayor parte de tus ahorros, el riesgo real es mayor. " +
-      "Una caída del 30% en el 100% de tu patrimonio es devastadora, pero en el 10% es manejable. " +
-      "Esto ajusta la agresividad óptima del portfolio.",
+      "Si este portfolio es casi todo lo que tenés, necesitamos ser más cuidadosos. " +
+      "Una caída del 30% en todo tu patrimonio es muy distinta a una caída en el 10% de tus ahorros.",
   },
   liquidity_need: {
     title: "¿Por qué importa la liquidez?",
     content:
-      "Si necesitás acceso frecuente al dinero, el portfolio debe incluir activos líquidos y de baja volatilidad. " +
-      "Invertir capital que podés necesitar a corto plazo en activos volátiles te fuerza a vender " +
-      "en momentos desfavorables.",
+      "Si podés necesitar esta plata de golpe, el portfolio debe tener inversiones que puedas " +
+      "vender fácil y sin perder mucho valor. Cuanto menos la necesites, más podemos optimizar.",
   },
   income_vs_growth: {
-    title: "¿Ingreso vs Crecimiento?",
+    title: "¿Cobrar vs crecer?",
     content:
-      "Los activos de ingreso (bonos, dividendos) generan flujo de caja regular pero crecimiento menor. " +
-      "Los activos de crecimiento (acciones growth) reinvierten en la empresa y se aprecian más a largo plazo. " +
-      "El balance depende de si necesitás dinero hoy o querés maximizar valor futuro.",
+      "Algunas inversiones te pagan periódicamente, como un alquiler. " +
+      "Otras crecen en valor pero no te dan plata hasta que vendas. " +
+      "El balance depende de si necesitás dinero hoy o querés maximizar valor a futuro.",
   },
   bond_preference: {
-    title: "¿Por qué importa la preferencia de bonos?",
+    title: "¿Por qué importa la estabilidad?",
     content:
-      "Los bonos soberanos son más seguros pero rinden menos. Los corporativos ofrecen mayor rendimiento " +
-      "pero con riesgo crediticio. La preferencia afecta la relación riesgo-retorno " +
-      "de la porción de renta fija de tu portfolio.",
+      "La estabilidad viene de instrumentos como bonos, que son préstamos a gobiernos o empresas " +
+      "que te devuelven con intereses. Son más predecibles pero rinden menos que las acciones. " +
+      "Más estabilidad = menos sorpresas, pero también menos crecimiento.",
   },
   geo_preference: {
-    title: "¿Por qué importa la preferencia geográfica?",
+    title: "¿Por qué importa dónde invertir?",
     content:
-      "Diversificar entre regiones reduce la exposición a riesgos locales (políticos, económicos, regulatorios). " +
-      "Un portfolio concentrado en un solo país está expuesto a eventos que no afectan a mercados globales.",
+      "Invertir en distintos países reduce el riesgo de que un problema local afecte todo tu portfolio. " +
+      "Estados Unidos tiene las empresas más grandes, pero sumar otros mercados da más variedad.",
   },
   esg_preference: {
     title: "¿Qué son los criterios ESG?",

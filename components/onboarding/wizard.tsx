@@ -12,16 +12,18 @@ import { StepFreeSelect } from "./step-free-select";
 import { StepReview } from "./step-review";
 import type { InvestorProfile } from "@/lib/portfolio/types";
 import { computeModelAllocation } from "@/lib/portfolio/allocation";
-import { CANDIDATE_BOND_ETFS, CANDIDATE_SECTOR_ETFS } from "@/lib/portfolio/constants";
+import { CANDIDATE_BOND_ETFS, CANDIDATE_SECTOR_ETFS, CANDIDATE_BROAD_ETFS } from "@/lib/portfolio/constants";
 
 type FreePick = { symbol: string; name: string; asset_type: string };
 
 const BOND_ETF_SET = new Set<string>(CANDIDATE_BOND_ETFS);
 const SECTOR_ETF_SET = new Set<string>(CANDIDATE_SECTOR_ETFS);
+const BROAD_ETF_SET = new Set<string>(CANDIDATE_BROAD_ETFS);
 
 function guessAssetType(symbol: string): string {
   if (BOND_ETF_SET.has(symbol)) return "bond_etf";
   if (SECTOR_ETF_SET.has(symbol)) return "etf";
+  if (BROAD_ETF_SET.has(symbol)) return "etf";
   if (symbol.match(/^[A-Z]{2,5}\d/i)) return "bond";
   return "equity";
 }
@@ -37,6 +39,7 @@ export function OnboardingWizard() {
   const [selectedEquities, setSelectedEquities] = useState<string[]>([]);
   const [selectedBonds, setSelectedBonds] = useState<string[]>([]);
   const [freePicks, setFreePicks] = useState<FreePick[]>([]);
+  const [optimizedWeights, setOptimizedWeights] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
@@ -44,13 +47,29 @@ export function OnboardingWizard() {
 
   const modelAlloc = useMemo(() => {
     if (!profile.risk_tolerance) return null;
-    return computeModelAllocation(profile as InvestorProfile);
-  }, [profile]);
+    const alloc = computeModelAllocation(profile as InvestorProfile);
+
+    if (isBuilderFlow && alloc.cash > 0.05) {
+      const excess = alloc.cash - 0.05;
+      alloc.cash = 0.05;
+      const eqRatio = alloc.us_equities / (alloc.us_equities + alloc.bonds || 1);
+      alloc.us_equities += excess * eqRatio;
+      alloc.bonds += excess * (1 - eqRatio);
+    }
+
+    return alloc;
+  }, [profile, isBuilderFlow]);
 
   const equityPercent = modelAlloc?.us_equities ?? 0.55;
   const bondPercent = modelAlloc?.bonds ?? 0.25;
 
-  const totalSteps = isBuilderFlow ? 8 : (hasPortfolio ? 3 : 2);
+  const totalSteps = isBuilderFlow ? 7 : (hasPortfolio ? 3 : 2);
+
+  const displayStep = (() => {
+    if (!isBuilderFlow) return step;
+    const mapping: Record<number, number> = { 1: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7 };
+    return mapping[step] ?? step;
+  })();
 
   async function saveProfileAndPositions(
     prof: Partial<InvestorProfile>,
@@ -86,6 +105,7 @@ export function OnboardingWizard() {
       }
 
       const errors: string[] = [];
+      let failedCapital = 0;
       for (const pos of positionsToSave) {
         if (!pos.quantity || pos.quantity <= 0) {
           console.warn("Skipping position with invalid quantity:", pos);
@@ -100,11 +120,22 @@ export function OnboardingWizard() {
           const err = await res.json().catch(() => ({}));
           console.error(`Failed to save ${pos.symbol}:`, err, "payload:", pos);
           errors.push(pos.symbol);
+          if (pos.asset_type !== "cash") {
+            failedCapital += pos.quantity * (pos.quantity > 100 ? 1 : 100);
+          }
         }
       }
 
+      if (failedCapital > 0) {
+        await fetch("/api/portfolio", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ symbol: "CASH-USD", quantity: Math.round(failedCapital * 100) / 100, asset_type: "cash" }),
+        }).catch(() => {});
+      }
+
       if (errors.length > 0) {
-        alert(`No se pudieron guardar: ${errors.join(", ")}. El resto se guardó correctamente.`);
+        alert(`No se pudieron guardar: ${errors.join(", ")}. El capital no invertido se asignó a efectivo.`);
       }
 
       router.push("/dashboard");
@@ -208,49 +239,113 @@ export function OnboardingWizard() {
     const bdCount = selectedBonds.length;
     const fpCount = freePicks.length;
 
-    const rawEquity = eqCount > 0 ? equityPercent * capital : 0;
-    const rawBond = bdCount > 0 ? bondPercent * capital : 0;
-    const remaining = capital - rawEquity - rawBond;
-    const rawFree = fpCount > 0 ? remaining * 0.5 : 0;
-    const cashAmount = capital - rawEquity - rawBond - rawFree;
+    const hasOptimizerWeights = Object.keys(optimizedWeights).length > 0 &&
+      selectedEquities.every((s) => optimizedWeights[s] !== undefined);
 
     const computed: { symbol: string; quantity: number; asset_type: string }[] = [];
 
-    if (eqCount > 0) {
-      const perEq = rawEquity / eqCount;
+    if (hasOptimizerWeights) {
+      // Use optimizer-calculated weights for precise allocation
+      // Weights already sum to ~0.95 (1 - cash), so dollar = capital × weight directly
       for (const sym of selectedEquities) {
+        const weight = optimizedWeights[sym] ?? 0;
+        const dollarAmount = capital * weight;
         const price = prices[sym];
-        const shares = Math.round((perEq / price) * 100) / 100;
-        computed.push({ symbol: sym, quantity: shares, asset_type: guessAssetType(sym) });
-      }
-    }
-
-    if (bdCount > 0) {
-      const perBd = rawBond / bdCount;
-      for (const sym of selectedBonds) {
+        if (!price || dollarAmount < 1) continue;
         const aType = guessAssetType(sym);
-        const price = prices[sym];
-        const qty = Math.floor(perBd / price);
-        computed.push({ symbol: sym, quantity: Math.max(qty, 1), asset_type: aType });
-      }
-    }
-
-    if (fpCount > 0) {
-      const perFp = rawFree / fpCount;
-      for (const fp of freePicks) {
-        const aType = fp.asset_type || guessAssetType(fp.symbol);
-        const price = prices[fp.symbol];
         if (aType === "bond") {
-          const qty = Math.floor(perFp / price);
-          computed.push({ symbol: fp.symbol, quantity: Math.max(qty, 1), asset_type: aType });
+          const qty = Math.max(1, Math.floor(dollarAmount / price));
+          computed.push({ symbol: sym, quantity: qty, asset_type: aType });
         } else {
-          const shares = Math.round((perFp / price) * 100) / 100;
-          computed.push({ symbol: fp.symbol, quantity: shares, asset_type: aType });
+          const shares = Math.round((dollarAmount / price) * 100) / 100;
+          computed.push({ symbol: sym, quantity: shares, asset_type: aType });
+        }
+      }
+
+      // Bonds from step 6 (Argentine bonds) - equal split from remaining capital
+      if (bdCount > 0) {
+        const usedWeight = selectedEquities.reduce((s, sym) => s + (optimizedWeights[sym] ?? 0), 0);
+        const remainingBudget = capital * Math.max(0, 1 - usedWeight - 0.05);
+        const perBd = remainingBudget > 0 ? remainingBudget / bdCount : (bondPercent * capital) / bdCount;
+        for (const sym of selectedBonds) {
+          const aType = guessAssetType(sym);
+          const price = prices[sym];
+          if (aType === "bond") {
+            const qty = Math.max(1, Math.floor(perBd / price));
+            computed.push({ symbol: sym, quantity: qty, asset_type: aType });
+          } else {
+            const shares = Math.round((perBd / price) * 100) / 100;
+            computed.push({ symbol: sym, quantity: shares, asset_type: aType });
+          }
+        }
+      }
+
+      // Free picks - equal split from remaining capital
+      if (fpCount > 0) {
+        const spent = computed.reduce((s, p) => s + p.quantity * (prices[p.symbol] ?? 0), 0);
+        const freeTotal = Math.max(0, capital - spent - capital * 0.05) * 0.8;
+        const perFp = freeTotal / fpCount;
+        for (const fp of freePicks) {
+          const aType = fp.asset_type || guessAssetType(fp.symbol);
+          const price = prices[fp.symbol];
+          if (aType === "bond") {
+            const qty = Math.max(1, Math.floor(perFp / price));
+            computed.push({ symbol: fp.symbol, quantity: qty, asset_type: aType });
+          } else {
+            const shares = Math.round((perFp / price) * 100) / 100;
+            computed.push({ symbol: fp.symbol, quantity: shares, asset_type: aType });
+          }
+        }
+      }
+    } else {
+      // Fallback: equal allocation per category (manual selection)
+      const rawEquity = eqCount > 0 ? equityPercent * capital : 0;
+      const rawBond = bdCount > 0 ? bondPercent * capital : 0;
+      const remaining = capital - rawEquity - rawBond;
+      const rawFree = fpCount > 0 ? remaining * 0.5 : 0;
+
+      if (eqCount > 0) {
+        const perEq = rawEquity / eqCount;
+        for (const sym of selectedEquities) {
+          const price = prices[sym];
+          const shares = Math.round((perEq / price) * 100) / 100;
+          computed.push({ symbol: sym, quantity: shares, asset_type: guessAssetType(sym) });
+        }
+      }
+
+      if (bdCount > 0) {
+        const perBd = rawBond / bdCount;
+        for (const sym of selectedBonds) {
+          const aType = guessAssetType(sym);
+          const price = prices[sym];
+          if (aType === "bond") {
+            const qty = Math.max(1, Math.floor(perBd / price));
+            computed.push({ symbol: sym, quantity: qty, asset_type: aType });
+          } else {
+            const shares = Math.round((perBd / price) * 100) / 100;
+            computed.push({ symbol: sym, quantity: shares, asset_type: aType });
+          }
+        }
+      }
+
+      if (fpCount > 0) {
+        const perFp = rawFree / fpCount;
+        for (const fp of freePicks) {
+          const aType = fp.asset_type || guessAssetType(fp.symbol);
+          const price = prices[fp.symbol];
+          if (aType === "bond") {
+            const qty = Math.max(1, Math.floor(perFp / price));
+            computed.push({ symbol: fp.symbol, quantity: qty, asset_type: aType });
+          } else {
+            const shares = Math.round((perFp / price) * 100) / 100;
+            computed.push({ symbol: fp.symbol, quantity: shares, asset_type: aType });
+          }
         }
       }
     }
 
-    if (cashAmount > 0) {
+    const cashAmount = capital - computed.reduce((sum, pos) => sum + pos.quantity * (prices[pos.symbol] ?? 0), 0);
+    if (cashAmount > 0.01) {
       computed.push({ symbol: "CASH-USD", quantity: Math.round(cashAmount * 100) / 100, asset_type: "cash" });
     }
 
@@ -294,14 +389,14 @@ export function OnboardingWizard() {
               Signal<span className="text-primary">AI</span>
             </h1>
             <p className="mt-1.5 text-xs text-muted-foreground">
-              {stepLabel()} — Paso {step} de {totalSteps}
+              {stepLabel()} — Paso {displayStep} de {totalSteps}
             </p>
             <div className="mt-3 flex gap-1 justify-center max-w-xs mx-auto">
               {Array.from({ length: totalSteps }).map((_, i) => (
                 <div
                   key={i}
                   className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                    i + 1 <= step ? "bg-primary" : "bg-muted"
+                    i + 1 <= displayStep ? "bg-primary" : "bg-muted"
                   }`}
                 />
               ))}
@@ -354,9 +449,12 @@ export function OnboardingWizard() {
             setSelectedEquities(syms);
             setStep(6);
           }}
+          onOptimizedWeights={setOptimizedWeights}
           onBack={() => setStep(4)}
           capital={capital}
           equityPercent={equityPercent}
+          profile={profile}
+          alloc={modelAlloc}
         />
       )}
 
@@ -371,6 +469,7 @@ export function OnboardingWizard() {
           capital={capital}
           bondPercent={bondPercent}
           bondPreference={profile.bond_preference as string | null}
+          profile={profile}
         />
       )}
 
@@ -396,6 +495,7 @@ export function OnboardingWizard() {
           freePicks={freePicks}
           equityPercent={equityPercent}
           bondPercent={bondPercent}
+          optimizedWeights={optimizedWeights}
           onConfirm={handleBuilderConfirm}
           onBack={() => setStep(7)}
           saving={saving}

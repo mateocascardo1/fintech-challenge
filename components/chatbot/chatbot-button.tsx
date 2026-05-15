@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { MessageCircle, X } from "lucide-react";
@@ -8,9 +8,22 @@ import { ChatbotPanel } from "./chatbot-panel";
 
 const HIDDEN_PATHS = ["/onboarding"];
 
+function getStockSymbol(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const match = pathname.match(/^\/stock\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]).toUpperCase() : null;
+}
+
 export function ChatbotButton() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  const stockSymbol = useMemo(() => getStockSymbol(pathname), [pathname]);
+
+  const initialInput = useMemo(() => {
+    if (!stockSymbol) return undefined;
+    return `¿Me conviene agregar $${stockSymbol} a mi portafolio? ¿O debo reducir mi exposición?`;
+  }, [stockSymbol]);
 
   if (HIDDEN_PATHS.some((p) => pathname?.startsWith(p))) return null;
 
@@ -18,7 +31,7 @@ export function ChatbotButton() {
     <>
       {open &&
         createPortal(
-          <ChatbotPanel onClose={() => setOpen(false)} />,
+          <ChatbotPanel onClose={() => setOpen(false)} initialInput={initialInput} />,
           document.body,
         )}
       <button

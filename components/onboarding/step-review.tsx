@@ -21,6 +21,7 @@ interface StepReviewProps {
   freePicks: Array<{ symbol: string; name: string; asset_type: string }>;
   equityPercent: number;
   bondPercent: number;
+  optimizedWeights?: Record<string, number>;
   onConfirm: () => void;
   onBack: () => void;
   saving: boolean;
@@ -48,21 +49,24 @@ export function StepReview({
   freePicks,
   equityPercent,
   bondPercent,
+  optimizedWeights,
   onConfirm,
   onBack,
   saving,
 }: StepReviewProps) {
-  const { stocks, sectorEtfs } = useMemo(() => {
+  const { stocks, sectorEtfs, bondEtfsFromEquities } = useMemo(() => {
     const s: string[] = [];
     const e: string[] = [];
+    const b: string[] = [];
     for (const sym of equities) {
-      if (SECTOR_ETF_SET.has(sym)) e.push(sym);
+      if (BOND_ETF_SET.has(sym)) b.push(sym);
+      else if (SECTOR_ETF_SET.has(sym)) e.push(sym);
       else s.push(sym);
     }
-    return { stocks: s, sectorEtfs: e };
+    return { stocks: s, sectorEtfs: e, bondEtfsFromEquities: b };
   }, [equities]);
 
-  const { bondEtfs, sovereignBonds } = useMemo(() => {
+  const { bondEtfs: bondEtfsFromBonds, sovereignBonds } = useMemo(() => {
     const etfs: string[] = [];
     const sov: string[] = [];
     for (const sym of bonds) {
@@ -72,17 +76,85 @@ export function StepReview({
     return { bondEtfs: etfs, sovereignBonds: sov };
   }, [bonds]);
 
+  const bondEtfs = useMemo(
+    () => [...new Set([...bondEtfsFromEquities, ...bondEtfsFromBonds])],
+    [bondEtfsFromEquities, bondEtfsFromBonds],
+  );
+
+  const hasWeights = optimizedWeights && Object.keys(optimizedWeights).length > 0;
+
+  const perSymbolAmount = useMemo(() => {
+    if (!hasWeights) return {};
+    const map: Record<string, number> = {};
+    for (const [sym, w] of Object.entries(optimizedWeights!)) {
+      map[sym] = capital * w;
+    }
+
+    // For non-optimizer instruments (sovereign bonds, free picks), compute from remaining budget
+    const optimizerSpent = Object.values(optimizedWeights!).reduce((s, w) => s + w, 0);
+    const remaining = capital * Math.max(0, 1 - optimizerSpent - 0.05);
+    const nonOptimizerSymbols = [
+      ...sovereignBonds.filter((s) => !optimizedWeights![s]),
+      ...freePicks.map((fp) => fp.symbol).filter((s) => !optimizedWeights![s]),
+    ];
+    if (nonOptimizerSymbols.length > 0) {
+      const perExtra = remaining / nonOptimizerSymbols.length;
+      for (const sym of nonOptimizerSymbols) {
+        map[sym] = perExtra;
+      }
+    }
+
+    return map;
+  }, [hasWeights, optimizedWeights, capital, sovereignBonds, freePicks]);
+
   const allocation = useMemo(() => {
-    const eqCount = equities.length;
-    const bdCount = bonds.length;
+    if (hasWeights) {
+      // Use optimizer weights for accurate display
+      let rawEquity = 0;
+      let rawBond = 0;
+      let rawFree = 0;
+
+      for (const sym of stocks) rawEquity += perSymbolAmount[sym] ?? 0;
+      for (const sym of sectorEtfs) rawEquity += perSymbolAmount[sym] ?? 0;
+      for (const sym of bondEtfs) rawBond += perSymbolAmount[sym] ?? 0;
+      for (const sym of sovereignBonds) rawBond += perSymbolAmount[sym] ?? 0;
+      for (const fp of freePicks) rawFree += perSymbolAmount[fp.symbol] ?? 0;
+
+      const cashAmount = Math.max(0, capital - rawEquity - rawBond - rawFree);
+      const pureEquityCount = stocks.length + sectorEtfs.length;
+
+      return {
+        equityTotal: rawEquity,
+        equityPer: pureEquityCount > 0 ? rawEquity / pureEquityCount : 0,
+        bondTotal: rawBond,
+        bondPer: (bondEtfs.length + sovereignBonds.length) > 0 ? rawBond / (bondEtfs.length + sovereignBonds.length) : 0,
+        freeTotal: rawFree,
+        freePer: freePicks.length > 0 ? rawFree / freePicks.length : 0,
+        cash: cashAmount,
+        pcts: {
+          eq: capital > 0 ? rawEquity / capital : 0,
+          bd: capital > 0 ? rawBond / capital : 0,
+          fp: capital > 0 ? rawFree / capital : 0,
+          ca: capital > 0 ? cashAmount / capital : 0,
+        },
+      };
+    }
+
+    // Fallback: equal split
+    const pureEquityCount = stocks.length + sectorEtfs.length;
+    const totalBondEtfCount = bondEtfs.length;
+    const sovBondCount = sovereignBonds.length;
     const fpCount = freePicks.length;
 
-    const rawEquity = eqCount > 0 ? equityPercent * capital : 0;
-    const rawBond = bdCount > 0 ? bondPercent * capital : 0;
+    const totalInstrumentCount = pureEquityCount + totalBondEtfCount + sovBondCount + fpCount;
+    const cashPct = 0.05;
+    const investable = capital * (1 - cashPct);
 
-    const remaining = capital - rawEquity - rawBond;
-    const freePickPortion = 0.5;
-    const rawFree = fpCount > 0 ? remaining * freePickPortion : 0;
+    const perInstrument = totalInstrumentCount > 0 ? investable / totalInstrumentCount : 0;
+
+    const rawEquity = pureEquityCount * perInstrument;
+    const rawBond = (totalBondEtfCount + sovBondCount) * perInstrument;
+    const rawFree = fpCount * perInstrument;
     const cashAmount = capital - rawEquity - rawBond - rawFree;
 
     const eqPct = capital > 0 ? rawEquity / capital : 0;
@@ -92,15 +164,15 @@ export function StepReview({
 
     return {
       equityTotal: rawEquity,
-      equityPer: eqCount > 0 ? rawEquity / eqCount : 0,
+      equityPer: pureEquityCount > 0 ? rawEquity / pureEquityCount : 0,
       bondTotal: rawBond,
-      bondPer: bdCount > 0 ? rawBond / bdCount : 0,
+      bondPer: (totalBondEtfCount + sovBondCount) > 0 ? rawBond / (totalBondEtfCount + sovBondCount) : 0,
       freeTotal: rawFree,
       freePer: fpCount > 0 ? rawFree / fpCount : 0,
       cash: cashAmount,
       pcts: { eq: eqPct, bd: bdPct, fp: fpPct, ca: caPct },
     };
-  }, [capital, equities, bonds, freePicks, equityPercent, bondPercent]);
+  }, [capital, stocks, sectorEtfs, bondEtfs, sovereignBonds, freePicks, hasWeights, perSymbolAmount]);
 
   const totalInstruments = equities.length + bonds.length + freePicks.length;
 
@@ -123,6 +195,29 @@ export function StepReview({
 
   return (
     <div className="animate-in fade-in duration-500 space-y-8">
+      {/* Full-screen creating overlay - uses portal-level z-index to cover everything */}
+      {saving && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 z-[9999] flex flex-col items-center justify-center p-6 bg-background" style={{ minHeight: '100vh', minWidth: '100vw' }}>
+          <div className="relative mb-8">
+            <div className="h-24 w-24 rounded-full border-4 border-muted/20 border-t-primary animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Wallet className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-foreground text-center">
+            Estamos creando tu portfolio
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground text-center max-w-xs leading-relaxed">
+            Comprando instrumentos y configurando tu cartera. Esto puede tomar unos segundos...
+          </p>
+          <div className="mt-8 flex gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -220,7 +315,7 @@ export function StepReview({
               Acciones
             </p>
             {stocks.map((sym) => (
-              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(allocation.equityPer)}`} />
+              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(hasWeights ? (perSymbolAmount[sym] ?? 0) : allocation.equityPer)}`} />
             ))}
           </div>
         )}
@@ -231,7 +326,7 @@ export function StepReview({
               ETFs Sectoriales
             </p>
             {sectorEtfs.map((sym) => (
-              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(allocation.equityPer)}`} />
+              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(hasWeights ? (perSymbolAmount[sym] ?? 0) : allocation.equityPer)}`} />
             ))}
           </div>
         )}
@@ -242,7 +337,7 @@ export function StepReview({
               ETFs de Bonos
             </p>
             {bondEtfs.map((sym) => (
-              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(allocation.bondPer)}`} />
+              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(hasWeights ? (perSymbolAmount[sym] ?? 0) : allocation.bondPer)}`} />
             ))}
           </div>
         )}
@@ -253,7 +348,7 @@ export function StepReview({
               Bonos Soberanos
             </p>
             {sovereignBonds.map((sym) => (
-              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(allocation.bondPer)}`} />
+              <InstrumentRow key={sym} sym={sym} amount={`~$${fmt(hasWeights ? (perSymbolAmount[sym] ?? 0) : allocation.bondPer)}`} />
             ))}
           </div>
         )}
@@ -267,7 +362,7 @@ export function StepReview({
               <InstrumentRow
                 key={fp.symbol}
                 sym={fp.symbol}
-                amount={isSovereignBond(fp.symbol) ? "1 bono (VN100)" : `~$${fmt(allocation.freePer)}`}
+                amount={isSovereignBond(fp.symbol) ? "1 bono (VN100)" : `~$${fmt(hasWeights ? (perSymbolAmount[fp.symbol] ?? 0) : allocation.freePer)}`}
                 label={fp.name}
               />
             ))}
@@ -323,24 +418,17 @@ export function StepReview({
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between pt-2">
-        <Button variant="ghost" onClick={onBack} disabled={saving}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Volver a editar
-        </Button>
-        <Button onClick={onConfirm} disabled={saving}>
-          {saving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Creando…
-            </>
-          ) : (
-            <>
-              <Check className="h-4 w-4 mr-1" />
-              Confirmar y crear portfolio
-            </>
-          )}
-        </Button>
-      </div>
+      {!saving && (
+        <div className="flex justify-between pt-2">
+          <Button variant="ghost" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Volver a editar
+          </Button>
+          <Button onClick={onConfirm}>
+            <Check className="h-4 w-4 mr-1" />
+            Confirmar y crear portfolio
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

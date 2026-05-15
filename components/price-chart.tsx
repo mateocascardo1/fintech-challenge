@@ -48,7 +48,7 @@ const RED = "#ef4444";
 const RED_TOP = "rgba(239, 68, 68, 0.3)";
 const RED_BOTTOM = "rgba(239, 68, 68, 0.02)";
 
-export function PriceChart({ symbol }: { symbol: string }) {
+export function PriceChart({ symbol, onPeriodReturn }: { symbol: string; onPeriodReturn?: (pct: number) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | ISeriesApi<"Area"> | null>(null);
@@ -161,6 +161,11 @@ export function PriceChart({ symbol }: { symbol: string }) {
         setHasData(points.length > 0);
         if (points.length > 0) {
           applySeries(chart, points, mode);
+          const first = points[0].open;
+          const last = points[points.length - 1].close;
+          if (first > 0 && onPeriodReturn) {
+            onPeriodReturn(((last - first) / first) * 100);
+          }
         }
         setIsLoading(false);
       })
