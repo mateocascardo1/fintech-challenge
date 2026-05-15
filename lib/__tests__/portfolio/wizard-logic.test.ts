@@ -191,6 +191,156 @@ describe("handleBuilderConfirm capital allocation logic", () => {
   });
 });
 
+describe("optimizer + bonds: total allocation never exceeds capital", () => {
+  const capital = 10000;
+  const bondPercent = 0.25;
+
+  function simulateOptimizerWithBonds(
+    optimizedWeights: Record<string, number>,
+    selectedEquities: string[],
+    selectedBonds: string[],
+    prices: Record<string, number>,
+  ) {
+    const bdCount = selectedBonds.length;
+    const cashReserve = capital * 0.05;
+    const bondBudget = bdCount > 0 ? bondPercent * capital : 0;
+    const equityBudget = capital - bondBudget - cashReserve;
+
+    const totalWeight = selectedEquities.reduce(
+      (s, sym) => s + (optimizedWeights[sym] ?? 0), 0
+    );
+
+    const computed: { symbol: string; quantity: number; asset_type: string }[] = [];
+
+    for (const sym of selectedEquities) {
+      const weight = optimizedWeights[sym] ?? 0;
+      const dollarAmount = totalWeight > 0 ? equityBudget * (weight / totalWeight) : 0;
+      const price = prices[sym];
+      if (!price || dollarAmount < 1) continue;
+      const aType = guessAssetType(sym);
+      if (aType === "bond") {
+        const qty = Math.max(1, Math.floor(dollarAmount / price));
+        computed.push({ symbol: sym, quantity: qty, asset_type: aType });
+      } else {
+        const shares = Math.round((dollarAmount / price) * 100) / 100;
+        computed.push({ symbol: sym, quantity: shares, asset_type: aType });
+      }
+    }
+
+    if (bdCount > 0) {
+      const perBd = bondBudget / bdCount;
+      for (const sym of selectedBonds) {
+        const aType = guessAssetType(sym);
+        const price = prices[sym];
+        if (aType === "bond") {
+          const qty = Math.max(1, Math.floor(perBd / price));
+          computed.push({ symbol: sym, quantity: qty, asset_type: aType });
+        } else {
+          const shares = Math.round((perBd / price) * 100) / 100;
+          computed.push({ symbol: sym, quantity: shares, asset_type: aType });
+        }
+      }
+    }
+
+    // Safety cap
+    const totalAllocated = computed.reduce(
+      (sum, pos) => sum + pos.quantity * (prices[pos.symbol] ?? 0), 0
+    );
+    if (totalAllocated > capital * 0.95) {
+      const scale = (capital * 0.95) / totalAllocated;
+      for (const pos of computed) {
+        if (pos.asset_type === "bond") {
+          pos.quantity = Math.max(1, Math.floor(pos.quantity * scale));
+        } else if (pos.asset_type !== "cash") {
+          pos.quantity = Math.round(pos.quantity * scale * 100) / 100;
+        }
+      }
+    }
+
+    const finalSpent = computed.reduce(
+      (sum, pos) => sum + pos.quantity * (prices[pos.symbol] ?? 0), 0
+    );
+    const cashAmount = capital - finalSpent;
+    if (cashAmount > 0.01) {
+      computed.push({ symbol: "CASH-USD", quantity: Math.round(cashAmount * 100) / 100, asset_type: "cash" });
+    }
+
+    return { computed, finalSpent, cashAmount };
+  }
+
+  it("does not exceed capital with optimizer + sovereign bonds", () => {
+    const optimizedWeights = { AAPL: 0.20, MSFT: 0.20, GOOGL: 0.15, XLK: 0.15, TLT: 0.15, SPY: 0.10 };
+    const selectedEquities = ["AAPL", "MSFT", "GOOGL", "XLK", "TLT", "SPY"];
+    const selectedBonds = ["GD30D", "AL30D"];
+    const prices: Record<string, number> = {
+      AAPL: 195, MSFT: 420, GOOGL: 175, XLK: 210, TLT: 92, SPY: 530,
+      GD30D: 55, AL30D: 48,
+    };
+
+    const { finalSpent, cashAmount } = simulateOptimizerWithBonds(
+      optimizedWeights, selectedEquities, selectedBonds, prices
+    );
+
+    expect(finalSpent).toBeLessThanOrEqual(capital);
+    expect(finalSpent + cashAmount).toBeCloseTo(capital, 0);
+    expect(cashAmount).toBeGreaterThan(0);
+  });
+
+  it("does not exceed capital with optimizer only (no bonds)", () => {
+    const optimizedWeights = { AAPL: 0.25, MSFT: 0.25, NVDA: 0.20, XLK: 0.15, AGG: 0.10 };
+    const selectedEquities = ["AAPL", "MSFT", "NVDA", "XLK", "AGG"];
+    const prices: Record<string, number> = {
+      AAPL: 195, MSFT: 420, NVDA: 130, XLK: 210, AGG: 100,
+    };
+
+    const { finalSpent, cashAmount } = simulateOptimizerWithBonds(
+      optimizedWeights, selectedEquities, [], prices
+    );
+
+    expect(finalSpent).toBeLessThanOrEqual(capital);
+    expect(finalSpent + cashAmount).toBeCloseTo(capital, 0);
+  });
+
+  it("handles many bonds without exceeding capital", () => {
+    const optimizedWeights = { AAPL: 0.30, MSFT: 0.30, XLK: 0.20, SPY: 0.15 };
+    const selectedEquities = ["AAPL", "MSFT", "XLK", "SPY"];
+    const selectedBonds = ["GD30D", "AL30D", "GD35D", "TX26D"];
+    const prices: Record<string, number> = {
+      AAPL: 195, MSFT: 420, XLK: 210, SPY: 530,
+      GD30D: 55, AL30D: 48, GD35D: 40, TX26D: 60,
+    };
+
+    const { finalSpent, cashAmount } = simulateOptimizerWithBonds(
+      optimizedWeights, selectedEquities, selectedBonds, prices
+    );
+
+    expect(finalSpent).toBeLessThanOrEqual(capital);
+    expect(finalSpent + cashAmount).toBeCloseTo(capital, 0);
+    expect(cashAmount).toBeGreaterThan(0);
+  });
+
+  it("equity budget decreases when bonds are present", () => {
+    const optimizedWeights = { AAPL: 0.50, MSFT: 0.50 };
+    const prices: Record<string, number> = { AAPL: 195, MSFT: 420, GD30D: 55 };
+
+    const noBonds = simulateOptimizerWithBonds(
+      optimizedWeights, ["AAPL", "MSFT"], [], prices
+    );
+    const withBonds = simulateOptimizerWithBonds(
+      optimizedWeights, ["AAPL", "MSFT"], ["GD30D"], prices
+    );
+
+    const noBondsEquitySpent = noBonds.computed
+      .filter(p => p.asset_type !== "cash" && p.asset_type !== "bond")
+      .reduce((s, p) => s + p.quantity * prices[p.symbol], 0);
+    const withBondsEquitySpent = withBonds.computed
+      .filter(p => p.asset_type !== "cash" && p.asset_type !== "bond")
+      .reduce((s, p) => s + p.quantity * prices[p.symbol], 0);
+
+    expect(withBondsEquitySpent).toBeLessThan(noBondsEquitySpent);
+  });
+});
+
 describe("displayStep mapping", () => {
   it("maps internal builder steps to display steps correctly", () => {
     const mapping: Record<number, number> = { 1: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7 };

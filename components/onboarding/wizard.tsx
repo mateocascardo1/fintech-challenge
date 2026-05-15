@@ -245,11 +245,17 @@ export function OnboardingWizard() {
     const computed: { symbol: string; quantity: number; asset_type: string }[] = [];
 
     if (hasOptimizerWeights) {
-      // Use optimizer-calculated weights for precise allocation
-      // Weights already sum to ~0.95 (1 - cash), so dollar = capital × weight directly
+      const cashReserve = capital * 0.05;
+      const bondBudget = bdCount > 0 ? bondPercent * capital : 0;
+      const equityBudget = capital - bondBudget - cashReserve;
+
+      const totalWeight = selectedEquities.reduce(
+        (s, sym) => s + (optimizedWeights[sym] ?? 0), 0
+      );
+
       for (const sym of selectedEquities) {
         const weight = optimizedWeights[sym] ?? 0;
-        const dollarAmount = capital * weight;
+        const dollarAmount = totalWeight > 0 ? equityBudget * (weight / totalWeight) : 0;
         const price = prices[sym];
         if (!price || dollarAmount < 1) continue;
         const aType = guessAssetType(sym);
@@ -262,11 +268,8 @@ export function OnboardingWizard() {
         }
       }
 
-      // Bonds from step 6 (Argentine bonds) - equal split from remaining capital
       if (bdCount > 0) {
-        const usedWeight = selectedEquities.reduce((s, sym) => s + (optimizedWeights[sym] ?? 0), 0);
-        const remainingBudget = capital * Math.max(0, 1 - usedWeight - 0.05);
-        const perBd = remainingBudget > 0 ? remainingBudget / bdCount : (bondPercent * capital) / bdCount;
+        const perBd = bondBudget / bdCount;
         for (const sym of selectedBonds) {
           const aType = guessAssetType(sym);
           const price = prices[sym];
@@ -280,10 +283,9 @@ export function OnboardingWizard() {
         }
       }
 
-      // Free picks - equal split from remaining capital
       if (fpCount > 0) {
         const spent = computed.reduce((s, p) => s + p.quantity * (prices[p.symbol] ?? 0), 0);
-        const freeTotal = Math.max(0, capital - spent - capital * 0.05) * 0.8;
+        const freeTotal = Math.max(0, capital - spent - cashReserve);
         const perFp = freeTotal / fpCount;
         for (const fp of freePicks) {
           const aType = fp.asset_type || guessAssetType(fp.symbol);
@@ -340,6 +342,21 @@ export function OnboardingWizard() {
             const shares = Math.round((perFp / price) * 100) / 100;
             computed.push({ symbol: fp.symbol, quantity: shares, asset_type: aType });
           }
+        }
+      }
+    }
+
+    // SAFETY: ensure total allocation never exceeds capital
+    const totalAllocated = computed.reduce(
+      (sum, pos) => sum + pos.quantity * (prices[pos.symbol] ?? 0), 0
+    );
+    if (totalAllocated > capital * 0.95) {
+      const scale = (capital * 0.95) / totalAllocated;
+      for (const pos of computed) {
+        if (pos.asset_type === "bond") {
+          pos.quantity = Math.max(1, Math.floor(pos.quantity * scale));
+        } else if (pos.asset_type !== "cash") {
+          pos.quantity = Math.round(pos.quantity * scale * 100) / 100;
         }
       }
     }

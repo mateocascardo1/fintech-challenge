@@ -208,7 +208,7 @@ export function StepProfile({
       )}
 
       {/* Circular progress */}
-      <div className="flex items-center justify-center py-1">
+      <div className={`flex items-center justify-center py-1 ${showBanner ? "invisible" : ""}`}>
         <div className="relative h-20 w-20">
           <svg className="h-20 w-20 -rotate-90" viewBox="0 0 80 80">
             <circle
@@ -236,7 +236,7 @@ export function StepProfile({
       </div>
 
       {/* Question area */}
-      <div className="min-h-[380px]">
+      <div className={`min-h-[380px] ${showBanner ? "invisible" : ""}`}>
         {!showSlider ? (
           <div key={currentQ} className="animate-in fade-in duration-300">
             {/* Question title + explanation subtitle */}
@@ -352,7 +352,7 @@ export function StepProfile({
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className={`flex items-center justify-between ${showBanner ? "invisible" : ""}`}>
         <Button
           variant="ghost"
           size="sm"
