@@ -150,26 +150,36 @@ export function StepReview({
   const perSymbolAmount = useMemo(() => {
     if (!hasWeights) return {};
     const map: Record<string, number> = {};
+
+    const bdCount = sovereignBonds.length + bondEtfsFromBonds.length;
+    const fpCount = freePicks.length;
+    const bondBudget = bdCount > 0 ? bondPercent * capital : 0;
+    const freeBudget = fpCount > 0 ? capital * 0.15 : 0;
+    const equityBudget = capital - bondBudget - freeBudget;
+
+    const totalWeight = Object.values(optimizedWeights!).reduce((s, w) => s + w, 0);
     for (const [sym, w] of Object.entries(optimizedWeights!)) {
-      map[sym] = capital * w;
+      map[sym] = totalWeight > 0 ? equityBudget * (w / totalWeight) : 0;
     }
 
-    // For non-optimizer instruments (sovereign bonds, free picks), compute from remaining budget
-    const optimizerSpent = Object.values(optimizedWeights!).reduce((s, w) => s + w, 0);
-    const remaining = capital * Math.max(0, 1 - optimizerSpent - 0.05);
-    const nonOptimizerSymbols = [
-      ...sovereignBonds.filter((s) => !optimizedWeights![s]),
-      ...freePicks.map((fp) => fp.symbol).filter((s) => !optimizedWeights![s]),
-    ];
-    if (nonOptimizerSymbols.length > 0) {
-      const perExtra = remaining / nonOptimizerSymbols.length;
-      for (const sym of nonOptimizerSymbols) {
-        map[sym] = perExtra;
+    const bondSymbols = sovereignBonds.filter((s) => !optimizedWeights![s]);
+    if (bondSymbols.length > 0) {
+      const perBond = bondBudget / bdCount;
+      for (const sym of bondSymbols) {
+        map[sym] = perBond;
+      }
+    }
+
+    const freeSymbols = freePicks.map((fp) => fp.symbol).filter((s) => !optimizedWeights![s]);
+    if (freeSymbols.length > 0) {
+      const perFree = freeBudget / freeSymbols.length;
+      for (const sym of freeSymbols) {
+        map[sym] = perFree;
       }
     }
 
     return map;
-  }, [hasWeights, optimizedWeights, capital, sovereignBonds, freePicks]);
+  }, [hasWeights, optimizedWeights, capital, sovereignBonds, bondEtfsFromBonds, freePicks, bondPercent]);
 
   const allocation = useMemo(() => {
     if (hasWeights) {

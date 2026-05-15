@@ -1,23 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { computeModelAllocation } from "@/lib/portfolio/allocation";
-import {
-  CANDIDATE_BOND_ETFS,
-  CANDIDATE_SECTOR_ETFS,
-  CANDIDATE_BROAD_ETFS,
-} from "@/lib/portfolio/constants";
+import { guessAssetType, allocatePortfolio } from "@/lib/portfolio/builder-allocator";
 import type { InvestorProfile } from "@/lib/portfolio/types";
-
-const BOND_ETF_SET = new Set<string>(CANDIDATE_BOND_ETFS);
-const SECTOR_ETF_SET = new Set<string>(CANDIDATE_SECTOR_ETFS);
-const BROAD_ETF_SET = new Set<string>(CANDIDATE_BROAD_ETFS);
-
-function guessAssetType(symbol: string): string {
-  if (BOND_ETF_SET.has(symbol)) return "bond_etf";
-  if (SECTOR_ETF_SET.has(symbol)) return "etf";
-  if (BROAD_ETF_SET.has(symbol)) return "etf";
-  if (symbol.match(/^[A-Z]{2,5}\d/i)) return "bond";
-  return "equity";
-}
 
 function computeBuilderAlloc(profile: InvestorProfile) {
   const alloc = computeModelAllocation(profile);
@@ -121,220 +105,39 @@ describe("builder flow cash reduction", () => {
   });
 });
 
-describe("handleBuilderConfirm capital allocation logic", () => {
-  it("bond ETFs get fractional shares, not integer-floored", () => {
-    const price = 90;
-    const perBd = 500;
-    const aType = guessAssetType("AGG");
-
-    expect(aType).toBe("bond_etf");
-
-    // Our new logic: bond_etf uses fractional shares
-    const shares = Math.round((perBd / price) * 100) / 100;
-    expect(shares).toBeCloseTo(5.56, 2);
-
-    // Old buggy logic would do Math.floor and lose capital
-    const oldQty = Math.floor(perBd / price);
-    expect(oldQty).toBe(5);
-    const capitalLost = perBd - oldQty * price;
-    expect(capitalLost).toBe(50); // $50 leaked per bond ETF
-  });
-
-  it("sovereign bonds still use integer floor", () => {
-    const price = 80;
-    const perBd = 500;
-    const aType = guessAssetType("AL30D");
-
-    expect(aType).toBe("bond");
-
-    const qty = Math.max(1, Math.floor(perBd / price));
-    expect(qty).toBe(6);
-  });
-
-  it("cash captures actual rounding losses", () => {
-    const capital = 10000;
-    const prices: Record<string, number> = {
-      AAPL: 178.5,
-      MSFT: 415.2,
-      AGG: 98.7,
-    };
-    const computed: { symbol: string; quantity: number; asset_type: string }[] = [];
-
-    const eqSymbols = ["AAPL", "MSFT"];
-    const bdSymbols = ["AGG"];
-
-    const rawEquity = 0.6 * capital;
-    const rawBond = 0.25 * capital;
-
-    const perEq = rawEquity / eqSymbols.length;
-    for (const sym of eqSymbols) {
-      const shares = Math.round((perEq / prices[sym]) * 100) / 100;
-      computed.push({ symbol: sym, quantity: shares, asset_type: "equity" });
-    }
-
-    const perBd = rawBond / bdSymbols.length;
-    for (const sym of bdSymbols) {
-      const shares = Math.round((perBd / prices[sym]) * 100) / 100;
-      computed.push({ symbol: sym, quantity: shares, asset_type: "bond_etf" });
-    }
-
-    const actualSpent = computed.reduce(
-      (sum, pos) => sum + pos.quantity * prices[pos.symbol],
-      0,
-    );
-    const cashAmount = capital - actualSpent;
-
-    expect(cashAmount).toBeGreaterThan(0);
-    expect(cashAmount).toBeLessThan(capital * 0.2);
-    // All capital is accounted for
-    expect(actualSpent + cashAmount).toBeCloseTo(capital, 2);
-  });
-});
-
-describe("optimizer + bonds: total allocation never exceeds capital", () => {
-  const capital = 10000;
-  const bondPercent = 0.25;
-
-  function simulateOptimizerWithBonds(
-    optimizedWeights: Record<string, number>,
-    selectedEquities: string[],
-    selectedBonds: string[],
-    prices: Record<string, number>,
-  ) {
-    const bdCount = selectedBonds.length;
-    const cashReserve = capital * 0.05;
-    const bondBudget = bdCount > 0 ? bondPercent * capital : 0;
-    const equityBudget = capital - bondBudget - cashReserve;
-
-    const totalWeight = selectedEquities.reduce(
-      (s, sym) => s + (optimizedWeights[sym] ?? 0), 0
-    );
-
-    const computed: { symbol: string; quantity: number; asset_type: string }[] = [];
-
-    for (const sym of selectedEquities) {
-      const weight = optimizedWeights[sym] ?? 0;
-      const dollarAmount = totalWeight > 0 ? equityBudget * (weight / totalWeight) : 0;
-      const price = prices[sym];
-      if (!price || dollarAmount < 1) continue;
-      const aType = guessAssetType(sym);
-      if (aType === "bond") {
-        const qty = Math.max(1, Math.floor(dollarAmount / price));
-        computed.push({ symbol: sym, quantity: qty, asset_type: aType });
-      } else {
-        const shares = Math.round((dollarAmount / price) * 100) / 100;
-        computed.push({ symbol: sym, quantity: shares, asset_type: aType });
-      }
-    }
-
-    if (bdCount > 0) {
-      const perBd = bondBudget / bdCount;
-      for (const sym of selectedBonds) {
-        const aType = guessAssetType(sym);
-        const price = prices[sym];
-        if (aType === "bond") {
-          const qty = Math.max(1, Math.floor(perBd / price));
-          computed.push({ symbol: sym, quantity: qty, asset_type: aType });
-        } else {
-          const shares = Math.round((perBd / price) * 100) / 100;
-          computed.push({ symbol: sym, quantity: shares, asset_type: aType });
-        }
-      }
-    }
-
-    // Safety cap
-    const totalAllocated = computed.reduce(
-      (sum, pos) => sum + pos.quantity * (prices[pos.symbol] ?? 0), 0
-    );
-    if (totalAllocated > capital * 0.95) {
-      const scale = (capital * 0.95) / totalAllocated;
-      for (const pos of computed) {
-        if (pos.asset_type === "bond") {
-          pos.quantity = Math.max(1, Math.floor(pos.quantity * scale));
-        } else if (pos.asset_type !== "cash") {
-          pos.quantity = Math.round(pos.quantity * scale * 100) / 100;
-        }
-      }
-    }
-
-    const finalSpent = computed.reduce(
-      (sum, pos) => sum + pos.quantity * (prices[pos.symbol] ?? 0), 0
-    );
-    const cashAmount = capital - finalSpent;
-    if (cashAmount > 0.01) {
-      computed.push({ symbol: "CASH-USD", quantity: Math.round(cashAmount * 100) / 100, asset_type: "cash" });
-    }
-
-    return { computed, finalSpent, cashAmount };
-  }
-
-  it("does not exceed capital with optimizer + sovereign bonds", () => {
-    const optimizedWeights = { AAPL: 0.20, MSFT: 0.20, GOOGL: 0.15, XLK: 0.15, TLT: 0.15, SPY: 0.10 };
-    const selectedEquities = ["AAPL", "MSFT", "GOOGL", "XLK", "TLT", "SPY"];
-    const selectedBonds = ["GD30D", "AL30D"];
-    const prices: Record<string, number> = {
-      AAPL: 195, MSFT: 420, GOOGL: 175, XLK: 210, TLT: 92, SPY: 530,
-      GD30D: 55, AL30D: 48,
-    };
-
-    const { finalSpent, cashAmount } = simulateOptimizerWithBonds(
-      optimizedWeights, selectedEquities, selectedBonds, prices
-    );
-
-    expect(finalSpent).toBeLessThanOrEqual(capital);
-    expect(finalSpent + cashAmount).toBeCloseTo(capital, 0);
-    expect(cashAmount).toBeGreaterThan(0);
-  });
-
-  it("does not exceed capital with optimizer only (no bonds)", () => {
-    const optimizedWeights = { AAPL: 0.25, MSFT: 0.25, NVDA: 0.20, XLK: 0.15, AGG: 0.10 };
-    const selectedEquities = ["AAPL", "MSFT", "NVDA", "XLK", "AGG"];
-    const prices: Record<string, number> = {
-      AAPL: 195, MSFT: 420, NVDA: 130, XLK: 210, AGG: 100,
-    };
-
-    const { finalSpent, cashAmount } = simulateOptimizerWithBonds(
-      optimizedWeights, selectedEquities, [], prices
-    );
-
-    expect(finalSpent).toBeLessThanOrEqual(capital);
-    expect(finalSpent + cashAmount).toBeCloseTo(capital, 0);
-  });
-
-  it("handles many bonds without exceeding capital", () => {
-    const optimizedWeights = { AAPL: 0.30, MSFT: 0.30, XLK: 0.20, SPY: 0.15 };
-    const selectedEquities = ["AAPL", "MSFT", "XLK", "SPY"];
-    const selectedBonds = ["GD30D", "AL30D", "GD35D", "TX26D"];
-    const prices: Record<string, number> = {
-      AAPL: 195, MSFT: 420, XLK: 210, SPY: 530,
-      GD30D: 55, AL30D: 48, GD35D: 40, TX26D: 60,
-    };
-
-    const { finalSpent, cashAmount } = simulateOptimizerWithBonds(
-      optimizedWeights, selectedEquities, selectedBonds, prices
-    );
-
-    expect(finalSpent).toBeLessThanOrEqual(capital);
-    expect(finalSpent + cashAmount).toBeCloseTo(capital, 0);
-    expect(cashAmount).toBeGreaterThan(0);
-  });
+describe("allocatePortfolio — equity budget shrinks when bonds present", () => {
+  const capital = 10_000;
+  const prices: Record<string, number> = { AAPL: 195, MSFT: 420, GD30D: 55 };
+  const weights = { AAPL: 0.5, MSFT: 0.5 };
 
   it("equity budget decreases when bonds are present", () => {
-    const optimizedWeights = { AAPL: 0.50, MSFT: 0.50 };
-    const prices: Record<string, number> = { AAPL: 195, MSFT: 420, GD30D: 55 };
+    const noBonds = allocatePortfolio({
+      capital,
+      selectedEquities: ["AAPL", "MSFT"],
+      selectedBonds: [],
+      freePicks: [],
+      optimizedWeights: weights,
+      prices,
+      equityPercent: 0.6,
+      bondPercent: 0.25,
+    });
 
-    const noBonds = simulateOptimizerWithBonds(
-      optimizedWeights, ["AAPL", "MSFT"], [], prices
-    );
-    const withBonds = simulateOptimizerWithBonds(
-      optimizedWeights, ["AAPL", "MSFT"], ["GD30D"], prices
-    );
+    const withBonds = allocatePortfolio({
+      capital,
+      selectedEquities: ["AAPL", "MSFT"],
+      selectedBonds: ["GD30D"],
+      freePicks: [],
+      optimizedWeights: weights,
+      prices,
+      equityPercent: 0.6,
+      bondPercent: 0.25,
+    });
 
-    const noBondsEquitySpent = noBonds.computed
-      .filter(p => p.asset_type !== "cash" && p.asset_type !== "bond")
+    const noBondsEquitySpent = noBonds
+      .filter((p) => p.asset_type !== "cash" && p.asset_type !== "bond")
       .reduce((s, p) => s + p.quantity * prices[p.symbol], 0);
-    const withBondsEquitySpent = withBonds.computed
-      .filter(p => p.asset_type !== "cash" && p.asset_type !== "bond")
+    const withBondsEquitySpent = withBonds
+      .filter((p) => p.asset_type !== "cash" && p.asset_type !== "bond")
       .reduce((s, p) => s + p.quantity * prices[p.symbol], 0);
 
     expect(withBondsEquitySpent).toBeLessThan(noBondsEquitySpent);

@@ -106,6 +106,7 @@ export function AiInsightsCard() {
       if (res.ok) await fetchInsights();
     } finally {
       setGenerating(false);
+      setLoading(false);
     }
   }, [fetchInsights]);
 

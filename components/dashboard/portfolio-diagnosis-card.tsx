@@ -192,6 +192,7 @@ export function PortfolioDiagnosisCard() {
       if (res.ok) await fetchData();
     } finally {
       setGenerating(false);
+      setLoading(false);
     }
   }, [fetchData]);
 
