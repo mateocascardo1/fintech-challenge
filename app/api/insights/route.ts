@@ -358,12 +358,14 @@ Generá SOLO un JSON (sin markdown) con estas 3 secciones:
    Cada objeto: { "asset_class": "bonds"|"us_equities"|"intl_equities"|"cash", "direction": "increase"|"decrease", "current_pct": number, "target_pct": number, "score_impact": number, "title": "acción corta", "body": "explicación de por qué y qué score mejora" }
    - Solo incluir clases con gap material (>5%)
    - NUNCA repetir la misma asset_class más de una vez. Cada asset_class debe aparecer como máximo 1 vez.
+   - Si necesitás recomendar aumento de cash, preferí decir "increase bonds" con bonos de corta duración (SHY, BIL) en el body. Evitá recomendar grandes incrementos de cash puro.
    - score_impact debe ser realista basado en los gaps que ves
 
 3. "instrument_picks": 3-5 instrumentos específicos para comprar o vender.
-   Cada objeto: { "action": "buy"|"sell", "symbol": "TICKER", "asset_type": "equity"|"etf"|"bond_etf"|"cash", "name": "nombre completo", "reason": "1 oración sobre qué sub-score mejora", "score_impact": number, "priority": "high"|"medium"|"low", "improves": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection" }
+   Cada objeto: { "action": "buy"|"sell", "symbol": "TICKER", "asset_type": "equity"|"etf"|"bond_etf", "name": "nombre completo", "reason": "1 oración sobre qué sub-score mejora", "score_impact": number, "priority": "high"|"medium"|"low", "improves": "diversification"|"risk_match"|"risk_adjusted_return"|"downside_protection" }
    - Priorizar instrumentos que cierren el mayor gap de allocation primero
-   - Para renta fija, recomendar SOLO ETFs de bonos (TLT, AGG, LQD, SHY, HYG, IEF, GOVT) con asset_type "bond_etf". NO recomendar bonos argentinos individuales (AL30, GD30, etc.) porque no tenemos datos de riesgo suficientes para evaluar su impacto en el score.
+   - NUNCA recomendar CASH-USD ni asset_type "cash". Si el portfolio necesita reducir riesgo o aumentar liquidez, recomendar bonos cortos (SHY, BIL, SGOV, VGSH) con asset_type "bond_etf" en su lugar.
+   - Para renta fija, recomendar SOLO ETFs de bonos (TLT, AGG, LQD, SHY, HYG, IEF, GOVT, BIL, SGOV, VGSH) con asset_type "bond_etf". NO recomendar bonos argentinos individuales (AL30, GD30, etc.) porque no tenemos datos de riesgo suficientes para evaluar su impacto en el score.
    - Cada rec debe especificar cuál sub-score mejora
    - NUNCA repetir el mismo símbolo más de una vez
 
