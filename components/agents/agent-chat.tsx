@@ -301,8 +301,17 @@ export function AgentChat({ agent, onBack }: AgentChatProps) {
   }
 
   function handleTickerClick(symbol: string) {
-    // Ticker clicks are only useful when LiveChat is mounted
-    // We'll pass this through by forcing a re-render with a message
+    // Ticker clicks handled inside LiveChat via suggestions
+  }
+
+  async function handleDeleteSession(session: AgentSession) {
+    try {
+      const res = await fetch(`/api/agents/${agent.id}/sessions/${session.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) return;
+      setSessions((prev) => prev.filter((s) => s.id !== session.id));
+    } catch { /* no-op */ }
   }
 
   return (
@@ -315,6 +324,7 @@ export function AgentChat({ agent, onBack }: AgentChatProps) {
         onTickerClick={handleTickerClick}
         onNewSession={createNewSession}
         onSessionClick={handleSessionClick}
+        onDeleteSession={handleDeleteSession}
       />
 
       {/* Main chat area */}

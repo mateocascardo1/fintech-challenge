@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, MessageSquare, Clock } from "lucide-react";
+import { Plus, MessageSquare, Clock, Trash2 } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote, AgentSession } from "@/lib/types";
 
@@ -12,6 +12,7 @@ type AgentSidebarProps = {
   onTickerClick: (symbol: string) => void;
   onNewSession: () => void;
   onSessionClick: (session: AgentSession) => void;
+  onDeleteSession?: (session: AgentSession) => void;
 };
 
 export function AgentSidebar({
@@ -21,6 +22,7 @@ export function AgentSidebar({
   onTickerClick,
   onNewSession,
   onSessionClick,
+  onDeleteSession,
 }: AgentSidebarProps) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(true);
@@ -127,29 +129,43 @@ export function AgentSidebar({
             </p>
           ) : (
             sessions.map((session) => (
-              <button
+              <div
                 key={session.id}
-                type="button"
-                onClick={() => onSessionClick(session)}
-                className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors ${
+                className={`group w-full text-left px-2.5 py-2 rounded-lg transition-colors relative ${
                   currentSessionId === session.id
                     ? "bg-primary/10 border border-primary/20"
                     : "hover:bg-white/[0.04]"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-                  <span className="text-[11px] font-medium truncate flex-1">
-                    {session.title}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 mt-0.5 ml-5">
-                  <Clock className="h-2.5 w-2.5 text-muted-foreground/30" />
-                  <span className="text-[9px] text-muted-foreground/40">
-                    {formatSessionDate(session.updated_at)}
-                  </span>
-                </div>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onSessionClick(session)}
+                  className="w-full text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                    <span className="text-[11px] font-medium truncate flex-1">
+                      {session.title}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5 ml-5">
+                    <Clock className="h-2.5 w-2.5 text-muted-foreground/30" />
+                    <span className="text-[9px] text-muted-foreground/40">
+                      {formatSessionDate(session.updated_at)}
+                    </span>
+                  </div>
+                </button>
+                {onDeleteSession && currentSessionId !== session.id && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onDeleteSession(session); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-red-400 hover:bg-red-400/10 transition-all"
+                    title="Eliminar sesión"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             ))
           )}
         </div>
