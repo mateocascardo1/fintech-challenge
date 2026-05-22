@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, ArrowRight, ImagePlus, FileText, X, Loader2,
-  Sparkles, Link2, Check, AlertCircle, Pencil,
+  ArrowLeft, ArrowRight, Upload, FileText, X, Loader2,
+  Sparkles, Check, AlertCircle, Pencil, Image as ImageIcon,
+  Link2, CloudUpload,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -27,17 +28,18 @@ type ExtractedPosition = z.infer<typeof extractedPositionSchema>["positions"][nu
 type UploadedFile = {
   id: string;
   name: string;
+  size: number;
   mimeType: string;
   data: string;
   preview?: string;
 };
 
 const BROKERS = [
-  { name: "Cocos Capital", icon: "🥥", color: "from-amber-500/20 to-amber-600/5" },
-  { name: "Interactive Brokers", icon: "🌐", color: "from-red-500/20 to-red-600/5" },
-  { name: "Balanz", icon: "⚖️", color: "from-blue-500/20 to-blue-600/5" },
-  { name: "TD Ameritrade", icon: "📊", color: "from-emerald-500/20 to-emerald-600/5" },
-  { name: "Charles Schwab", icon: "🛡️", color: "from-sky-500/20 to-sky-600/5" },
+  { name: "Cocos Capital", abbr: "CC" },
+  { name: "Interactive Brokers", abbr: "IB" },
+  { name: "Balanz", abbr: "BZ" },
+  { name: "TD Ameritrade", abbr: "TD" },
+  { name: "Charles Schwab", abbr: "CS" },
 ] as const;
 
 type StepImportProps = {
@@ -62,6 +64,12 @@ function readFileAsBase64(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProps) {
@@ -92,6 +100,7 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
       newFiles.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         name: file.name,
+        size: file.size,
         mimeType: file.type,
         data,
         preview,
@@ -119,7 +128,10 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
     e.preventDefault();
     setIsDragging(true);
   };
-  const handleDragLeave = () => setIsDragging(false);
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -157,128 +169,191 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
     onImport(mapped);
   };
 
-  return (
-    <div className="space-y-8 animate-fade-in-up">
-      <h2 className="text-xl font-semibold text-center">Importa tu portfolio</h2>
+  const hasResults = confirmedPositions.length > 0 || isStreaming;
 
-      {/* Zone 1: Broker Cards */}
-      <div className="space-y-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 text-center">
-          Conecta tu broker
+  return (
+    <div className="space-y-6 animate-fade-in-up">
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <h2 className="text-xl font-bold tracking-tight">
+          Importa tu portfolio
+        </h2>
+        <p className="text-sm text-muted-foreground/70 max-w-sm mx-auto">
+          Subí capturas o PDFs de tu broker y la AI extrae tus posiciones automáticamente
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {BROKERS.map((broker) => (
-            <div
-              key={broker.name}
-              className="relative surface-elevated rounded-xl p-4 opacity-50 cursor-not-allowed select-none"
-            >
-              <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${broker.color} pointer-events-none`} />
-              <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-                <span className="text-2xl">{broker.icon}</span>
-                <span className="text-xs font-medium truncate w-full">{broker.name}</span>
-                <div className="flex items-center gap-1">
-                  <Link2 className="h-3 w-3 text-muted-foreground/40" />
-                  <span className="text-[10px] text-muted-foreground/40">Conectar</span>
+      </div>
+
+      {/* ── HERO: Upload Zone ── */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onKeyDown={(e) => { if (e.key === "Enter") fileInputRef.current?.click(); }}
+        className={`
+          group relative overflow-hidden rounded-2xl p-px cursor-pointer
+          transition-all duration-300
+          ${isDragging
+            ? "scale-[1.01] shadow-[0_0_50px_-10px_rgba(34,197,94,0.25)]"
+            : "hover:shadow-[0_0_30px_-10px_rgba(34,197,94,0.12)]"
+          }
+        `}
+      >
+        {/* Gradient border */}
+        <div className={`
+          absolute inset-0 rounded-2xl transition-opacity duration-300
+          ${isDragging
+            ? "bg-gradient-to-br from-primary/60 via-primary/30 to-primary/10 opacity-100"
+            : "bg-gradient-to-br from-primary/20 via-border/30 to-border/20 opacity-60 group-hover:opacity-100"
+          }
+        `} />
+
+        <div className={`
+          relative surface-elevated rounded-[15px] noise-overlay
+          transition-all duration-300
+          ${files.length === 0 ? "py-12 px-6" : "py-6 px-6"}
+        `}>
+          {/* Corner decorative glow */}
+          <div className={`
+            absolute top-0 right-0 w-40 h-40 rounded-bl-full transition-all duration-500
+            ${isDragging
+              ? "bg-gradient-to-bl from-primary/15 to-transparent"
+              : "bg-gradient-to-bl from-primary/5 to-transparent group-hover:from-primary/10"
+            }
+          `} />
+
+          <div className="relative z-10">
+            {files.length === 0 ? (
+              /* Empty state */
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className={`
+                  flex h-16 w-16 items-center justify-center rounded-2xl
+                  border transition-all duration-300
+                  ${isDragging
+                    ? "bg-primary/15 border-primary/40 scale-110"
+                    : "bg-primary/8 border-primary/15 group-hover:bg-primary/12 group-hover:border-primary/25"
+                  }
+                `}>
+                  <CloudUpload className={`
+                    h-8 w-8 transition-all duration-300
+                    ${isDragging ? "text-primary scale-110" : "text-primary/70 group-hover:text-primary"}
+                  `} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <p className="text-sm font-semibold">
+                    {isDragging ? "Soltá tus archivos acá" : "Arrastra o hacé click para subir"}
+                  </p>
+                  <p className="text-xs text-muted-foreground/50">
+                    Screenshots o PDFs de tu broker
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {["PNG", "JPG", "WEBP", "PDF"].map(fmt => (
+                    <span key={fmt} className="text-[10px] font-medium text-muted-foreground/40 bg-white/[0.04] rounded-md px-2 py-0.5 border border-white/[0.04]">
+                      {fmt}
+                    </span>
+                  ))}
                 </div>
               </div>
-              <div className="absolute top-2 right-2 z-20">
-                <Badge variant="secondary" className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary border-primary/20">
-                  Pronto
-                </Badge>
+            ) : (
+              /* Files uploaded state — compact clickable area to add more */
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
+                <Upload className="h-3.5 w-3.5" />
+                <span>Click o arrastra para agregar más archivos</span>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 h-px bg-border/30" />
-        <span className="text-xs text-muted-foreground/50 font-medium">o importa tu portfolio</span>
-        <div className="flex-1 h-px bg-border/30" />
-      </div>
-
-      {/* Zone 2: Upload */}
-      <div className="space-y-4">
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onKeyDown={(e) => { if (e.key === "Enter") fileInputRef.current?.click(); }}
-          className={`
-            relative rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer
-            transition-all duration-200
-            ${isDragging
-              ? "border-primary/60 bg-primary/5 scale-[1.01]"
-              : "border-border/40 hover:border-border/60 hover:bg-white/[0.02]"
-            }
-          `}
-        >
-          <ImagePlus className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-          <p className="text-sm font-medium text-muted-foreground">
-            Arrastra screenshots o PDFs de tu broker
-          </p>
-          <p className="text-xs text-muted-foreground/50 mt-1">
-            PNG, JPG, WEBP, PDF
-          </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".png,.jpg,.jpeg,.webp,.pdf"
-            onChange={(e) => e.target.files && handleFiles(e.target.files)}
-            className="hidden"
-          />
+            )}
+          </div>
         </div>
 
-        {/* File previews */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".png,.jpg,.jpeg,.webp,.pdf"
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          className="hidden"
+        />
+      </div>
+
+      {/* ── File Previews ── */}
+      <AnimatePresence mode="popLayout">
         {files.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {files.map((file) => (
-              <div key={file.id} className="relative group">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-2"
+          >
+            {files.map((file, i) => (
+              <motion.div
+                key={file.id}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20, scale: 0.95 }}
+                transition={{ duration: 0.25, delay: i * 0.05 }}
+                className="group/file flex items-center gap-3 surface-elevated rounded-xl p-3 border border-border/20 hover:border-border/40 transition-colors"
+              >
+                {/* Thumbnail */}
                 {file.preview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={file.preview}
                     alt={file.name}
-                    className="h-16 w-16 rounded-lg object-cover border border-border/30"
+                    className="h-12 w-12 rounded-lg object-cover border border-border/20 flex-shrink-0"
                   />
                 ) : (
-                  <div className="h-16 w-16 rounded-lg border border-border/30 bg-white/[0.02] flex flex-col items-center justify-center">
-                    <FileText className="h-5 w-5 text-muted-foreground/50" />
-                    <span className="text-[8px] text-muted-foreground/40 mt-1 truncate max-w-[56px]">
-                      {file.name}
-                    </span>
+                  <div className="h-12 w-12 rounded-lg border border-border/20 bg-red-500/5 flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-5 w-5 text-red-400/70" />
                   </div>
                 )}
+
+                {/* File info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{file.name}</p>
+                  <p className="text-[11px] text-muted-foreground/50 mt-0.5">
+                    {formatFileSize(file.size)} · {file.mimeType === "application/pdf" ? "PDF" : "Imagen"}
+                  </p>
+                </div>
+
+                {/* Remove */}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); removeFile(file.id); }}
-                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-background border border-border
-                    flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-1.5 rounded-lg opacity-0 group-hover/file:opacity-100 hover:bg-white/[0.06] text-muted-foreground/50 hover:text-foreground transition-all flex-shrink-0"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </button>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Analyze button */}
-        {files.length > 0 && !isStreaming && confirmedPositions.length === 0 && (
-          <Button onClick={handleAnalyze} className="w-full" size="lg">
+      {/* ── Analyze Button ── */}
+      {files.length > 0 && !isStreaming && confirmedPositions.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Button onClick={handleAnalyze} className="w-full h-12 text-sm font-semibold" size="lg">
             <Sparkles className="h-4 w-4 mr-2" />
             Analizar con SignalAI
           </Button>
-        )}
-      </div>
+        </motion.div>
+      )}
 
-      {/* Zone 3: Extracted positions */}
-      {(confirmedPositions.length > 0 || isStreaming) && (
-        <div className="space-y-3">
+      {/* ── Extracted Positions ── */}
+      {hasResults && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-3"
+        >
           <div className="flex items-center gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60">
               Posiciones detectadas
@@ -302,10 +377,10 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
                 exit={{ opacity: 0, x: -20, scale: 0.95 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`
-                  surface-elevated rounded-xl p-4 border-l-4 transition-colors
-                  ${pos.confidence === "high" ? "border-l-emerald-500"
-                    : pos.confidence === "medium" ? "border-l-amber-500"
-                    : "border-l-red-500"
+                  surface-elevated rounded-xl p-4 border-l-[3px] transition-colors
+                  ${pos.confidence === "high" ? "border-l-emerald-500/80"
+                    : pos.confidence === "medium" ? "border-l-amber-500/80"
+                    : "border-l-red-500/80"
                   }
                 `}
               >
@@ -392,13 +467,13 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
               <span className="text-xs text-muted-foreground/50">Analizando...</span>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
-      {/* Action buttons after stream completes */}
+      {/* ── Confirm / Upload More ── */}
       {!isStreaming && confirmedPositions.length > 0 && (
         <div className="space-y-3">
-          <Button onClick={handleConfirm} className="w-full" size="lg">
+          <Button onClick={handleConfirm} className="w-full h-12 text-sm font-semibold" size="lg">
             <Check className="h-4 w-4 mr-2" />
             Confirmar {confirmedPositions.length} posicion{confirmedPositions.length !== 1 ? "es" : ""}
           </Button>
@@ -410,20 +485,56 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
               prevPositionCount.current = 0;
               fileInputRef.current?.click();
             }}
-            className="w-full text-xs"
+            className="w-full text-xs text-muted-foreground/60"
           >
-            <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
+            <Upload className="h-3.5 w-3.5 mr-1.5" />
             Subir mas archivos
           </Button>
         </div>
       )}
 
-      {/* Navigation */}
+      {/* ── Divider + Brokers ── */}
+      {!hasResults && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-4 pt-2"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex-1 h-px bg-border/20" />
+            <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/30 font-medium">o conecta tu broker</span>
+            <div className="flex-1 h-px bg-border/20" />
+          </div>
+
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {BROKERS.map((broker) => (
+              <div
+                key={broker.name}
+                className="group/broker relative flex items-center gap-2 rounded-lg px-3 py-2 border border-border/15
+                  bg-white/[0.015] opacity-50 cursor-not-allowed select-none
+                  hover:opacity-60 transition-all"
+                title={broker.name}
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.05] text-[10px] font-bold text-muted-foreground/50 border border-border/10">
+                  {broker.abbr}
+                </div>
+                <span className="text-[11px] text-muted-foreground/50 font-medium hidden sm:block">{broker.name}</span>
+                <Badge variant="secondary" className="text-[8px] px-1 py-0 bg-primary/8 text-primary/60 border-primary/10 ml-auto">
+                  Pronto
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Navigation ── */}
       <div className="flex justify-between pt-2">
-        <Button variant="ghost" onClick={onBack}>
+        <Button variant="ghost" onClick={onBack} className="text-muted-foreground/60 hover:text-foreground">
           <ArrowLeft className="h-4 w-4 mr-1" /> Volver
         </Button>
-        <Button variant="outline" onClick={onSkip}>
+        <Button variant="outline" onClick={onSkip} className="border-border/30">
           Cargar manualmente
           <ArrowRight className="h-4 w-4 ml-1" />
         </Button>
