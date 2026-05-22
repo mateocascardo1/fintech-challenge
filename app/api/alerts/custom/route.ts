@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { CANDIDATE_EQUITIES, EQUITY_DISPLAY_INFO } from "@/lib/portfolio/constants";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -20,63 +19,38 @@ export async function POST(req: Request) {
     );
   }
 
-  const candidates = [...CANDIDATE_EQUITIES];
-  const fundamentalsData: Array<Record<string, unknown>> = [];
+  const aiPrompt = `Eres un screener de acciones experto con conocimiento profundo de todos los mercados globales: NYSE, NASDAQ, MERVAL (Argentina), B3 (Brasil), BMV (México), LSE, Euronext, y más.
 
-  const batchSize = 10;
-  for (let i = 0; i < candidates.length; i += batchSize) {
-    const batch = candidates.slice(i, i + batchSize);
-    const results = await Promise.allSettled(
-      batch.map(async (sym) => {
-        const res = await fetch(new URL(`/api/fundamentals/${sym}`, req.url));
-        if (!res.ok) return null;
-        return res.json();
-      }),
-    );
-    for (const r of results) {
-      if (r.status === "fulfilled" && r.value) {
-        fundamentalsData.push(r.value);
-      }
-    }
-  }
-
-  const fundamentalsTable = fundamentalsData
-    .map((f) => {
-      const info = EQUITY_DISPLAY_INFO[f.symbol as string];
-      return `${f.symbol} | ${info?.name ?? "N/A"} | ${info?.sector ?? "N/A"} | P/E: ${f.peRatio ?? "N/A"} | Div: ${f.dividendYield ?? "N/A"} | 52wH: ${f.fiftyTwoWeekHigh ?? "N/A"} | 52wL: ${f.fiftyTwoWeekLow ?? "N/A"} | Price: ${f.price ?? "N/A"} | MCap: ${f.marketCap ?? "N/A"} | EarningsGr: ${f.earningsGrowth ?? "N/A"} | RevGr: ${f.revenueGrowth ?? "N/A"} | D/E: ${f.debtToEquity ?? "N/A"} | Beta: ${f.beta ?? "N/A"} | ProfitMg: ${f.profitMargin ?? "N/A"} | FCF: ${f.freeCashflow ?? "N/A"}`;
-    })
-    .join("\n");
-
-  const aiPrompt = `Eres un screener de acciones experto. El usuario busca:
-
+El usuario busca:
 CRITERIO: "${prompt}"
 
-DATOS REALES del universo de candidatos (Yahoo Finance):
-${fundamentalsTable}
-
 INSTRUCCIONES:
-1. Filtra la tabla de datos REALES para encontrar empresas que cumplan los criterios del usuario.
-2. Solo incluye empresas donde los DATOS CONFIRMEN el criterio. No asumas -- usa los numeros.
-3. Para criterios cualitativos (ej: "management solido", "industria defensiva") usa tu conocimiento, pero prioriza datos.
-4. Si el criterio menciona metricas que estan en la tabla (P/E, 52wk, dividendo, etc.), VERIFICA contra los datos reales.
-5. Si el criterio es sobre un mercado o sector que no esta en la tabla, indica que no hay cobertura.
-6. Maximo 5 matches.
+1. Usando tu conocimiento del mercado, sugiere entre 3 y 8 acciones que cumplan el criterio del usuario.
+2. Puedes recomendar acciones de CUALQUIER mercado global. Usa tickers válidos de Yahoo Finance.
+   - US stocks: AAPL, MSFT, etc.
+   - Argentina (MERVAL): GGAL, YPF, PAM, BMA, CEPU, LOMA, SUPV, TEO, CRESY, etc.
+   - Brasil: VALE, PBR, ITUB, NU, etc.
+   - México: AMX, CEMEX, etc.
+   - Europa: ASML, SAP, NVO, AZN, SHEL, etc.
+3. Prioriza acciones que REALMENTE cumplan el criterio basándote en datos públicos conocidos.
+4. Si el criterio es muy específico a un mercado (ej: "agro argentino"), enfócate en ese mercado.
+5. Incluye métricas estimadas que conozcas (P/E, dividend yield, market cap, etc.).
 
 Responde SOLO con este JSON:
 {
-  "response": "Evaluacion en espanol, 2-4 oraciones, tono profesional. Menciona datos concretos.",
+  "response": "Evaluación en español, 2-4 oraciones, tono profesional. Explica por qué estas acciones cumplen el criterio.",
   "matchedSymbols": [
     {
-      "symbol": "TICKER",
-      "reason": "Por que cumple, con numeros reales",
-      "metrics": { "peRatio": 15.2, "dividendYield": 0.034, "fiftyTwoWeekDelta": -32 }
+      "symbol": "TICKER (formato Yahoo Finance)",
+      "reason": "Por qué cumple el criterio, con datos concretos",
+      "metrics": { "peRatio": 15.2, "dividendYield": 0.034, "marketCap": 50000000000 }
     }
   ],
-  "confidence": "high|medium|none"
+  "confidence": "high|medium|low"
 }
 
-high = 2+ matches claros con datos. medium = matches parciales. none = nada cumple.
-SOLO JSON.`;
+high = recomendaciones sólidas con datos conocidos. medium = parcialmente seguro. low = especulativo.
+SOLO JSON, sin markdown ni explicaciones extra.`;
 
   const result = await generateText({
     model: anthropic("claude-sonnet-4-20250514"),
@@ -91,7 +65,7 @@ SOLO JSON.`;
       metrics: Record<string, number>;
     }>;
     confidence: string;
-  } = { response: "", matchedSymbols: [], confidence: "none" };
+  } = { response: "", matchedSymbols: [], confidence: "low" };
 
   try {
     const text = result.text.trim();
@@ -103,21 +77,39 @@ SOLO JSON.`;
     console.error("Failed to parse custom alert AI response");
   }
 
-  const status =
-    parsed.matchedSymbols.length > 0 ? "matched" : "no_match";
-  const matchedSymbolsList = parsed.matchedSymbols.map((m) => m.symbol);
+  const validatedSymbols: typeof parsed.matchedSymbols = [];
 
-  const matchedData = parsed.matchedSymbols.map((m) => {
-    const fund = fundamentalsData.find(
-      (f) => (f.symbol as string) === m.symbol,
+  if (parsed.matchedSymbols.length > 0) {
+    const symbols = parsed.matchedSymbols.map((m) => m.symbol);
+    const quoteRes = await fetch(
+      new URL(`/api/quote?symbols=${symbols.join(",")}`, req.url),
     );
-    return {
-      symbol: m.symbol,
-      reason: m.reason,
-      metrics: m.metrics,
-      fundamentals: fund ?? null,
-    };
-  });
+
+    let validTickers = new Set<string>();
+    if (quoteRes.ok) {
+      const quoteData = await quoteRes.json();
+      const quotes = Array.isArray(quoteData) ? quoteData : quoteData?.quotes ?? [];
+      validTickers = new Set(
+        quotes
+          .filter((q: { symbol: string; price: number }) => q.price > 0)
+          .map((q: { symbol: string }) => q.symbol),
+      );
+    }
+
+    for (const m of parsed.matchedSymbols) {
+      if (validTickers.has(m.symbol)) {
+        validatedSymbols.push(m);
+      }
+    }
+  }
+
+  const status = validatedSymbols.length > 0 ? "matched" : "no_match";
+  const matchedSymbolsList = validatedSymbols.map((m) => m.symbol);
+  const matchedData = validatedSymbols.map((m) => ({
+    symbol: m.symbol,
+    reason: m.reason,
+    metrics: m.metrics,
+  }));
 
   const { data: saved, error } = await supabase
     .from("custom_alert_rules")
