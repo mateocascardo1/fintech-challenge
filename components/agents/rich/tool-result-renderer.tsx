@@ -6,9 +6,11 @@ import { ChatTickerCard, ChatTickerGrid } from "./chat-ticker-card";
 import { ChatComparisonTable } from "./chat-comparison-table";
 import { ChatSectorHeatmap } from "./chat-sector-heatmap";
 
-type ToolInvocation = {
+type ToolPart = {
   toolName: string;
   state: string;
+  output?: unknown;
+  // Legacy compat
   result?: unknown;
 };
 
@@ -16,12 +18,14 @@ export function ToolResultRenderer({
   invocation,
   agentTickers,
 }: {
-  invocation: ToolInvocation;
+  invocation: ToolPart;
   agentTickers?: string[];
 }) {
-  if (invocation.state !== "result" || !invocation.result) return null;
+  const hasOutput = invocation.state === "output-available" || invocation.state === "result";
+  const output = invocation.output ?? invocation.result;
+  if (!hasOutput || !output) return null;
 
-  const result = invocation.result as Record<string, unknown>;
+  const result = output as Record<string, unknown>;
 
   if ("error" in result) return null;
 

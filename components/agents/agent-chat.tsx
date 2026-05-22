@@ -106,8 +106,8 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
         {messages.map((m) => {
           const text = extractTextContent(m.parts);
           const toolParts = m.parts.filter(
-            (p) => p.type === "tool-invocation",
-          ) as Array<{ type: string; toolInvocation: { toolName: string; state: string; result?: unknown } }>;
+            (p) => p.type === "dynamic-tool" || p.type === "tool-invocation",
+          ) as Array<{ type: string; toolName: string; state: string; output?: unknown; toolInvocation?: { toolName: string; state: string; result?: unknown } }>;
 
           if (!text && toolParts.length === 0 && m.role === "assistant" && isLoading) return null;
 
@@ -154,13 +154,18 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
                         </ReactMarkdown>
                       </div>
                     )}
-                    {toolParts.map((tp, i) => (
-                      <ToolResultRenderer
-                        key={i}
-                        invocation={tp.toolInvocation}
-                        agentTickers={agent.tickers}
-                      />
-                    ))}
+                    {toolParts.map((tp, i) => {
+                      const inv = tp.type === "dynamic-tool"
+                        ? { toolName: tp.toolName, state: tp.state, output: tp.output }
+                        : tp.toolInvocation ?? { toolName: "", state: "", output: undefined };
+                      return (
+                        <ToolResultRenderer
+                          key={i}
+                          invocation={inv}
+                          agentTickers={agent.tickers}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>
