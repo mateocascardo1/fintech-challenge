@@ -102,7 +102,7 @@ export function AgentCreator({ onComplete, onCancel }: AgentCreatorProps) {
               className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all hover:shadow-[0_0_24px_-4px_rgba(34,197,94,0.5)] active:scale-95"
             >
               <Bot className="h-4 w-4" />
-              Ver mis agentes
+              Hablar con mi agente
             </button>
           </div>
         </div>

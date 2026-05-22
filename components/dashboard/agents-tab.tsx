@@ -48,7 +48,7 @@ export function AgentsTab() {
 
   function handleCreationComplete(agent: UserAgent) {
     setAgents((prev) => [agent, ...prev]);
-    setView({ mode: "list" });
+    setView({ mode: "chatting", agent });
   }
 
   function handleCreationCancel() {
