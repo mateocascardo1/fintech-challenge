@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Sparkles, X, Loader2, Clock, ArrowRight, Trash2,
+  Sparkles, X, Loader2, ArrowRight, Trash2,
   ChevronDown, TrendingUp, Bell, BellOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -212,9 +212,14 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
             {/* Loading state */}
             {searching && (
               <div className="space-y-5 pt-2">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground/50">
-                  <Loader2 className="h-4.5 w-4.5 animate-spin text-primary/60" />
-                  Analizando datos fundamentales de ~25 empresas...
+                <div className="rounded-2xl border border-primary/15 bg-primary/[0.04] p-6 flex items-center gap-4">
+                  <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/12 border border-primary/20 shrink-0">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-foreground/80">Analizando el mercado...</p>
+                    <p className="text-sm text-muted-foreground/50 mt-0.5">Evaluando datos fundamentales en tiempo real</p>
+                  </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, i) => (
@@ -282,9 +287,15 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 py-4 text-sm text-muted-foreground/50">
-                    <Clock className="h-4.5 w-4.5 shrink-0" />
-                    No encontré matches con estos criterios. Te alertaré si detecto algo en el futuro.
+                  <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.03] p-7 text-center">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/15 mx-auto mb-4">
+                      <Bell className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <p className="text-lg font-semibold text-foreground/80 mb-2">Alerta creada</p>
+                    <p className="text-sm text-muted-foreground/60 leading-relaxed max-w-md mx-auto">
+                      No encontramos matches ahora, pero vamos a monitorear el mercado continuamente.
+                      Te alertaremos apenas detectemos algo que cumpla tu criterio.
+                    </p>
                   </div>
                 )}
               </motion.div>
@@ -451,7 +462,14 @@ function AlertCard({
         </div>
       )}
       {alert.status === "no_match" && (
-        <p className="text-xs text-muted-foreground/30 mb-2">Sin matches aún</p>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs text-muted-foreground/40">Buscando</span>
+          <span className="flex gap-0.5">
+            <span className="h-1 w-1 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+            <span className="h-1 w-1 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+            <span className="h-1 w-1 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+          </span>
+        </div>
       )}
 
       {/* Expanded content */}
