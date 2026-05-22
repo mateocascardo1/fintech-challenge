@@ -252,45 +252,48 @@ export function MarketWatchTab() {
         </div>
       </div>
 
-      {/* Below: News and Heatmap (collapsible, full width) */}
-      <CollapsibleMarketSection
-        icon={<Newspaper className="h-4 w-4 text-blue-400" />}
-        title="NOTICIAS DEL MERCADO"
-        count={news.length}
-        loading={newsLoading}
-        skeletonCount={5}
-      >
-        {news.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">No hay noticias disponibles.</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {news.map((n, i) => (
-              <a
-                key={i}
-                href={n.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block rounded-xl border border-border/30 bg-white/[0.02] py-3.5 px-4 hover:border-primary/20 hover:bg-white/[0.04] transition-all duration-200"
-              >
-                <p className="font-medium text-sm leading-snug line-clamp-2">{n.title}</p>
-                <p className="text-xs text-muted-foreground/50 mt-2">
-                  {n.source} · {n.pubDate}
-                </p>
-              </a>
-            ))}
-          </div>
-        )}
-      </CollapsibleMarketSection>
+      {/* Below: News and Heatmap side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CollapsibleMarketSection
+          icon={<Newspaper className="h-4 w-4 text-blue-400" />}
+          title="NOTICIAS DEL MERCADO"
+          count={news.length}
+          loading={newsLoading}
+          skeletonCount={5}
+          defaultOpen
+        >
+          {news.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">No hay noticias disponibles.</p>
+          ) : (
+            <div className="space-y-2">
+              {news.map((n, i) => (
+                <a
+                  key={i}
+                  href={n.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-xl border border-border/30 bg-white/[0.02] py-3 px-4 hover:border-primary/20 hover:bg-white/[0.04] transition-all duration-200"
+                >
+                  <p className="font-medium text-sm leading-snug line-clamp-2">{n.title}</p>
+                  <p className="text-xs text-muted-foreground/50 mt-1.5">
+                    {n.source} · {n.pubDate}
+                  </p>
+                </a>
+              ))}
+            </div>
+          )}
+        </CollapsibleMarketSection>
 
-      <CollapsibleMarketSection
-        icon={<LayoutGrid className="h-4 w-4 text-emerald-400" />}
-        title="S&P 500 HEAT MAP"
-        count={0}
-        loading={false}
-        skeletonCount={0}
-      >
-        <HeatmapTab />
-      </CollapsibleMarketSection>
+        <CollapsibleMarketSection
+          icon={<LayoutGrid className="h-4 w-4 text-emerald-400" />}
+          title="S&P 500 HEAT MAP"
+          count={0}
+          loading={false}
+          skeletonCount={0}
+        >
+          <HeatmapTab />
+        </CollapsibleMarketSection>
+      </div>
     </div>
   );
 }
@@ -361,15 +364,15 @@ function IndicesStrip({ quotes, loading }: { quotes: Quote[]; loading: boolean }
           >
             <Link
               href={`/stock/${encodeURIComponent(q.symbol)}`}
-              className={`surface-elevated rounded-xl px-4 py-3 flex flex-col gap-0.5 transition-all duration-200 block ${
+              className={`surface-elevated rounded-lg px-3 py-2.5 flex flex-col gap-0.5 transition-all duration-200 block ${
                 q.changePercent >= 0 ? "hover:surface-glow-positive" : "hover:surface-glow-negative"
               }`}
             >
-              <span className="text-[11px] text-muted-foreground/60 truncate">{q.name ?? q.symbol}</span>
-              <span className="font-mono font-bold text-lg tabular-nums tracking-tight">
+              <span className="text-[10px] text-muted-foreground/60 truncate leading-tight">{q.name ?? q.symbol}</span>
+              <span className="font-mono font-bold text-[15px] tabular-nums tracking-tight">
                 {formatPrice(q.price)}
               </span>
-              <span className={`font-mono text-xs tabular-nums font-semibold ${
+              <span className={`font-mono text-[11px] tabular-nums font-semibold ${
                 q.changePercent >= 0 ? "text-positive" : "text-negative"
               }`}>
                 {formatPercent(q.changePercent, { withSign: true })}
@@ -489,6 +492,7 @@ function CollapsibleMarketSection({
   loading,
   skeletonCount,
   children,
+  defaultOpen = false,
 }: {
   icon?: React.ReactNode;
   title: string;
@@ -496,8 +500,9 @@ function CollapsibleMarketSection({
   loading: boolean;
   skeletonCount: number;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div className="rounded-2xl border border-border/30 overflow-hidden transition-all duration-200">
