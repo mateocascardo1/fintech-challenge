@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, Upload, FileText, X, Loader2,
-  Sparkles, Check, AlertCircle, Pencil, Image as ImageIcon,
-  Link2, CloudUpload,
+  Sparkles, Check, AlertCircle, Pencil, CloudUpload,
+  Link2, Keyboard,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -170,118 +170,169 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
   };
 
   const hasResults = confirmedPositions.length > 0 || isStreaming;
+  const hasFiles = files.length > 0;
 
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Header */}
       <div className="text-center space-y-2">
         <h2 className="text-xl font-bold tracking-tight">
-          Importa tu portfolio
+          Cargá tu portfolio
         </h2>
-        <p className="text-sm text-muted-foreground/70 max-w-sm mx-auto">
-          Subí capturas o PDFs de tu broker y la AI extrae tus posiciones automáticamente
+        <p className="text-sm text-muted-foreground/70 max-w-md mx-auto">
+          Subí capturas de tu broker para detectar posiciones automáticamente, o cargalas a mano
         </p>
       </div>
 
-      {/* ── HERO: Upload Zone ── */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => fileInputRef.current?.click()}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onKeyDown={(e) => { if (e.key === "Enter") fileInputRef.current?.click(); }}
-        className={`
-          group relative overflow-hidden rounded-2xl p-px cursor-pointer
-          transition-all duration-300
-          ${isDragging
-            ? "scale-[1.01] shadow-[0_0_50px_-10px_rgba(34,197,94,0.25)]"
-            : "hover:shadow-[0_0_30px_-10px_rgba(34,197,94,0.12)]"
-          }
-        `}
-      >
-        {/* Gradient border */}
-        <div className={`
-          absolute inset-0 rounded-2xl transition-opacity duration-300
-          ${isDragging
-            ? "bg-gradient-to-br from-primary/60 via-primary/30 to-primary/10 opacity-100"
-            : "bg-gradient-to-br from-primary/20 via-border/30 to-border/20 opacity-60 group-hover:opacity-100"
-          }
-        `} />
+      {/* ── Two paths: Upload AI vs Manual ── */}
+      {!hasFiles && !hasResults && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {/* Path 1: AI Upload */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`
+              group relative overflow-hidden rounded-2xl p-px cursor-pointer text-left
+              transition-all duration-400
+              ${isDragging
+                ? "scale-[1.02] shadow-[0_0_50px_-10px_rgba(34,197,94,0.3)]"
+                : "hover:scale-[1.01] hover:shadow-[0_0_40px_-10px_rgba(34,197,94,0.15)]"
+              }
+            `}
+          >
+            <div className={`
+              absolute inset-0 rounded-2xl transition-opacity duration-300
+              ${isDragging
+                ? "bg-gradient-to-br from-primary/60 via-primary/30 to-primary/10 opacity-100"
+                : "bg-gradient-to-br from-primary/30 via-primary/10 to-transparent opacity-60 group-hover:opacity-100"
+              }
+            `} />
 
-        <div className={`
-          relative surface-elevated rounded-[15px] noise-overlay
-          transition-all duration-300
-          ${files.length === 0 ? "py-12 px-6" : "py-6 px-6"}
-        `}>
-          {/* Corner decorative glow */}
-          <div className={`
-            absolute top-0 right-0 w-40 h-40 rounded-bl-full transition-all duration-500
-            ${isDragging
-              ? "bg-gradient-to-bl from-primary/15 to-transparent"
-              : "bg-gradient-to-bl from-primary/5 to-transparent group-hover:from-primary/10"
-            }
-          `} />
+            <div className="relative surface-elevated rounded-[15px] p-6 sm:p-7 h-full noise-overlay">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/8 to-transparent rounded-bl-full" />
 
-          <div className="relative z-10">
-            {files.length === 0 ? (
-              /* Empty state */
-              <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative z-10 flex flex-col items-start space-y-4">
                 <div className={`
-                  flex h-16 w-16 items-center justify-center rounded-2xl
-                  border transition-all duration-300
+                  flex h-12 w-12 items-center justify-center rounded-xl border transition-all duration-300
                   ${isDragging
-                    ? "bg-primary/15 border-primary/40 scale-110"
-                    : "bg-primary/8 border-primary/15 group-hover:bg-primary/12 group-hover:border-primary/25"
+                    ? "bg-primary/20 border-primary/40 scale-110"
+                    : "bg-primary/10 border-primary/20 group-hover:bg-primary/15 group-hover:border-primary/30"
                   }
                 `}>
-                  <CloudUpload className={`
-                    h-8 w-8 transition-all duration-300
-                    ${isDragging ? "text-primary scale-110" : "text-primary/70 group-hover:text-primary"}
-                  `} />
+                  <CloudUpload className="h-6 w-6 text-primary" />
                 </div>
 
                 <div className="space-y-1.5">
-                  <p className="text-sm font-semibold">
-                    {isDragging ? "Soltá tus archivos acá" : "Arrastra o hacé click para subir"}
-                  </p>
-                  <p className="text-xs text-muted-foreground/50">
-                    Screenshots o PDFs de tu broker
+                  <h3 className="text-sm font-bold tracking-tight">
+                    {isDragging ? "Soltá acá" : "Subir screenshots"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground/60 leading-relaxed">
+                    La AI detecta tickers y cantidades de tus capturas o PDFs automáticamente
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {["PNG", "JPG", "WEBP", "PDF"].map(fmt => (
-                    <span key={fmt} className="text-[10px] font-medium text-muted-foreground/40 bg-white/[0.04] rounded-md px-2 py-0.5 border border-white/[0.04]">
+                <div className="flex items-center gap-1.5">
+                  {["PNG", "JPG", "PDF"].map(fmt => (
+                    <span key={fmt} className="text-[9px] font-medium text-muted-foreground/35 bg-white/[0.04] rounded px-1.5 py-0.5 border border-white/[0.03]">
                       {fmt}
                     </span>
                   ))}
                 </div>
-              </div>
-            ) : (
-              /* Files uploaded state — compact clickable area to add more */
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
-                <Upload className="h-3.5 w-3.5" />
-                <span>Click o arrastra para agregar más archivos</span>
-              </div>
-            )}
-          </div>
-        </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".png,.jpg,.jpeg,.webp,.pdf"
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
-          className="hidden"
-        />
-      </div>
+                <div className="flex items-center gap-2 text-xs font-medium text-primary group-hover:gap-2.5 transition-all duration-300">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Analizar con AI
+                </div>
+              </div>
+            </div>
+          </button>
+
+          {/* Path 2: Manual Entry */}
+          <button
+            type="button"
+            onClick={onSkip}
+            className="
+              group relative overflow-hidden rounded-2xl p-px cursor-pointer text-left
+              transition-all duration-400
+              hover:scale-[1.01] hover:shadow-[0_0_40px_-10px_rgba(148,163,184,0.1)]
+            "
+          >
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-400/15 via-border/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
+
+            <div className="relative surface-elevated rounded-[15px] p-6 sm:p-7 h-full noise-overlay">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-slate-400/5 to-transparent rounded-bl-full" />
+
+              <div className="relative z-10 flex flex-col items-start space-y-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-400/8 border border-slate-400/15 group-hover:bg-slate-400/12 group-hover:border-slate-400/25 transition-all duration-300">
+                  <Keyboard className="h-6 w-6 text-slate-400/80" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h3 className="text-sm font-bold tracking-tight">Cargar manualmente</h3>
+                  <p className="text-xs text-muted-foreground/60 leading-relaxed">
+                    Buscá acciones, ETFs, bonos argentinos y efectivo para armar tu portfolio
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {["Acciones", "ETFs", "Bonos", "Cash"].map(tag => (
+                    <span key={tag} className="inline-flex items-center rounded-full bg-slate-400/6 px-2 py-0.5 text-[9px] font-medium text-slate-400/60 border border-slate-400/8">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-400/80 group-hover:gap-2.5 group-hover:text-slate-300 transition-all duration-300">
+                  Cargar posiciones
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* ── Upload Zone (compact, when files already added or in results mode) ── */}
+      {(hasFiles || hasResults) && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onKeyDown={(e) => { if (e.key === "Enter") fileInputRef.current?.click(); }}
+          className={`
+            group rounded-xl border border-dashed py-3 px-4 cursor-pointer
+            transition-all duration-200 flex items-center justify-center gap-2
+            ${isDragging
+              ? "border-primary/50 bg-primary/5"
+              : "border-border/30 hover:border-border/50 hover:bg-white/[0.02]"
+            }
+          `}
+        >
+          <Upload className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground/60" />
+          <span className="text-xs text-muted-foreground/40 group-hover:text-muted-foreground/60">
+            {isDragging ? "Soltá acá" : "Agregar más archivos"}
+          </span>
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".png,.jpg,.jpeg,.webp,.pdf"
+        onChange={(e) => e.target.files && handleFiles(e.target.files)}
+        className="hidden"
+      />
 
       {/* ── File Previews ── */}
       <AnimatePresence mode="popLayout">
-        {files.length > 0 && (
+        {hasFiles && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -297,7 +348,6 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
                 transition={{ duration: 0.25, delay: i * 0.05 }}
                 className="group/file flex items-center gap-3 surface-elevated rounded-xl p-3 border border-border/20 hover:border-border/40 transition-colors"
               >
-                {/* Thumbnail */}
                 {file.preview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -311,7 +361,6 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
                   </div>
                 )}
 
-                {/* File info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{file.name}</p>
                   <p className="text-[11px] text-muted-foreground/50 mt-0.5">
@@ -319,7 +368,6 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
                   </p>
                 </div>
 
-                {/* Remove */}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); removeFile(file.id); }}
@@ -334,7 +382,7 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
       </AnimatePresence>
 
       {/* ── Analyze Button ── */}
-      {files.length > 0 && !isStreaming && confirmedPositions.length === 0 && (
+      {hasFiles && !isStreaming && confirmedPositions.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -493,36 +541,29 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
         </div>
       )}
 
-      {/* ── Divider + Brokers ── */}
-      {!hasResults && (
+      {/* ── Broker pills (only visible in initial two-path view) ── */}
+      {!hasFiles && !hasResults && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-4 pt-2"
+          transition={{ delay: 0.3 }}
+          className="space-y-3"
         >
           <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-border/20" />
-            <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/30 font-medium">o conecta tu broker</span>
-            <div className="flex-1 h-px bg-border/20" />
+            <div className="flex-1 h-px bg-border/15" />
+            <span className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground/25 font-medium">Conexión directa próximamente</span>
+            <div className="flex-1 h-px bg-border/15" />
           </div>
 
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div className="flex items-center justify-center gap-3">
             {BROKERS.map((broker) => (
               <div
                 key={broker.name}
-                className="group/broker relative flex items-center gap-2 rounded-lg px-3 py-2 border border-border/15
-                  bg-white/[0.015] opacity-50 cursor-not-allowed select-none
-                  hover:opacity-60 transition-all"
-                title={broker.name}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.03] border border-border/10
+                  text-[9px] font-bold text-muted-foreground/30 cursor-not-allowed select-none"
+                title={`${broker.name} — Próximamente`}
               >
-                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.05] text-[10px] font-bold text-muted-foreground/50 border border-border/10">
-                  {broker.abbr}
-                </div>
-                <span className="text-[11px] text-muted-foreground/50 font-medium hidden sm:block">{broker.name}</span>
-                <Badge variant="secondary" className="text-[8px] px-1 py-0 bg-primary/8 text-primary/60 border-primary/10 ml-auto">
-                  Pronto
-                </Badge>
+                {broker.abbr}
               </div>
             ))}
           </div>
@@ -530,13 +571,9 @@ export function StepImportPortfolio({ onImport, onSkip, onBack }: StepImportProp
       )}
 
       {/* ── Navigation ── */}
-      <div className="flex justify-between pt-2">
-        <Button variant="ghost" onClick={onBack} className="text-muted-foreground/60 hover:text-foreground">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Volver
-        </Button>
-        <Button variant="outline" onClick={onSkip} className="border-border/30">
-          Cargar manualmente
-          <ArrowRight className="h-4 w-4 ml-1" />
+      <div className="flex justify-center pt-2">
+        <Button variant="ghost" onClick={onBack} className="text-muted-foreground/50 hover:text-foreground text-xs">
+          <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Volver
         </Button>
       </div>
     </div>
