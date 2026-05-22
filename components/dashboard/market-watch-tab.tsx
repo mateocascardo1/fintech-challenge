@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Star, TrendingUp, Loader2, ArrowRight, Sparkles, Search, ChevronDown, LayoutGrid } from "lucide-react";
+import { Plus, Star, TrendingUp, Loader2, ArrowRight, Sparkles, Search, ChevronDown, LayoutGrid, Newspaper } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import { INDICES, ETFS, COMMODITIES, CURRENCIES } from "@/lib/tickers";
 import { StockCard } from "@/components/stock-card";
 import { HeatmapTab } from "@/components/dashboard/market-heatmap";
 import { ScreenerModal } from "@/components/dashboard/screener-modal";
+import { motion } from "motion/react";
 import type { Quote } from "@/lib/types";
 
 type WatchlistItem = { symbol: string };
@@ -30,7 +31,6 @@ function CardSkeleton() {
     </div>
   );
 }
-
 
 export function MarketWatchTab() {
   const router = useRouter();
@@ -136,148 +136,125 @@ export function MarketWatchTab() {
 
   return (
     <div className="space-y-8">
-      {/* Smart Screener -- hero card */}
-      <ScreenerCard />
+      {/* Two-column grid layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+        {/* Main column */}
+        <div className="space-y-6">
+          <ScreenerCard />
 
-      {/* Watchlist */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Star className="h-4 w-4 text-yellow-400" />
-            <p className="section-label">FAVORITOS</p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowSearch(!showSearch)}
-            className="text-xs"
-          >
-            {showSearch ? "Cerrar" : <><Plus className="h-3.5 w-3.5 mr-1" /> Agregar</>}
-          </Button>
-        </div>
-
-        {showSearch && (
-          <div className="mb-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar instrumento para agregar..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-                autoFocus
-              />
+          {/* Favoritos */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-yellow-400" />
+                <p className="section-label">FAVORITOS</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSearch(!showSearch)}
+                className="text-xs"
+              >
+                {showSearch ? "Cerrar" : <><Plus className="h-3.5 w-3.5 mr-1" /> Agregar</>}
+              </Button>
             </div>
-            {searching && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+
+            {showSearch && (
+              <div className="mb-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="relative max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar instrumento para agregar..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                    autoFocus
+                  />
+                </div>
+                {searching && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+                  </div>
+                )}
+                {searchResults.length > 0 && (
+                  <div className="border border-border rounded-xl overflow-hidden divide-y divide-border/50 max-w-md animate-in fade-in duration-150">
+                    {searchResults.map((r) => (
+                      <button
+                        key={r.symbol}
+                        type="button"
+                        onClick={() => addToWatchlist(r.symbol)}
+                        disabled={addingSymbol === r.symbol}
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/30 transition-colors text-left text-sm disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <div>
+                          <span className="font-bold">{r.symbol}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">{r.name}</span>
+                        </div>
+                        {addingSymbol === r.symbol ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        ) : (
+                          <Plus className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-            {searchResults.length > 0 && (
-              <div className="border border-border rounded-xl overflow-hidden divide-y divide-border/50 max-w-md animate-in fade-in duration-150">
-                {searchResults.map((r) => (
-                  <button
-                    key={r.symbol}
-                    type="button"
-                    onClick={() => addToWatchlist(r.symbol)}
-                    disabled={addingSymbol === r.symbol}
-                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/30 transition-colors text-left text-sm disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <div>
-                      <span className="font-bold">{r.symbol}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">{r.name}</span>
-                    </div>
-                    {addingSymbol === r.symbol ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    ) : (
-                      <Plus className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </button>
+
+            {watchLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="rounded-xl bg-card border border-border/30 p-5 space-y-3">
+                    <Skeleton className="h-4 w-20 rounded-md" />
+                    <Skeleton className="h-3 w-32 rounded-md" />
+                    <Skeleton className="h-6 w-24 rounded-md" />
+                    <Skeleton className="h-3 w-16 rounded-md" />
+                  </div>
                 ))}
               </div>
+            ) : watchQuotes.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {watchQuotes.map((q, i) => (
+                  <motion.div
+                    key={q.symbol}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, duration: 0.3 }}
+                  >
+                    <StockCard quote={q} onRemove={removeFromWatchlist} />
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowSearch(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border/40 text-sm text-muted-foreground/50 hover:border-primary/20 hover:text-muted-foreground/70 transition-all duration-200"
+              >
+                <Plus className="h-3.5 w-3.5" /> Agregar a favoritos
+              </button>
             )}
           </div>
-        )}
 
-        {watchLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-xl bg-card border border-border/30 p-5 space-y-3">
-                <Skeleton className="h-4 w-20 rounded-md" />
-                <Skeleton className="h-3 w-32 rounded-md" />
-                <Skeleton className="h-6 w-24 rounded-md" />
-                <Skeleton className="h-3 w-16 rounded-md" />
-              </div>
-            ))}
-          </div>
-        ) : watchQuotes.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-in fade-in duration-500">
-            {watchQuotes.map((q) => (
-              <StockCard key={q.symbol} quote={q} onRemove={removeFromWatchlist} />
-            ))}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowSearch(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border/40 text-sm text-muted-foreground/50 hover:border-primary/20 hover:text-muted-foreground/70 transition-all duration-200"
-          >
-            <Plus className="h-3.5 w-3.5" /> Agregar a favoritos
-          </button>
-        )}
+          {/* Indices - always visible compact strip */}
+          <IndicesStrip quotes={indicesQuotes} loading={marketLoading} />
+        </div>
+
+        {/* Sidebar column */}
+        <div className="space-y-6">
+          <EtfsCompact quotes={etfQuotes} loading={marketLoading} />
+          <CommoditiesDivisasCompact
+            commodities={commodityQuotes}
+            currencies={currencyQuotes}
+            loading={marketLoading}
+          />
+        </div>
       </div>
 
-      {/* Indices */}
+      {/* Below: News and Heatmap (collapsible, full width) */}
       <CollapsibleMarketSection
-        icon={<TrendingUp className="h-4 w-4 text-primary" />}
-        title="ÍNDICES"
-        count={indicesQuotes.length}
-        loading={marketLoading}
-        skeletonCount={5}
-      >
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {indicesQuotes.map((q) => <StockCard key={q.symbol} quote={q} />)}
-        </div>
-      </CollapsibleMarketSection>
-
-      {/* ETFs */}
-      <CollapsibleMarketSection
-        icon={<TrendingUp className="h-4 w-4 text-chart-2" />}
-        title="ETFS POPULARES"
-        count={etfQuotes.length}
-        loading={marketLoading}
-        skeletonCount={6}
-      >
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {etfQuotes.map((q) => <StockCard key={q.symbol} quote={q} />)}
-        </div>
-      </CollapsibleMarketSection>
-
-      {/* Commodities + Currencies */}
-      <CollapsibleMarketSection
-        title="COMMODITIES & DIVISAS"
-        count={commodityQuotes.length + currencyQuotes.length}
-        loading={marketLoading}
-        skeletonCount={5}
-      >
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/40 mb-2">Commodities</p>
-            <div className="space-y-1">
-              {commodityQuotes.map((q) => <QuoteRow key={q.symbol} quote={q} />)}
-            </div>
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/40 mb-2">Divisas</p>
-            <div className="space-y-1">
-              {currencyQuotes.map((q) => <QuoteRow key={q.symbol} quote={q} />)}
-            </div>
-          </div>
-        </div>
-      </CollapsibleMarketSection>
-
-      {/* News */}
-      <CollapsibleMarketSection
+        icon={<Newspaper className="h-4 w-4 text-blue-400" />}
         title="NOTICIAS DEL MERCADO"
         count={news.length}
         loading={newsLoading}
@@ -286,17 +263,17 @@ export function MarketWatchTab() {
         {news.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">No hay noticias disponibles.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {news.map((n, i) => (
               <a
                 key={i}
                 href={n.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-xl border border-border bg-card py-3 px-4 hover:border-primary/20 transition-colors"
+                className="block rounded-xl border border-border/30 bg-white/[0.02] py-3.5 px-4 hover:border-primary/20 hover:bg-white/[0.04] transition-all duration-200"
               >
-                <p className="font-medium text-sm">{n.title}</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="font-medium text-sm leading-snug line-clamp-2">{n.title}</p>
+                <p className="text-xs text-muted-foreground/50 mt-2">
                   {n.source} · {n.pubDate}
                 </p>
               </a>
@@ -305,7 +282,6 @@ export function MarketWatchTab() {
         )}
       </CollapsibleMarketSection>
 
-      {/* S&P 500 Heat Map */}
       <CollapsibleMarketSection
         icon={<LayoutGrid className="h-4 w-4 text-emerald-400" />}
         title="S&P 500 HEAT MAP"
@@ -328,23 +304,183 @@ function ScreenerCard() {
       <button
         type="button"
         onClick={() => setShowModal(true)}
-        className="w-full surface-elevated noise-overlay rounded-2xl p-5 flex items-center gap-4 hover:border-primary/20 border border-transparent transition-all duration-200 group text-left"
+        className="screener-hero-card w-full rounded-2xl p-6 flex items-center gap-5 border border-primary/10 transition-all duration-300 group text-left relative overflow-hidden"
       >
-        <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/12 border border-primary/15 shrink-0 group-hover:bg-primary/18 transition-colors">
-          <Sparkles className="h-5 w-5 text-primary" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-transparent to-primary/[0.03] opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="relative flex items-center justify-center h-12 w-12 rounded-xl bg-primary/12 border border-primary/20 shrink-0 group-hover:bg-primary/18 group-hover:scale-105 transition-all duration-300">
+          <Sparkles className="h-5.5 w-5.5 text-primary" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-semibold text-foreground/90 mb-0.5">Screener Inteligente</p>
-          <p className="text-sm text-muted-foreground/50">
+        <div className="relative flex-1 min-w-0">
+          <p className="text-base font-bold text-foreground mb-0.5 tracking-tight">Screener Inteligente</p>
+          <p className="text-sm text-muted-foreground/60">
             Busca acciones con IA y datos reales del mercado
           </p>
         </div>
-        <ArrowRight className="h-4 w-4 text-muted-foreground/25 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+        <ArrowRight className="relative h-5 w-5 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-1 transition-all duration-300 shrink-0" />
       </button>
       {showModal && <ScreenerModal onClose={() => setShowModal(false)} />}
     </>
   );
 }
+
+
+function IndicesStrip({ quotes, loading }: { quotes: Quote[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <p className="section-label flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-primary" />
+          ÍNDICES
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-xl bg-card border border-border/20 p-3 space-y-2">
+              <Skeleton className="h-3 w-16 rounded" />
+              <Skeleton className="h-5 w-20 rounded" />
+              <Skeleton className="h-3 w-12 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="section-label flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-primary" />
+        ÍNDICES
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+        {quotes.map((q, i) => (
+          <motion.div
+            key={q.symbol}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.06, duration: 0.25 }}
+          >
+            <Link
+              href={`/stock/${encodeURIComponent(q.symbol)}`}
+              className={`surface-elevated rounded-xl px-4 py-3 flex flex-col gap-0.5 transition-all duration-200 block ${
+                q.changePercent >= 0 ? "hover:surface-glow-positive" : "hover:surface-glow-negative"
+              }`}
+            >
+              <span className="text-[11px] text-muted-foreground/60 truncate">{q.name ?? q.symbol}</span>
+              <span className="font-mono font-bold text-lg tabular-nums tracking-tight">
+                {formatPrice(q.price)}
+              </span>
+              <span className={`font-mono text-xs tabular-nums font-semibold ${
+                q.changePercent >= 0 ? "text-positive" : "text-negative"
+              }`}>
+                {formatPercent(q.changePercent, { withSign: true })}
+              </span>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+function EtfsCompact({ quotes, loading }: { quotes: Quote[]; loading: boolean }) {
+  return (
+    <div className="rounded-2xl border border-border/30 overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-border/20">
+        <p className="section-label flex items-center gap-2">
+          <TrendingUp className="h-3.5 w-3.5 text-chart-2" />
+          ETFS POPULARES
+        </p>
+      </div>
+      <div className="divide-y divide-border/10">
+        {loading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="px-5 py-3 flex items-center justify-between">
+              <Skeleton className="h-4 w-20 rounded" />
+              <Skeleton className="h-4 w-24 rounded" />
+            </div>
+          ))
+        ) : (
+          quotes.map((q, i) => (
+            <motion.div
+              key={q.symbol}
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.04, duration: 0.2 }}
+            >
+              <Link
+                href={`/stock/${encodeURIComponent(q.symbol)}`}
+                className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.03] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-mono font-bold text-sm">{q.symbol}</span>
+                  <span className="text-xs text-muted-foreground/50 truncate max-w-[100px]">{q.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-sm tabular-nums">{formatPrice(q.price)}</span>
+                  <span className={`font-mono text-xs tabular-nums font-semibold min-w-[52px] text-right ${
+                    q.changePercent >= 0 ? "text-positive" : "text-negative"
+                  }`}>
+                    {formatPercent(q.changePercent, { withSign: true })}
+                  </span>
+                </div>
+              </Link>
+            </motion.div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function CommoditiesDivisasCompact({
+  commodities,
+  currencies,
+  loading,
+}: {
+  commodities: Quote[];
+  currencies: Quote[];
+  loading: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/30 overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-border/20">
+        <p className="section-label">COMMODITIES & DIVISAS</p>
+      </div>
+      <div className="divide-y divide-border/10">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="px-5 py-2.5 flex items-center justify-between">
+              <Skeleton className="h-3.5 w-24 rounded" />
+              <Skeleton className="h-3.5 w-20 rounded" />
+            </div>
+          ))
+        ) : (
+          <>
+            {commodities.length > 0 && (
+              <div className="px-5 pt-3 pb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/35 mb-1">Commodities</p>
+              </div>
+            )}
+            {commodities.map((q) => (
+              <QuoteRow key={q.symbol} quote={q} />
+            ))}
+            {currencies.length > 0 && (
+              <div className="px-5 pt-3 pb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/35 mb-1">Divisas</p>
+              </div>
+            )}
+            {currencies.map((q) => (
+              <QuoteRow key={q.symbol} quote={q} />
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 function CollapsibleMarketSection({
   icon,
@@ -399,15 +535,17 @@ function QuoteRow({ quote }: { quote: Quote }) {
   return (
     <Link
       href={`/stock/${encodeURIComponent(quote.symbol)}`}
-      className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/20 transition-all duration-200"
+      className="flex items-center justify-between py-2.5 px-5 hover:bg-white/[0.03] transition-colors"
     >
-      <div>
+      <div className="flex items-center gap-2">
         <span className="font-medium text-sm">{quote.name}</span>
-        <span className="ml-2 text-xs text-muted-foreground">{quote.symbol}</span>
+        <span className="text-[11px] text-muted-foreground/40">{quote.symbol}</span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-sm tabular-nums font-medium">{formatPrice(quote.price)}</span>
-        <span className={`text-xs tabular-nums min-w-[60px] text-right ${quote.changePercent >= 0 ? "text-positive" : "text-negative"}`}>
+        <span className="font-mono text-sm tabular-nums font-medium">{formatPrice(quote.price)}</span>
+        <span className={`font-mono text-xs tabular-nums font-semibold min-w-[52px] text-right ${
+          quote.changePercent >= 0 ? "text-positive" : "text-negative"
+        }`}>
           {formatPercent(quote.changePercent, { withSign: true })}
         </span>
       </div>

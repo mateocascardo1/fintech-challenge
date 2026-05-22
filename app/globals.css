@@ -281,6 +281,24 @@
       radial-gradient(ellipse 70% 50% at 50% 40%, oklch(0.74 0.17 152 / 6%) 0%, transparent 70%),
       radial-gradient(ellipse 40% 30% at 70% 60%, oklch(0.60 0.12 200 / 4%) 0%, transparent 60%);
   }
+
+  .screener-hero-card {
+    background: linear-gradient(
+      145deg,
+      oklch(0.14 0.01 152 / 60%) 0%,
+      oklch(0.12 0.005 260) 50%,
+      oklch(0.14 0.008 200 / 40%) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 4%),
+      0 0 40px -10px oklch(0.74 0.17 152 / 8%);
+  }
+  .screener-hero-card:hover {
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 6%),
+      0 0 60px -10px oklch(0.74 0.17 152 / 15%),
+      0 0 0 1px oklch(0.74 0.17 152 / 12%);
+  }
 }
 
 @keyframes fade-in-up {
