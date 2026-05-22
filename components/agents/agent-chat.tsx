@@ -21,6 +21,31 @@ function extractTextContent(parts: Array<{ type: string; text?: string }>): stri
     .join("");
 }
 
+function isToolPart(part: { type: string }): boolean {
+  return part.type.startsWith("tool-") || part.type === "dynamic-tool";
+}
+
+function getToolNameFromPart(part: { type: string; toolName?: string }): string {
+  if (part.type === "dynamic-tool") return (part as { toolName: string }).toolName;
+  return part.type.split("-").slice(1).join("-");
+}
+
+type ToolPartData = {
+  toolName: string;
+  state: string;
+  output?: unknown;
+};
+
+function extractToolParts(parts: Array<Record<string, unknown>>): ToolPartData[] {
+  return parts
+    .filter((p) => isToolPart(p as { type: string }))
+    .map((p) => ({
+      toolName: getToolNameFromPart(p as { type: string; toolName?: string }),
+      state: p.state as string,
+      output: p.output,
+    }));
+}
+
 function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string }) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,70 +130,92 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
 
         {messages.map((m) => {
           const text = extractTextContent(m.parts);
-          const toolParts = m.parts.filter(
-            (p) => p.type === "dynamic-tool" || p.type === "tool-invocation",
-          ) as Array<{ type: string; toolName: string; state: string; output?: unknown; toolInvocation?: { toolName: string; state: string; result?: unknown } }>;
+          const toolParts = extractToolParts(m.parts as Array<Record<string, unknown>>);
 
-          if (!text && toolParts.length === 0 && m.role === "assistant" && isLoading) return null;
+          const completedTools = toolParts.filter((tp) => tp.state === "output-available");
+          const loadingTools = toolParts.filter(
+            (tp) => tp.state === "input-available" || tp.state === "input-streaming",
+          );
+
+          if (!text && completedTools.length === 0 && loadingTools.length === 0 && m.role === "assistant" && isLoading) return null;
 
           return (
             <div
               key={m.id}
-              className={`flex gap-3 mb-5 ${m.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+              className={`mb-5 ${m.role === "user" ? "flex justify-end" : ""} animate-in fade-in slide-in-from-bottom-2 duration-300`}
             >
-              {m.role === "assistant" && (
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Sparkles className="h-4 w-4 text-primary" />
+              {m.role === "user" ? (
+                <div className="max-w-[70%] rounded-2xl rounded-br-sm bg-primary text-primary-foreground px-5 py-3.5 shadow-sm">
+                  <p className="text-sm leading-relaxed">{text}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Text content */}
+                  {text && (
+                    <div className="flex gap-3">
+                      <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="max-w-[75%] rounded-2xl rounded-bl-sm bg-white/[0.03] border border-white/[0.08] px-5 py-4">
+                        <div className="chat-markdown text-sm leading-relaxed text-foreground/90">
+                          <ReactMarkdown
+                            components={{
+                              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                              strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
+                              ul: ({ children }) => <ul className="mb-3 ml-4 space-y-1.5 last:mb-0">{children}</ul>,
+                              ol: ({ children }) => <ol className="mb-3 ml-4 space-y-1.5 list-decimal last:mb-0">{children}</ol>,
+                              li: ({ children }) => (
+                                <li className="relative pl-2 before:absolute before:left-[-8px] before:top-[10px] before:h-1 before:w-1 before:rounded-full before:bg-primary/50">
+                                  {children}
+                                </li>
+                              ),
+                              h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0 text-foreground">{children}</h2>,
+                              h3: ({ children }) => <h3 className="text-sm font-bold mb-1.5 mt-2 first:mt-0 text-foreground">{children}</h3>,
+                              code: ({ children }) => (
+                                <code className="px-1.5 py-0.5 rounded-md bg-white/[0.06] text-primary text-[13px] font-mono">
+                                  {children}
+                                </code>
+                              ),
+                            }}
+                          >
+                            {text}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Loading tools */}
+                  {loadingTools.map((tp, i) => (
+                    <div key={`loading-${i}`} className="ml-11 flex items-center gap-2.5 px-4 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] w-fit animate-pulse">
+                      <Loader2 className="h-3.5 w-3.5 text-primary/60 animate-spin" />
+                      <span className="text-xs text-muted-foreground/60">
+                        {tp.toolName === "getHistoricalPrices" && "Cargando gráfico de precios..."}
+                        {tp.toolName === "getStockQuote" && "Obteniendo cotización..."}
+                        {tp.toolName === "getStockFundamentals" && "Buscando datos fundamentales..."}
+                        {tp.toolName === "getFinancialData" && "Cargando estados financieros..."}
+                        {tp.toolName === "getStockNews" && "Buscando noticias..."}
+                        {tp.toolName === "getSectorNews" && "Buscando noticias del sector..."}
+                        {tp.toolName === "compareStocks" && "Comparando acciones..."}
+                        {tp.toolName === "searchStocks" && "Buscando acciones..."}
+                        {!["getHistoricalPrices", "getStockQuote", "getStockFundamentals", "getFinancialData", "getStockNews", "getSectorNews", "compareStocks", "searchStocks"].includes(tp.toolName) && "Procesando..."}
+                      </span>
+                    </div>
+                  ))}
+
+                  {/* Completed tool results - rendered OUTSIDE the text bubble for full width */}
+                  {completedTools.map((tp, i) => (
+                    <div key={`tool-${i}`} className="ml-11">
+                      <ToolResultRenderer
+                        toolName={tp.toolName}
+                        state={tp.state}
+                        output={tp.output}
+                        agentTickers={agent.tickers}
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
-              <div className={`max-w-[70%] ${m.role === "user" ? "" : "min-w-[220px]"}`}>
-                {m.role === "user" ? (
-                  <div className="rounded-2xl rounded-br-sm bg-primary text-primary-foreground px-5 py-3.5 shadow-sm">
-                    <p className="text-sm leading-relaxed">{text}</p>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl rounded-bl-sm bg-white/[0.03] border border-white/[0.08] px-5 py-4">
-                    {text && (
-                      <div className="chat-markdown text-sm leading-relaxed text-foreground/90">
-                        <ReactMarkdown
-                          components={{
-                            p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                            strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
-                            ul: ({ children }) => <ul className="mb-3 ml-4 space-y-1.5 last:mb-0">{children}</ul>,
-                            ol: ({ children }) => <ol className="mb-3 ml-4 space-y-1.5 list-decimal last:mb-0">{children}</ol>,
-                            li: ({ children }) => (
-                              <li className="relative pl-2 before:absolute before:left-[-8px] before:top-[10px] before:h-1 before:w-1 before:rounded-full before:bg-primary/50">
-                                {children}
-                              </li>
-                            ),
-                            h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0 text-foreground">{children}</h2>,
-                            h3: ({ children }) => <h3 className="text-sm font-bold mb-1.5 mt-2 first:mt-0 text-foreground">{children}</h3>,
-                            code: ({ children }) => (
-                              <code className="px-1.5 py-0.5 rounded-md bg-white/[0.06] text-primary text-[13px] font-mono">
-                                {children}
-                              </code>
-                            ),
-                          }}
-                        >
-                          {text}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                    {toolParts.map((tp, i) => {
-                      const inv = tp.type === "dynamic-tool"
-                        ? { toolName: tp.toolName, state: tp.state, output: tp.output }
-                        : tp.toolInvocation ?? { toolName: "", state: "", output: undefined };
-                      return (
-                        <ToolResultRenderer
-                          key={i}
-                          invocation={inv}
-                          agentTickers={agent.tickers}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
             </div>
           );
         })}
@@ -305,8 +352,8 @@ export function AgentChat({ agent, onBack }: AgentChatProps) {
     } catch { /* no-op */ }
   }
 
-  function handleTickerClick(symbol: string) {
-    // Ticker clicks handled inside LiveChat via suggestions
+  function handleTickerClick(_symbol: string) {
+    // handled inside LiveChat via suggestions
   }
 
   async function handleDeleteSession(session: AgentSession) {

@@ -5,31 +5,23 @@ import { ChatNewsCard } from "./chat-news-card";
 import { ChatTickerCard, ChatTickerGrid } from "./chat-ticker-card";
 import { ChatComparisonTable } from "./chat-comparison-table";
 import { ChatSectorHeatmap } from "./chat-sector-heatmap";
+import { ChatFinancialTable } from "./chat-financial-table";
 
-type ToolPart = {
+type Props = {
   toolName: string;
   state: string;
   output?: unknown;
-  // Legacy compat
-  result?: unknown;
+  agentTickers?: string[];
 };
 
-export function ToolResultRenderer({
-  invocation,
-  agentTickers,
-}: {
-  invocation: ToolPart;
-  agentTickers?: string[];
-}) {
-  const hasOutput = invocation.state === "output-available" || invocation.state === "result";
-  const output = invocation.output ?? invocation.result;
-  if (!hasOutput || !output) return null;
+export function ToolResultRenderer({ toolName, state, output, agentTickers }: Props) {
+  if (state !== "output-available" || !output) return null;
 
   const result = output as Record<string, unknown>;
 
   if ("error" in result) return null;
 
-  switch (invocation.toolName) {
+  switch (toolName) {
     case "getStockQuote": {
       return <ChatTickerCard data={result as Parameters<typeof ChatTickerCard>[0]["data"]} />;
     }
@@ -54,7 +46,7 @@ export function ToolResultRenderer({
     }
 
     case "getFinancialData": {
-      return null;
+      return <ChatFinancialTable data={result} />;
     }
 
     case "searchStocks": {
