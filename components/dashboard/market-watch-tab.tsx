@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Star, TrendingUp, Loader2, ArrowRight } from "lucide-react";
+import { Search, Plus, Star, TrendingUp, Loader2, ArrowRight, Sparkles, Clock, Trash2, Power, ChevronDown, ChevronUp } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import { INDICES, ETFS, COMMODITIES, CURRENCIES } from "@/lib/tickers";
 import { StockCard } from "@/components/stock-card";
@@ -331,6 +331,9 @@ export function MarketWatchTab() {
         )}
       </div>
 
+      {/* Smart Screener */}
+      <SmartScreenerSection />
+
       {/* Indices */}
       {marketLoading ? (
         <MarketSectionSkeleton title="ÍNDICES" count={5} />
@@ -411,6 +414,315 @@ export function MarketWatchTab() {
                 </p>
               </a>
             ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type CustomAlertRule = {
+  id: string;
+  prompt: string;
+  ai_response: string;
+  matched_symbols: string[];
+  matched_data: Array<{
+    symbol: string;
+    reason: string;
+    metrics: Record<string, number>;
+  }>;
+  status: string;
+  is_read: boolean;
+  is_active: boolean;
+  created_at: string;
+};
+
+const QUICK_PROMPTS = [
+  "Empresas defensivas con dividendo > 3%",
+  "Tech con P/E bajo 20 y revenue creciendo",
+  "Acciones 30%+ debajo de 52-week high",
+];
+
+function SmartScreenerSection() {
+  const router = useRouter();
+  const [prompt, setPrompt] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [result, setResult] = useState<CustomAlertRule | null>(null);
+  const [savedAlerts, setSavedAlerts] = useState<CustomAlertRule[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(true);
+  const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/alerts");
+        const data = await res.json();
+        if (!cancelled) setSavedAlerts(data.customAlerts ?? []);
+      } catch { /* ignore */ }
+      if (!cancelled) setAlertsLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function handleSubmit() {
+    if (prompt.trim().length < 10 || searching) return;
+    setSearching(true);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/alerts/custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResult(data);
+        setSavedAlerts((prev) => [data, ...prev]);
+      }
+    } catch { /* ignore */ }
+
+    setSearching(false);
+  }
+
+  async function toggleActive(id: string, isActive: boolean) {
+    setSavedAlerts((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, is_active: isActive } : a)),
+    );
+    await fetch(`/api/alerts/custom/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: isActive }),
+    });
+  }
+
+  async function deleteAlert(id: string) {
+    setSavedAlerts((prev) => prev.filter((a) => a.id !== id));
+    await fetch(`/api/alerts/custom/${id}`, { method: "DELETE" });
+  }
+
+  return (
+    <div className="surface-elevated noise-overlay rounded-2xl p-6 space-y-6">
+      {/* Zone 1: Create new alert */}
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <p className="section-label">SCREENER INTELIGENTE</p>
+          </div>
+          <p className="text-sm text-muted-foreground/60">
+            Describe lo que buscas y SignalAI lo evaluara con datos reales del mercado
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {QUICK_PROMPTS.map((qp) => (
+            <button
+              key={qp}
+              type="button"
+              onClick={() => setPrompt(qp)}
+              className="text-xs px-3 py-1.5 rounded-full border border-border/50 bg-white/[0.03] hover:border-primary/30 hover:bg-primary/[0.05] transition-all duration-200 text-muted-foreground/70 hover:text-foreground"
+            >
+              {qp}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Ej: Empresas con flujo de caja creciente, baja deuda y en sector defensivo..."
+            rows={3}
+            className="w-full rounded-xl border border-border/60 bg-white/[0.03] px-4 py-3 text-sm placeholder:text-muted-foreground/40 focus:border-primary/30 focus:ring-1 focus:ring-primary/20 focus:outline-none resize-none"
+          />
+          <Button
+            onClick={handleSubmit}
+            disabled={prompt.trim().length < 10 || searching}
+            className="bg-primary/[0.08] border border-primary/25 text-foreground/90 text-sm font-semibold hover:bg-primary/[0.15] transition-all"
+          >
+            {searching ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            {searching ? "Analizando..." : "Buscar"}
+          </Button>
+        </div>
+
+        {searching && (
+          <div className="rounded-xl border border-border/30 bg-white/[0.02] p-5 space-y-3 animate-pulse">
+            <div className="h-4 w-3/4 rounded bg-muted/15" />
+            <div className="h-4 w-1/2 rounded bg-muted/10" />
+            <div className="h-20 w-full rounded bg-muted/10" />
+          </div>
+        )}
+
+        {result && !searching && (
+          <div className="surface-elevated noise-overlay rounded-xl p-5 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-sm text-foreground/80 leading-relaxed">{result.ai_response}</p>
+
+            {result.matched_data.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {result.matched_data.map((m) => (
+                  <button
+                    key={m.symbol}
+                    type="button"
+                    onClick={() => router.push(`/stock/${encodeURIComponent(m.symbol)}`)}
+                    className="text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 hover:border-primary/30 hover:bg-primary/[0.03] transition-all group"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-sm">{m.symbol}</span>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                    <p className="text-xs text-muted-foreground/60 leading-relaxed mb-2">{m.reason}</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                      {Object.entries(m.metrics).map(([k, v]) => (
+                        <span key={k} className="tabular-nums font-mono text-[10px] text-muted-foreground/50">
+                          {k}: {typeof v === "number" ? v.toFixed(2) : v}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground/60">
+                <Clock className="h-4 w-4" />
+                No encontre empresas que coincidan. Te alertare si detecto algo en el futuro.
+              </div>
+            )}
+
+            <p className="text-[10px] text-muted-foreground/30 uppercase tracking-wider">
+              generado por signalai
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Zone 2: Saved alert rules */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <p className="section-label">MIS ALERTAS</p>
+          {savedAlerts.length > 0 && (
+            <Badge variant="secondary" className="text-[10px]">{savedAlerts.length}</Badge>
+          )}
+        </div>
+
+        {alertsLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-border/30 bg-white/[0.02] p-4 space-y-2 animate-pulse">
+                <div className="h-4 w-2/3 rounded bg-muted/15" />
+                <div className="h-3 w-24 rounded bg-muted/10" />
+              </div>
+            ))}
+          </div>
+        ) : savedAlerts.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border/40 p-6 text-center">
+            <p className="text-sm text-muted-foreground/50">
+              No tenes alertas guardadas. Crea una arriba para empezar.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {savedAlerts.map((alert) => {
+              const isExpanded = expandedAlertId === alert.id;
+              return (
+                <div
+                  key={alert.id}
+                  className={`rounded-xl border border-border/30 bg-white/[0.02] transition-all duration-200 ${
+                    !alert.is_active ? "opacity-50" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedAlertId(isExpanded ? null : alert.id)}
+                      className="flex-1 min-w-0 text-left flex items-center gap-3"
+                    >
+                      <p className="text-sm italic text-muted-foreground/70 truncate">
+                        &ldquo;{alert.prompt}&rdquo;
+                      </p>
+                      {isExpanded ? (
+                        <ChevronUp className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                      )}
+                    </button>
+
+                    <Badge
+                      variant={alert.status === "matched" ? "default" : "secondary"}
+                      className={`text-[10px] shrink-0 ${
+                        alert.status === "matched"
+                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                          : alert.status === "no_match"
+                            ? "bg-muted/10 text-muted-foreground/50"
+                            : "bg-amber-500/10 text-amber-400"
+                      }`}
+                    >
+                      {alert.status === "matched"
+                        ? `${alert.matched_symbols.length} match${alert.matched_symbols.length > 1 ? "es" : ""}`
+                        : alert.status === "no_match"
+                          ? "Sin resultados"
+                          : "Pendiente"}
+                    </Badge>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleActive(alert.id, !alert.is_active)}
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        alert.is_active
+                          ? "text-emerald-400 hover:bg-emerald-500/10"
+                          : "text-muted-foreground/40 hover:bg-white/[0.06]"
+                      }`}
+                      title={alert.is_active ? "Desactivar" : "Activar"}
+                    >
+                      <Power className="h-3.5 w-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteAlert(alert.id)}
+                      className="p-1.5 rounded-lg text-muted-foreground/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="border-t border-border/20 px-4 py-3 space-y-3 animate-in slide-in-from-top-1 duration-200">
+                      <p className="text-sm text-foreground/70 leading-relaxed">{alert.ai_response}</p>
+                      {alert.matched_data.length > 0 && (
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {alert.matched_data.map((m) => (
+                            <Link
+                              key={m.symbol}
+                              href={`/stock/${encodeURIComponent(m.symbol)}`}
+                              className="rounded-lg border border-border/30 bg-white/[0.02] p-2.5 hover:border-primary/30 transition-all text-left block"
+                            >
+                              <span className="font-bold text-xs">{m.symbol}</span>
+                              <p className="text-[11px] text-muted-foreground/50 mt-0.5 line-clamp-2">{m.reason}</p>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-[10px] text-muted-foreground/30">
+                        {new Date(alert.created_at).toLocaleDateString("es-AR", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

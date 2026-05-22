@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ActivityIcon } from "lucide-react";
 import { SearchCommand } from "@/components/search-command";
 import { MacroIndicators } from "@/components/macro-indicators";
+import { NotificationBell } from "@/components/notification-bell";
 import { AuthAvatar } from "@/components/auth-avatar";
 
 export function AppHeader() {
@@ -21,7 +22,8 @@ export function AppHeader() {
           <MacroIndicators />
         </div>
 
-        <div className="shrink-0 ml-auto">
+        <div className="shrink-0 ml-auto flex items-center gap-1">
+          <NotificationBell />
           <AuthAvatar />
         </div>
       </div>

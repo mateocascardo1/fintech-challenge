@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { OverviewTab } from "@/components/dashboard/overview-tab";
 import { HoldingsTab } from "@/components/dashboard/holdings-tab";
 import { MarketWatchTab } from "@/components/dashboard/market-watch-tab";
@@ -16,8 +17,15 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("Overview");
+function DashboardInner() {
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && TABS.some((t) => t.id === tabParam)) {
+      return tabParam as TabId;
+    }
+    return "Overview";
+  });
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
@@ -57,5 +65,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense>
+      <DashboardInner />
+    </Suspense>
   );
 }
