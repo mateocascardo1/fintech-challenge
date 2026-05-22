@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Zap, Loader2, RefreshCw, TrendingUp, TrendingDown, ArrowRight, MoveRight, Sparkles,
+  Zap, Loader2, RefreshCw, TrendingUp, TrendingDown, ArrowRight, MoveRight, Sparkles, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
@@ -84,7 +84,7 @@ function parseInstrumentPick(row: InsightRow): InstrumentPick {
   };
 }
 
-export function AiInsightsCard() {
+export function AiInsightsCard({ isCalibrated = false }: { isCalibrated?: boolean }) {
   const [allInsights, setAllInsights] = useState<InsightRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -111,6 +111,10 @@ export function AiInsightsCard() {
   }, [fetchInsights]);
 
   useEffect(() => {
+    if (isCalibrated) {
+      setLoading(false);
+      return;
+    }
     fetchInsights()
       .then((count) => {
         if (count === 0) {
@@ -120,7 +124,7 @@ export function AiInsightsCard() {
         }
       })
       .catch(() => setLoading(false));
-  }, [fetchInsights, generateInsights]);
+  }, [fetchInsights, generateInsights, isCalibrated]);
 
   const allocMoves = (() => {
     const raw = allInsights.filter((i) => i.type === "alloc_move").map(parseAllocMove);
@@ -204,6 +208,31 @@ export function AiInsightsCard() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCalibrated && !hasContent) {
+    return (
+      <div className="surface-elevated noise-overlay rounded-2xl p-6">
+        <div className="relative z-10 animate-in fade-in duration-500">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="h-4 w-4 text-positive" />
+            <p className="section-label">PORTFOLIO CALIBRADO</p>
+          </div>
+          <div className="flex flex-col items-center py-8 text-center">
+            <div className="h-12 w-12 rounded-full bg-positive/10 flex items-center justify-center mb-4">
+              <ShieldCheck className="h-5 w-5 text-positive/70" />
+            </div>
+            <p className="text-sm font-semibold mb-1.5">Tu portfolio sigue alineado</p>
+            <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
+              No detectamos desviaciones significativas respecto a tu perfil de inversor. No hay acciones necesarias por ahora.
+            </p>
+          </div>
+          <p className="text-[9px] text-muted-foreground/30 text-center">
+            Monitoreamos tu portfolio continuamente. Te avisaremos cuando haya oportunidades.
+          </p>
         </div>
       </div>
     );
