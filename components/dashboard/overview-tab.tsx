@@ -7,8 +7,16 @@ import { TopHoldingsCard } from "./top-holdings-card";
 import { SectorBreakdownCard } from "./sector-breakdown-card";
 import { PortfolioDiagnosisCard } from "./portfolio-diagnosis-card";
 import { AiInsightsCard } from "./ai-insights-card";
+import { GuardianInsightsCard } from "./guardian-insights-card";
 import { MarketRecapCard } from "./market-recap-card";
 import { EarningsCalendarCard } from "./earnings-calendar-card";
+
+type GuardianStatus = {
+  isGuardianMode: boolean;
+  isCalibrated: boolean;
+  nextAnalysisDate: string | null;
+  portfolioAgeDays: number;
+};
 
 function SkeletonCard({ className }: { className?: string }) {
   return (
@@ -24,17 +32,22 @@ function SkeletonCard({ className }: { className?: string }) {
 
 export function OverviewTab() {
   const [positions, setPositions] = useState<{ symbol: string; quantity: number; asset_type: string }[]>([]);
+  const [guardianStatus, setGuardianStatus] = useState<GuardianStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/portfolio")
-      .then((r) => r.json())
-      .then((pos) => {
+    Promise.all([
+      fetch("/api/portfolio").then((r) => r.json()),
+      fetch("/api/portfolio/guardian-status").then((r) => r.json()),
+    ])
+      .then(([pos, status]) => {
         setPositions(Array.isArray(pos) ? pos : []);
+        setGuardianStatus(status);
         setLoading(false);
       })
       .catch(() => {
         setPositions([]);
+        setGuardianStatus(null);
         setLoading(false);
       });
   }, []);
@@ -78,7 +91,11 @@ export function OverviewTab() {
       </div>
 
       <div className="animate-in fade-in duration-500" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
-        <AiInsightsCard />
+        {guardianStatus?.isGuardianMode ? (
+          <GuardianInsightsCard nextAnalysisDate={guardianStatus.nextAnalysisDate} />
+        ) : (
+          <AiInsightsCard isCalibrated={guardianStatus?.isCalibrated ?? false} />
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 items-start animate-in fade-in duration-500" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
