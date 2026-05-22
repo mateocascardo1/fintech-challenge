@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Star, TrendingUp, Loader2, ArrowRight, Sparkles, Search, ChevronDown } from "lucide-react";
+import { Plus, Star, TrendingUp, Loader2, ArrowRight, Sparkles, Search, ChevronDown, LayoutGrid } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import { INDICES, ETFS, COMMODITIES, CURRENCIES } from "@/lib/tickers";
 import { StockCard } from "@/components/stock-card";
+import { HeatmapTab } from "@/components/dashboard/market-heatmap";
 import { ScreenerModal } from "@/components/dashboard/screener-modal";
 import type { Quote } from "@/lib/types";
 
@@ -302,6 +303,17 @@ export function MarketWatchTab() {
             ))}
           </div>
         )}
+      </CollapsibleMarketSection>
+
+      {/* S&P 500 Heat Map */}
+      <CollapsibleMarketSection
+        icon={<LayoutGrid className="h-4 w-4 text-emerald-400" />}
+        title="S&P 500 HEAT MAP"
+        count={0}
+        loading={false}
+        skeletonCount={0}
+      >
+        <HeatmapTab />
       </CollapsibleMarketSection>
     </div>
   );

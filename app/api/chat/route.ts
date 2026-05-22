@@ -4,10 +4,12 @@ import { z } from "zod";
 import { getQuote, getFundamentals, getHistoryByRange, searchSymbols, getQuotesBatch, getFinancialStatements } from "@/lib/providers/yahoo";
 import { getNews } from "@/lib/providers/google-news";
 import { buildCfoPrompt, buildAdvisorPrompt } from "@/lib/chat";
+import { buildAgentBuilderPrompt, buildCustomAgentPrompt } from "@/lib/agent-prompts";
 import { isValidSymbol } from "@/lib/tickers";
 import { rateLimit } from "@/lib/rate-limit";
 import { formatPrice, formatPercent, formatMarketCap, formatRatio, formatInteger } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { createMarketTools } from "@/lib/agent-tools";
 import type { Range } from "@/lib/types";
 
 export async function POST(req: Request) {
@@ -38,6 +40,22 @@ export async function POST(req: Request) {
 
   if (mode === "advisor") {
     return handleAdvisorMode(req, uiMessages);
+  }
+
+  if (mode === "agent-builder") {
+    const { agentId } = body as { agentId?: string };
+    if (!agentId) {
+      return new Response(JSON.stringify({ error: "agentId required" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    return handleAgentBuilderMode(user.id, agentId, uiMessages);
+  }
+
+  if (mode === "custom-agent") {
+    const { agentId, sessionId } = body as { agentId?: string; sessionId?: string };
+    if (!agentId || !sessionId) {
+      return new Response(JSON.stringify({ error: "agentId and sessionId required" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    return handleCustomAgentMode(user.id, agentId, sessionId, uiMessages);
   }
 
   if (!symbol || !isValidSymbol(symbol.toUpperCase())) {
@@ -606,6 +624,144 @@ REGLAS CRÍTICAS:
     console.error("advisor chat error:", e);
     return new Response(
       JSON.stringify({ error: "Error al procesar la consulta del asesor" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+}
+
+async function handleAgentBuilderMode(userId: string, agentId: string, uiMessages: Array<UIMessage>) {
+  try {
+    const supabase = await createClient();
+    const { data: agent } = await supabase
+      .from("user_agents")
+      .select("*")
+      .eq("id", agentId)
+      .eq("user_id", userId)
+      .single();
+
+    if (!agent) {
+      return new Response(JSON.stringify({ error: "Agent not found" }), { status: 404, headers: { "Content-Type": "application/json" } });
+    }
+
+    const systemPrompt = buildAgentBuilderPrompt(agent.name, agent.description);
+    const messages = await convertToModelMessages(uiMessages);
+
+    const result = streamText({
+      model: anthropic("claude-sonnet-4-20250514"),
+      system: systemPrompt,
+      messages,
+      tools: {
+        finalizeAgent: tool({
+          description: "Llamar cuando tengas toda la información necesaria para crear el agente. Genera el system prompt final, tickers sugeridos, y keywords.",
+          inputSchema: z.object({
+            name: z.string().describe("Nombre final del agente"),
+            description: z.string().describe("Descripción corta del agente (1-2 oraciones)"),
+            systemPrompt: z.string().describe("System prompt completo y profesional para el agente"),
+            tickers: z.array(z.string()).describe("Lista de tickers relevantes sugeridos"),
+            keywords: z.array(z.string()).describe("Keywords para buscar noticias del sector"),
+          }),
+          execute: async ({ name, description, systemPrompt: prompt, tickers, keywords }) => {
+            const { error } = await supabase
+              .from("user_agents")
+              .update({
+                name,
+                description,
+                system_prompt: prompt,
+                tickers,
+                keywords,
+                status: "ready",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", agentId)
+              .eq("user_id", userId);
+
+            if (error) return { error: "No se pudo guardar el agente" };
+            return { success: true, name, tickers, keywords };
+          },
+        }),
+      },
+      stopWhen: stepCountIs(5),
+    });
+
+    return result.toUIMessageStreamResponse();
+  } catch (e) {
+    console.error("agent-builder error:", e);
+    return new Response(
+      JSON.stringify({ error: "Error en el builder de agente" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+}
+
+async function handleCustomAgentMode(userId: string, agentId: string, sessionId: string, uiMessages: Array<UIMessage>) {
+  try {
+    const supabase = await createClient();
+    const { data: agent } = await supabase
+      .from("user_agents")
+      .select("*")
+      .eq("id", agentId)
+      .eq("user_id", userId)
+      .single();
+
+    if (!agent || agent.status !== "ready") {
+      return new Response(JSON.stringify({ error: "Agent not found or not ready" }), { status: 404, headers: { "Content-Type": "application/json" } });
+    }
+
+    const { data: session } = await supabase
+      .from("agent_sessions")
+      .select("summary")
+      .eq("id", sessionId)
+      .eq("user_id", userId)
+      .single();
+
+    const systemPrompt = buildCustomAgentPrompt(
+      agent.system_prompt,
+      agent.tickers,
+      agent.keywords,
+      session?.summary ?? undefined,
+    );
+
+    const messages = await convertToModelMessages(uiMessages);
+
+    const lastUserMsg = uiMessages.filter((m) => m.role === "user").pop();
+    if (lastUserMsg) {
+      const textParts = (lastUserMsg.parts as Array<{ type: string; text?: string }>).filter((p) => p.type === "text");
+      const text = textParts.map((p) => p.text).join("");
+      if (text) {
+        await supabase.from("agent_messages").insert({
+          session_id: sessionId,
+          role: "user",
+          content: text,
+        });
+      }
+    }
+
+    const result = streamText({
+      model: anthropic("claude-sonnet-4-20250514"),
+      system: systemPrompt,
+      messages,
+      tools: createMarketTools(),
+      stopWhen: stepCountIs(5),
+      onFinish: async ({ text }) => {
+        if (text) {
+          await supabase.from("agent_messages").insert({
+            session_id: sessionId,
+            role: "assistant",
+            content: text,
+          });
+          await supabase
+            .from("agent_sessions")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", sessionId);
+        }
+      },
+    });
+
+    return result.toUIMessageStreamResponse();
+  } catch (e) {
+    console.error("custom-agent error:", e);
+    return new Response(
+      JSON.stringify({ error: "Error al procesar consulta del agente" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }

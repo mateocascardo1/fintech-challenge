@@ -76,3 +76,37 @@ export type EarningsEvent = {
 
 export const RANGES = ["5d", "1mo", "3mo", "6mo", "1y", "5y", "max"] as const;
 export type Range = (typeof RANGES)[number];
+
+export type UserAgent = {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  system_prompt: string;
+  tickers: string[];
+  keywords: string[];
+  icon: string;
+  status: "building" | "ready";
+  created_at: string;
+  updated_at: string;
+};
+
+export type AgentSession = {
+  id: string;
+  agent_id: string;
+  user_id: string;
+  title: string;
+  summary: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AgentMessage = {
+  id: string;
+  session_id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  tool_calls: unknown | null;
+  tool_results: unknown | null;
+  created_at: string;
+};

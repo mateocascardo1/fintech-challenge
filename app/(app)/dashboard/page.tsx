@@ -5,14 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { OverviewTab } from "@/components/dashboard/overview-tab";
 import { HoldingsTab } from "@/components/dashboard/holdings-tab";
 import { MarketWatchTab } from "@/components/dashboard/market-watch-tab";
-import { HeatmapTab } from "@/components/dashboard/market-heatmap";
-import { BarChart3, Briefcase, Globe, LayoutGrid } from "lucide-react";
+import { AgentsTab } from "@/components/dashboard/agents-tab";
+import { BarChart3, Briefcase, Globe, Bot } from "lucide-react";
 
 const TABS = [
   { id: "Overview", label: "Overview", icon: BarChart3 },
   { id: "Holdings", label: "Holdings", icon: Briefcase },
   { id: "Market Watch", label: "Market Watch", icon: Globe },
-  { id: "Heat Map", label: "Heat Map", icon: LayoutGrid },
+  { id: "Agents", label: "Agents", icon: Bot },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -61,7 +61,7 @@ function DashboardInner() {
           {activeTab === "Overview" && <OverviewTab key={refreshKey} />}
           {activeTab === "Holdings" && <HoldingsTab onPortfolioChange={() => setRefreshKey((k) => k + 1)} />}
           {activeTab === "Market Watch" && <MarketWatchTab />}
-          {activeTab === "Heat Map" && <HeatmapTab />}
+          {activeTab === "Agents" && <AgentsTab />}
         </div>
       </div>
     </div>

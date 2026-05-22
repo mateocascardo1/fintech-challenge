@@ -48,3 +48,27 @@ export async function getNews(symbol: string, hoursBack = 24): Promise<NewsItem[
     return [];
   }
 }
+
+export async function getNewsByKeywords(keywords: string[], hoursBack = 48): Promise<NewsItem[]> {
+  const query = keywords.join(" OR ");
+  const q = encodeURIComponent(`when:${hoursBack}h ${query}`);
+  const url = `https://news.google.com/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`;
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+    if (!r.ok) return [];
+    const xml = await r.text();
+    const parsed = parser.parse(xml) as {
+      rss?: { channel?: { item?: RssItem | RssItem[] } };
+    };
+    const raw = parsed.rss?.channel?.item;
+    const items = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    return items.slice(0, 10).map((it) => ({
+      title: extractText(it.title),
+      link: it.link ?? "",
+      pubDate: it.pubDate ?? "",
+      source: extractSource(it.source),
+    }));
+  } catch {
+    return [];
+  }
+}
