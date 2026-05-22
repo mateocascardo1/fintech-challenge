@@ -413,14 +413,6 @@ export function StepPositions({
         </Button>
       </div>
 
-      <div className="mt-6 surface-elevated rounded-xl p-4 text-center border border-border/50">
-        <p className="text-sm font-medium text-muted-foreground">
-          Próximamente
-        </p>
-        <p className="text-xs text-muted-foreground/70 mt-1">
-          Integración con Cocos Capital, Interactive Brokers, PPI y más.
-        </p>
-      </div>
     </div>
   );
 }

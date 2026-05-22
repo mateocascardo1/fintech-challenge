@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { StepHasPortfolio } from "./step-has-portfolio";
+import { StepImportPortfolio } from "./step-import-portfolio";
 import { StepPositions } from "./step-positions";
 import { StepProfile } from "./step-profile";
 import { StepCapital } from "./step-capital";
@@ -51,7 +52,7 @@ export function OnboardingWizard() {
   const equityPercent = modelAlloc?.us_equities ?? 0.55;
   const bondPercent = modelAlloc?.bonds ?? 0.25;
 
-  const totalSteps = isBuilderFlow ? 7 : (hasPortfolio ? 3 : 2);
+  const totalSteps = isBuilderFlow ? 7 : (hasPortfolio ? 4 : 2);
 
   const displayStep = (() => {
     if (!isBuilderFlow) return step;
@@ -239,8 +240,11 @@ export function OnboardingWizard() {
 
   function stepLabel(): string {
     if (step === 1) return "Inicio";
+    if (step === 2 && hasPortfolio) return "Importar";
     if (step === 2) return "Posiciones";
+    if (step === 3 && hasPortfolio) return "Posiciones";
     if (step === 3) return "Perfil";
+    if (step === 4 && hasPortfolio) return "Perfil";
     if (step === 4) return "Capital";
     if (step === 5) return "Acciones";
     if (step === 6) return "Bonos";
@@ -314,19 +318,42 @@ export function OnboardingWizard() {
       )}
 
       {step === 2 && hasPortfolio && (
-        <StepPositions
-          positions={positions}
-          setPositions={setPositions}
-          onNext={() => setStep(3)}
+        <StepImportPortfolio
+          onImport={(imported) => {
+            setPositions(prev => {
+              const existing = new Set(prev.map(p => p.symbol));
+              const newOnes = imported.filter(p => !existing.has(p.symbol));
+              return [...prev, ...newOnes];
+            });
+            setStep(3);
+          }}
+          onSkip={() => setStep(3)}
           onBack={() => setStep(1)}
         />
       )}
 
-      {step === 3 && (
+      {step === 3 && hasPortfolio && (
+        <StepPositions
+          positions={positions}
+          setPositions={setPositions}
+          onNext={() => setStep(4)}
+          onBack={() => setStep(2)}
+        />
+      )}
+
+      {step === 3 && !hasPortfolio && (
         <StepProfile
           onComplete={handleProfileComplete}
-          onBack={() => setStep(hasPortfolio ? 2 : 1)}
+          onBack={() => setStep(1)}
           isBuilderFlow={isBuilderFlow}
+        />
+      )}
+
+      {step === 4 && hasPortfolio && (
+        <StepProfile
+          onComplete={handleProfileComplete}
+          onBack={() => setStep(3)}
+          isBuilderFlow={false}
         />
       )}
 
