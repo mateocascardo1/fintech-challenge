@@ -9,7 +9,7 @@ export type BondPreference = "none" | "low" | "medium" | "high";
 export type AssetType = "equity" | "etf" | "bond_etf" | "bond" | "cash";
 export type InsightType =
   | "alert" | "recommendation" | "market" | "earnings" | "trade"
-  | "diagnosis" | "alloc_move" | "instrument_pick";
+  | "diagnosis" | "alloc_move" | "instrument_pick" | "recommendation_summary";
 
 export type InvestorProfile = {
   investment_horizon: InvestmentHorizon | null;

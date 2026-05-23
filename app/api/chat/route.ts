@@ -387,10 +387,19 @@ async function handleAdvisorMode(req: Request, uiMessages: Array<UIMessage>) {
       if (insights && insights.length > 0) {
         const diagItems = (insights as Array<{ type: string; title: string; body: string; metadata?: Record<string, unknown> | null }>)
           .filter((i) => i.type === "diagnosis");
-        const allocMoves = (insights as Array<{ type: string; title: string; body: string; metadata?: Record<string, unknown> | null }>)
+        const allocMoves = (insights as Array<{ type: string; title: string; body: string; score_impact?: number | null; metadata?: Record<string, unknown> | null }>)
           .filter((i) => i.type === "alloc_move");
-        const instrPicks = (insights as Array<{ type: string; title: string; body: string; metadata?: Record<string, unknown> | null }>)
+        const instrPicks = (insights as Array<{ type: string; title: string; body: string; related_symbol?: string | null; score_impact?: number | null; metadata?: Record<string, unknown> | null }>)
           .filter((i) => i.type === "instrument_pick");
+        const summaryRow = (insights as Array<{ type: string; title: string; body: string; metadata?: Record<string, unknown> | null }>)
+          .find((i) => i.type === "recommendation_summary");
+
+        if (summaryRow) {
+          const sm = summaryRow.metadata as Record<string, unknown> | null;
+          sections.push(
+            `RESUMEN RECOMENDACIONES: prioridad ${sm?.weakest_pillar ?? "N/A"}, impacto potencial +${sm?.total_potential_impact ?? "?"} pts.`,
+          );
+        }
 
         if (diagItems.length > 0) {
           sections.push(`DIAGNÓSTICO AI DEL PORTFOLIO:\n${diagItems.map((d) =>
@@ -400,13 +409,16 @@ async function handleAdvisorMode(req: Request, uiMessages: Array<UIMessage>) {
         if (allocMoves.length > 0) {
           sections.push(`RECOMENDACIONES DE ALLOCATION:\n${allocMoves.map((a) => {
             const m = a.metadata as Record<string, unknown> | null;
-            return `- ${a.title}: ${a.body} (de ${m?.from_pct ?? "?"}% a ${m?.to_pct ?? "?"}%, impacto score: ${m?.score_impact ?? "?"})`;
+            const fromPct = m?.current_pct ?? m?.from_pct ?? "?";
+            const toPct = m?.target_pct ?? m?.to_pct ?? "?";
+            return `- ${a.title}: ${a.body} (de ${fromPct}% a ${toPct}%, impacto score: +${a.score_impact ?? m?.score_impact ?? "?"})`;
           }).join("\n")}`);
         }
         if (instrPicks.length > 0) {
           sections.push(`INSTRUMENTOS RECOMENDADOS:\n${instrPicks.map((i) => {
             const m = i.metadata as Record<string, unknown> | null;
-            return `- ${m?.action ?? "?"} ${m?.symbol ?? ""}: ${i.body} (impacto score: ${m?.score_impact ?? "?"})`;
+            const sym = i.related_symbol ?? m?.symbol ?? "";
+            return `- ${m?.action ?? "?"} ${sym}: ${i.body} (impacto score: +${i.score_impact ?? m?.score_impact ?? "?"})`;
           }).join("\n")}`);
         }
       }

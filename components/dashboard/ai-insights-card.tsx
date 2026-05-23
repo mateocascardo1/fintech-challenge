@@ -1,51 +1,72 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { motion } from "motion/react";
 import {
-  Zap, Loader2, RefreshCw, TrendingUp, TrendingDown, ArrowRight, MoveRight, Sparkles, ShieldCheck,
+  Zap,
+  Loader2,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  MoveRight,
+  Sparkles,
+  ShieldCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
-import { ALLOCATION_EXPLANATIONS, INSTRUMENT_EXPLANATIONS, SELL_EXPLANATIONS } from "@/lib/financial-explanations";
+import {
+  ALLOCATION_EXPLANATIONS,
+  INSTRUMENT_EXPLANATIONS,
+  SELL_EXPLANATIONS,
+} from "@/lib/financial-explanations";
 
-type InsightRow = {
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  related_symbol: string | null;
-  score_impact: number | null;
-  metadata?: Record<string, unknown> | null;
+type EnvelopeSummary = {
+  weakest_pillar: string | null;
+  weakest_pillar_label: string | null;
+  total_potential_impact: number;
+  generated_at: string | null;
+  stale: boolean;
 };
 
 type AllocMove = {
   id: string;
-  asset_class: string;
-  direction: "increase" | "decrease";
-  current_pct: number;
-  target_pct: number;
-  score_impact: number;
   title: string;
   body: string;
+  score_impact: number;
+  metadata?: {
+    asset_class?: string;
+    direction?: "increase" | "decrease";
+    current_pct?: number;
+    target_pct?: number;
+  } | null;
 };
 
 type InstrumentPick = {
   id: string;
-  action: "buy" | "sell";
-  symbol: string;
-  asset_type: string;
-  name: string;
-  reason: string;
+  body: string;
+  related_symbol: string | null;
   score_impact: number;
-  priority: "high" | "medium" | "low";
-  improves: string;
+  metadata?: {
+    action?: "buy" | "sell";
+    asset_type?: string;
+    name?: string;
+    priority?: "high" | "medium" | "low";
+    improves?: string;
+  } | null;
+};
+
+type InsightsEnvelope = {
+  summary: EnvelopeSummary;
+  allocation_moves: AllocMove[];
+  instrument_picks: InstrumentPick[];
 };
 
 const ASSET_CLASS_LABELS: Record<string, { label: string; dot: string }> = {
-  us_equities: { label: "US Equities", dot: "bg-primary" },
-  intl_equities: { label: "Intl. Equities", dot: "bg-chart-2" },
+  us_equities: { label: "Acciones US", dot: "bg-primary" },
+  intl_equities: { label: "Acc. internacionales", dot: "bg-chart-2" },
   bonds: { label: "Bonos", dot: "bg-yellow-400" },
-  cash: { label: "Cash", dot: "bg-emerald-400" },
+  cash: { label: "Efectivo", dot: "bg-emerald-400" },
 };
 
 const IMPROVES_LABELS: Record<string, string> = {
@@ -55,48 +76,32 @@ const IMPROVES_LABELS: Record<string, string> = {
   downside_protection: "Downside",
 };
 
-function parseAllocMove(row: InsightRow): AllocMove {
-  const m = row.metadata as Record<string, unknown> | null;
-  return {
-    id: row.id,
-    asset_class: (m?.asset_class as string) ?? "us_equities",
-    direction: (m?.direction as "increase" | "decrease") ?? "increase",
-    current_pct: (m?.current_pct as number) ?? 0,
-    target_pct: (m?.target_pct as number) ?? 0,
-    score_impact: row.score_impact ?? 0,
-    title: row.title,
-    body: row.body,
-  };
-}
+const PRIORITY_LABELS: Record<string, string> = {
+  high: "Alta",
+  medium: "Media",
+  low: "Baja",
+};
 
-function parseInstrumentPick(row: InsightRow): InstrumentPick {
-  const m = row.metadata as Record<string, unknown> | null;
+function parseEnvelope(data: InsightsEnvelope | null) {
+  if (!data) return { summary: null, allocMoves: [], instrumentPicks: [] };
   return {
-    id: row.id,
-    action: (m?.action as "buy" | "sell") ?? "buy",
-    symbol: row.related_symbol ?? "",
-    asset_type: (m?.asset_type as string) ?? "equity",
-    name: (m?.name as string) ?? "",
-    reason: row.body,
-    score_impact: row.score_impact ?? 0,
-    priority: (m?.priority as "high" | "medium" | "low") ?? "medium",
-    improves: (m?.improves as string) ?? "diversification",
+    summary: data.summary,
+    allocMoves: data.allocation_moves ?? [],
+    instrumentPicks: data.instrument_picks ?? [],
   };
 }
 
 export function AiInsightsCard({ isCalibrated = false }: { isCalibrated?: boolean }) {
-  const [allInsights, setAllInsights] = useState<InsightRow[]>([]);
+  const [envelope, setEnvelope] = useState<InsightsEnvelope | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 
   const fetchInsights = useCallback(async () => {
-    const res = await fetch("/api/insights");
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      setAllInsights(data);
-      return data.length;
-    }
-    return 0;
+    const res = await fetch("/api/insights?format=envelope");
+    if (!res.ok) return null;
+    const data = (await res.json()) as InsightsEnvelope;
+    setEnvelope(data);
+    return data;
   }, []);
 
   const generateInsights = useCallback(async () => {
@@ -115,99 +120,33 @@ export function AiInsightsCard({ isCalibrated = false }: { isCalibrated?: boolea
       setLoading(false);
       return;
     }
-    fetchInsights()
-      .then((count) => {
-        if (count === 0) {
-          generateInsights();
-        } else {
-          setLoading(false);
-        }
-      })
-      .catch(() => setLoading(false));
-  }, [fetchInsights, generateInsights, isCalibrated]);
 
-  const allocMoves = (() => {
-    const raw = allInsights.filter((i) => i.type === "alloc_move").map(parseAllocMove);
-    const seen = new Set<string>();
-    return raw.filter((m) => {
-      if (seen.has(m.asset_class)) return false;
-      seen.add(m.asset_class);
-      return true;
-    });
-  })();
+    fetchInsights().finally(() => setLoading(false));
 
-  const instrumentPicks = (() => {
-    const raw = allInsights.filter((i) => i.type === "instrument_pick").map(parseInstrumentPick);
-    const seen = new Set<string>();
-    return raw.filter((p) => {
-      const key = `${p.action}-${p.symbol}`;
-      if (seen.has(key) || seen.has(p.symbol)) return false;
-      seen.add(key);
-      seen.add(p.symbol);
-      return true;
-    });
-  })();
+    const onUpdated = () => {
+      fetchInsights();
+    };
+    window.addEventListener("insights-updated", onUpdated);
+    return () => window.removeEventListener("insights-updated", onUpdated);
+  }, [fetchInsights, isCalibrated]);
 
+  const { summary, allocMoves, instrumentPicks } = parseEnvelope(envelope);
   const hasContent = allocMoves.length > 0 || instrumentPicks.length > 0;
-
-  // Auto-regenerate if we have insights but no structured recommendations (old format)
-  const hasOldInsights = allInsights.length > 0 && !hasContent;
-  useEffect(() => {
-    if (hasOldInsights && !generating && !loading) {
-      generateInsights();
-    }
-  }, [hasOldInsights, generating, loading, generateInsights]);
 
   if (loading || generating) {
     return (
       <div className="surface-elevated noise-overlay rounded-2xl p-6">
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-6">
-            <Zap className="h-4 w-4 text-yellow-400" />
-            <p className="section-label">RECOMENDACIONES</p>
-            {generating && (
-              <span className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
-                <Loader2 className="h-3 w-3 animate-spin text-yellow-400/60" />
-                Generando...
-              </span>
-            )}
-          </div>
+          <Header generating={generating} />
           {generating && (
-            <div className="rounded-xl border border-yellow-400/10 bg-yellow-400/[0.03] px-4 py-3 mb-5 flex items-center gap-3 animate-in fade-in duration-300">
-              <div className="relative flex h-2 w-2 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-400" />
-              </div>
+            <div className="rounded-xl border border-yellow-400/10 bg-yellow-400/[0.03] px-4 py-3 mb-5 flex items-center gap-3">
+              <PulseDot />
               <p className="text-xs text-muted-foreground">
-                Generando recomendaciones personalizadas para tu portfolio. Esto puede tomar unos instantes.
+                Calculando recomendaciones con impacto real en tu score…
               </p>
             </div>
           )}
-          <div className="mb-5">
-            <div className="h-2.5 w-32 rounded-md bg-muted/10 animate-pulse mb-3" />
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="h-3 w-24 rounded-md bg-muted/15 animate-pulse" />
-                  <div className="flex-1 h-2 rounded-full bg-muted/10 animate-pulse" />
-                  <div className="h-3 w-14 rounded-md bg-muted/15 animate-pulse" />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="border-t border-border/20 pt-5">
-            <div className="h-2.5 w-28 rounded-md bg-muted/10 animate-pulse mb-3" />
-            <div className="space-y-2.5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-3 py-2.5">
-                  <div className="h-5 w-16 rounded-full bg-muted/10 animate-pulse" />
-                  <div className="h-4 w-12 rounded bg-muted/15 animate-pulse" />
-                  <div className="flex-1 h-3 rounded-md bg-muted/10 animate-pulse" />
-                  <div className="h-4 w-10 rounded bg-muted/15 animate-pulse" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <SkeletonBlock />
         </div>
       </div>
     );
@@ -221,18 +160,11 @@ export function AiInsightsCard({ isCalibrated = false }: { isCalibrated?: boolea
             <ShieldCheck className="h-4 w-4 text-positive" />
             <p className="section-label">PORTFOLIO CALIBRADO</p>
           </div>
-          <div className="flex flex-col items-center py-8 text-center">
-            <div className="h-12 w-12 rounded-full bg-positive/10 flex items-center justify-center mb-4">
-              <ShieldCheck className="h-5 w-5 text-positive/70" />
-            </div>
-            <p className="text-sm font-semibold mb-1.5">Tu portfolio sigue alineado</p>
-            <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
-              No detectamos desviaciones significativas respecto a tu perfil de inversor. No hay acciones necesarias por ahora.
-            </p>
-          </div>
-          <p className="text-[9px] text-muted-foreground/30 text-center">
-            Monitoreamos tu portfolio continuamente. Te avisaremos cuando haya oportunidades.
-          </p>
+          <EmptyState
+            icon={<ShieldCheck className="h-5 w-5 text-positive/70" />}
+            title="Tu portfolio sigue alineado"
+            description="No detectamos desviaciones significativas. Te avisaremos cuando haya oportunidades."
+          />
         </div>
       </div>
     );
@@ -242,215 +174,339 @@ export function AiInsightsCard({ isCalibrated = false }: { isCalibrated?: boolea
     return (
       <div className="surface-elevated noise-overlay rounded-2xl p-6">
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-yellow-400" />
-              <p className="section-label">RECOMENDACIONES</p>
-            </div>
-          </div>
-          <div className="flex flex-col items-center py-8 text-center">
-            <div className="h-12 w-12 rounded-full bg-yellow-400/10 flex items-center justify-center mb-4">
-              <Sparkles className="h-5 w-5 text-yellow-400/70" />
-            </div>
-            <p className="text-sm font-medium mb-1.5">Analizando tu portfolio...</p>
-            <p className="text-xs text-muted-foreground max-w-sm leading-relaxed mb-5">
-              Pronto tendrás recomendaciones personalizadas basadas en tu perfil de riesgo y composición actual.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={generateInsights}
-              disabled={generating}
-              className="text-xs"
-            >
-              <RefreshCw className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} />
-              Generar recomendaciones
-            </Button>
-          </div>
+          <Header />
+          <EmptyState
+            icon={<Sparkles className="h-5 w-5 text-yellow-400/70" />}
+            title="Recomendaciones en camino"
+            description="Se generan junto con tu diagnóstico. Si tardan, actualizalas manualmente."
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={generateInsights}
+                disabled={generating}
+                className="text-xs"
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} />
+                Generar recomendaciones
+              </Button>
+            }
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="surface-elevated noise-overlay rounded-2xl p-6">
+    <div className="surface-elevated noise-overlay rounded-2xl p-6 border border-yellow-400/10">
       <div className="relative z-10 animate-in fade-in duration-500">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-yellow-400" />
-            <p className="section-label">RECOMENDACIONES</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={generateInsights}
-            disabled={generating}
-            className="text-xs text-muted-foreground hover:text-foreground"
+        <Header
+          onRefresh={generateInsights}
+          refreshing={generating}
+        />
+
+        {summary?.stale && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 rounded-xl border border-yellow-400/25 bg-yellow-400/[0.06] px-4 py-3 flex items-start gap-3"
           >
-            <RefreshCw className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} />
-            Actualizar
-          </Button>
-        </div>
-
-        {allocMoves.length > 0 && (
-          <div className="mb-6">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-3">
-              CAPITAL ALLOCATION
-            </p>
-            <div className="space-y-3">
-              {allocMoves.map((move) => {
-                const cls = ASSET_CLASS_LABELS[move.asset_class] ?? { label: move.asset_class, dot: "bg-muted" };
-                const isDecrease = move.direction === "decrease";
-
-                return (
-                  <div key={move.id} className="flex items-center gap-3">
-                    {/* Asset class */}
-                    <div className="flex items-center gap-2 w-32 shrink-0">
-                      <span className={`h-2 w-2 rounded-full ${cls.dot}`} />
-                      <span className="text-xs font-medium truncate">{cls.label}</span>
-                      {(() => {
-                        const expKey = `${move.direction}_${move.asset_class}`;
-                        const exp = ALLOCATION_EXPLANATIONS[expKey];
-                        return exp ? (
-                          <FinancialTooltip title={exp.title} content={exp.content} side="right" />
-                        ) : null;
-                      })()}
-                    </div>
-
-                    {/* Current -> Target bar */}
-                    <div className="flex-1 flex items-center gap-2">
-                      <span className="text-xs tabular-nums text-muted-foreground w-10 text-right">
-                        {move.current_pct.toFixed(0)}%
-                      </span>
-
-                      <div className="flex-1 h-2 rounded-full bg-muted/20 relative overflow-hidden">
-                        {/* Current position */}
-                        <div
-                          className={`absolute top-0 left-0 h-full rounded-full transition-all duration-700 ${cls.dot} opacity-60`}
-                          style={{ width: `${Math.min(move.current_pct, 100)}%` }}
-                        />
-                        {/* Target marker */}
-                        <div
-                          className="absolute top-[-2px] h-[calc(100%+4px)] w-0.5 rounded-full bg-foreground/40"
-                          style={{ left: `${Math.min(move.target_pct, 100)}%` }}
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-1 w-10">
-                        <MoveRight className={`h-3 w-3 text-muted-foreground/40 ${isDecrease ? "rotate-180" : ""}`} />
-                        <span className="text-xs tabular-nums font-medium">
-                          {move.target_pct.toFixed(0)}%
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Score impact */}
-                    <div className="w-16 text-right">
-                      <span
-                        className={`text-xs font-bold tabular-nums ${
-                          move.score_impact > 0 ? "text-primary" : "text-negative"
-                        }`}
-                      >
-                        {move.score_impact > 0 ? "+" : ""}{move.score_impact} pts
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+            <AlertTriangle className="h-4 w-4 text-yellow-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-yellow-200/90">
+                Tu portfolio cambió
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Estas recomendaciones pueden estar desactualizadas.
+              </p>
             </div>
-          </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={generateInsights}
+              className="text-[10px] h-7 shrink-0"
+            >
+              Actualizar
+            </Button>
+          </motion.div>
         )}
 
-        {/* Divider */}
+        {summary && summary.total_potential_impact > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="mb-6 rounded-xl bg-gradient-to-r from-yellow-400/[0.08] to-transparent border border-yellow-400/15 px-4 py-3.5 flex flex-wrap items-center gap-3"
+          >
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">
+                Hasta (escenario combinado)
+              </p>
+              <p className="text-2xl font-bold tabular-nums text-primary">
+                +{summary.total_potential_impact}
+                <span className="text-sm font-medium text-muted-foreground ml-1">pts</span>
+              </p>
+            </div>
+            {summary.weakest_pillar_label && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-yellow-400/10 text-yellow-300/90 border border-yellow-400/20">
+                Prioridad: {summary.weakest_pillar_label}
+              </span>
+            )}
+          </motion.div>
+        )}
+
+        {allocMoves.length > 0 && (
+          <section className="mb-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-3">
+              Paso 1 — Asignación de capital
+            </p>
+            <div className="space-y-3">
+              {allocMoves.map((move, i) => (
+                <AllocMoveCard key={move.id} move={move} index={i} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {allocMoves.length > 0 && instrumentPicks.length > 0 && (
           <div className="border-t border-border/30 my-5" />
         )}
 
-        {/* Tier B: Instrument Picks */}
         {instrumentPicks.length > 0 && (
-          <div>
+          <section>
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-3">
-              INSTRUMENTOS
+              Paso 2 — Instrumentos sugeridos
             </p>
             <div className="space-y-2.5">
-              {instrumentPicks.map((pick) => {
-                const isBuy = pick.action === "buy";
-                const assetLabel = pick.asset_type === "bond" ? "BONO"
-                  : pick.asset_type === "etf" ? "ETF"
-                  : pick.asset_type === "cash" ? "CASH" : "ACCIÓN";
-
-                return (
-                  <div
-                    key={pick.id}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/10 ${
-                      pick.priority === "high" ? "border-l-2 border-l-primary/40" : ""
-                    }`}
-                  >
-                    {/* Action badge */}
-                    <span
-                      className={`shrink-0 inline-flex items-center gap-1 text-[9px] font-bold tracking-[0.1em] px-2 py-0.5 rounded-full ${
-                        isBuy
-                          ? "bg-primary/15 text-primary"
-                          : "bg-negative/15 text-negative"
-                      }`}
-                    >
-                      {isBuy ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
-                      {isBuy ? "COMPRAR" : "VENDER"}
-                    </span>
-
-                    {/* Ticker */}
-                    <span className="shrink-0 font-mono text-sm font-bold text-foreground">
-                      {pick.symbol}
-                    </span>
-
-                    {/* Asset type pill */}
-                    <span className="shrink-0 text-[8px] font-semibold tracking-wider text-muted-foreground/50 bg-muted/20 px-1.5 py-0.5 rounded">
-                      {assetLabel}
-                    </span>
-
-                    {/* Name + reason */}
-                    <div className="flex-1 min-w-0">
-                      {pick.name && (
-                        <span className="text-xs text-muted-foreground/60 mr-2">{pick.name}</span>
-                      )}
-                      <span className="text-xs text-foreground/70">{pick.reason}</span>
-                    </div>
-
-                    {/* Improves badge + tooltip */}
-                    <span className="shrink-0 flex items-center gap-1 text-[8px] font-medium text-muted-foreground/40 tracking-wide hidden lg:inline-flex">
-                      {IMPROVES_LABELS[pick.improves] ?? pick.improves}
-                      {(() => {
-                        const label = IMPROVES_LABELS[pick.improves] ?? pick.improves;
-                        const exp = isBuy
-                          ? (INSTRUMENT_EXPLANATIONS[label] ?? INSTRUMENT_EXPLANATIONS.default)
-                          : SELL_EXPLANATIONS;
-                        return <FinancialTooltip title={exp.title} content={exp.content} side="left" />;
-                      })()}
-                    </span>
-
-                    {/* Arrow + Score impact */}
-                    <div className="shrink-0 flex items-center gap-1">
-                      <ArrowRight className="h-3 w-3 text-muted-foreground/30" />
-                      <span
-                        className={`text-sm font-bold tabular-nums ${
-                          pick.score_impact > 0 ? "text-primary" : "text-negative"
-                        }`}
-                      >
-                        {pick.score_impact > 0 ? "+" : ""}{pick.score_impact}
-                      </span>
-                      <span className="text-[8px] text-muted-foreground/40 font-medium">pts</span>
-                    </div>
-                  </div>
-                );
-              })}
+              {instrumentPicks.map((pick, i) => (
+                <InstrumentCard key={pick.id} pick={pick} index={i} />
+              ))}
             </div>
-          </div>
+          </section>
         )}
 
         <p className="text-[9px] text-muted-foreground/30 mt-5 text-center">
-          Generado por IA. No constituye asesoramiento financiero.
+          Impacto estimado por simulación sobre tu score. No constituye asesoramiento financiero.
         </p>
       </div>
     </div>
+  );
+}
+
+function Header({
+  generating,
+  onRefresh,
+  refreshing,
+}: {
+  generating?: boolean;
+  onRefresh?: () => void;
+  refreshing?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-2">
+        <Zap className="h-4 w-4 text-yellow-400" />
+        <p className="section-label">RECOMENDACIONES</p>
+        {generating && (
+          <span className="ml-2 flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+            <Loader2 className="h-3 w-3 animate-spin text-yellow-400/60" />
+            Generando…
+          </span>
+        )}
+      </div>
+      {onRefresh && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRefresh}
+          disabled={refreshing}
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className={`h-3 w-3 mr-1 ${refreshing ? "animate-spin" : ""}`} />
+          Actualizar
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function PulseDot() {
+  return (
+    <div className="relative flex h-2 w-2 shrink-0">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-400" />
+    </div>
+  );
+}
+
+function SkeletonBlock() {
+  return (
+    <>
+      <div className="h-16 rounded-xl bg-muted/10 animate-pulse mb-5" />
+      <div className="space-y-3">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="h-20 rounded-xl bg-muted/10 animate-pulse" />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center py-8 text-center">
+      <div className="h-12 w-12 rounded-full bg-yellow-400/10 flex items-center justify-center mb-4">
+        {icon}
+      </div>
+      <p className="text-sm font-medium mb-1.5">{title}</p>
+      <p className="text-xs text-muted-foreground max-w-sm leading-relaxed mb-5">
+        {description}
+      </p>
+      {action}
+    </div>
+  );
+}
+
+function AllocMoveCard({ move, index }: { move: AllocMove; index: number }) {
+  const m = move.metadata ?? {};
+  const cls = ASSET_CLASS_LABELS[m.asset_class ?? ""] ?? {
+    label: m.asset_class ?? "",
+    dot: "bg-muted",
+  };
+  const isDecrease = m.direction === "decrease";
+  const current = m.current_pct ?? 0;
+  const target = m.target_pct ?? 0;
+
+  const expKey = `${m.direction}_${m.asset_class}`;
+  const exp = ALLOCATION_EXPLANATIONS[expKey];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.35 }}
+      className="rounded-xl border border-border/30 bg-white/[0.02] px-4 py-3.5"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`h-2 w-2 rounded-full shrink-0 ${cls.dot}`} />
+          <span className="text-sm font-semibold truncate">{move.title}</span>
+          {exp && <FinancialTooltip title={exp.title} content={exp.content} side="right" />}
+        </div>
+        <span
+          className={`text-xs font-bold tabular-nums shrink-0 ${
+            move.score_impact > 0 ? "text-primary" : "text-negative"
+          }`}
+        >
+          {move.score_impact > 0 ? "+" : ""}
+          {move.score_impact} pts
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed mb-3">{move.body}</p>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] tabular-nums text-muted-foreground w-8 text-right">
+          {current}%
+        </span>
+        <div className="flex-1 h-2 rounded-full bg-muted/20 relative overflow-hidden">
+          <div
+            className={`absolute top-0 left-0 h-full rounded-full ${cls.dot} opacity-50`}
+            style={{ width: `${Math.min(current, 100)}%` }}
+          />
+          <div
+            className="absolute top-[-2px] h-[calc(100%+4px)] w-0.5 rounded-full bg-foreground/50"
+            style={{ left: `${Math.min(target, 100)}%` }}
+          />
+        </div>
+        <MoveRight
+          className={`h-3 w-3 text-muted-foreground/40 shrink-0 ${isDecrease ? "rotate-180" : ""}`}
+        />
+        <span className="text-[10px] tabular-nums font-medium w-8">{target}%</span>
+      </div>
+    </motion.div>
+  );
+}
+
+function InstrumentCard({ pick, index }: { pick: InstrumentPick; index: number }) {
+  const m = pick.metadata ?? {};
+  const isBuy = m.action === "buy";
+  const symbol = pick.related_symbol ?? "";
+  const isHigh = m.priority === "high";
+  const assetLabel =
+    m.asset_type === "bond_etf"
+      ? "BONO ETF"
+      : m.asset_type === "etf"
+        ? "ETF"
+        : "ACCIÓN";
+  const improvesLabel = IMPROVES_LABELS[m.improves ?? ""] ?? m.improves;
+  const exp = isBuy
+    ? (INSTRUMENT_EXPLANATIONS[improvesLabel ?? ""] ?? INSTRUMENT_EXPLANATIONS.default)
+    : SELL_EXPLANATIONS;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15 + index * 0.07, duration: 0.35 }}
+      className={`rounded-xl border px-4 py-3 transition-colors hover:bg-white/[0.03] ${
+        isHigh
+          ? "border-l-2 border-l-yellow-400/50 border-border/30 bg-yellow-400/[0.03]"
+          : "border-border/30 bg-white/[0.02]"
+      }`}
+    >
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <span
+          className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-[0.1em] px-2 py-0.5 rounded-full ${
+            isBuy ? "bg-primary/15 text-primary" : "bg-negative/15 text-negative"
+          }`}
+        >
+          {isBuy ? (
+            <TrendingUp className="h-2.5 w-2.5" />
+          ) : (
+            <TrendingDown className="h-2.5 w-2.5" />
+          )}
+          {isBuy ? "COMPRAR" : "VENDER"}
+        </span>
+        <span className="font-mono text-sm font-bold">{symbol}</span>
+        <span className="text-[8px] font-semibold tracking-wider text-muted-foreground/50 bg-muted/20 px-1.5 py-0.5 rounded">
+          {assetLabel}
+        </span>
+        {m.priority && (
+          <span className="text-[8px] text-muted-foreground/50 sm:inline">
+            {PRIORITY_LABELS[m.priority] ?? m.priority}
+          </span>
+        )}
+        <span
+          className={`ml-auto text-sm font-bold tabular-nums ${
+            pick.score_impact > 0 ? "text-primary" : "text-negative"
+          }`}
+        >
+          +{pick.score_impact} pts
+        </span>
+      </div>
+      {m.name && (
+        <p className="text-[11px] text-muted-foreground/60 mb-1">{m.name}</p>
+      )}
+      <div className="flex items-start gap-1.5">
+        <p className="text-xs text-foreground/80 leading-relaxed flex-1">{pick.body}</p>
+        {exp && (
+          <FinancialTooltip title={exp.title} content={exp.content} side="left" />
+        )}
+      </div>
+      {improvesLabel && (
+        <p className="text-[9px] text-muted-foreground/40 mt-2 tracking-wide">
+          Mejora: {improvesLabel}
+        </p>
+      )}
+    </motion.div>
   );
 }

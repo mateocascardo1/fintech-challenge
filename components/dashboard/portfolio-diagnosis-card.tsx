@@ -189,7 +189,10 @@ export function PortfolioDiagnosisCard() {
     setGenerating(true);
     try {
       const res = await fetch("/api/insights", { method: "POST" });
-      if (res.ok) await fetchData();
+      if (res.ok) {
+        await fetchData();
+        window.dispatchEvent(new CustomEvent("insights-updated"));
+      }
     } finally {
       setGenerating(false);
       setLoading(false);
