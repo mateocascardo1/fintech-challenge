@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Bot, Plus, Trash2, Loader2, Cpu, ArrowRight } from "lucide-react";
 import { AgentCreator } from "@/components/agents/agent-creator";
 import { AgentChat } from "@/components/agents/agent-chat";
+import { dispatchMarkJourneyStep } from "@/lib/journey/journey-events";
 import type { UserAgent } from "@/lib/types";
 
 type ViewState =
@@ -22,7 +23,11 @@ export function AgentsTab() {
       const res = await fetch("/api/agents");
       if (!res.ok) return;
       const data = await res.json();
-      setAgents(data.agents ?? []);
+      const list = data.agents ?? [];
+      setAgents(list);
+      if (list.length > 0) {
+        dispatchMarkJourneyStep("create_agent");
+      }
     } catch {
       /* no-op */
     } finally {
@@ -47,6 +52,7 @@ export function AgentsTab() {
   }
 
   function handleCreationComplete(agent: UserAgent) {
+    dispatchMarkJourneyStep("create_agent");
     setAgents((prev) => [agent, ...prev]);
     setView({ mode: "chatting", agent });
   }
@@ -67,13 +73,15 @@ export function AgentsTab() {
 
   if (view.mode === "chatting") {
     return (
-      <AgentChat
-        agent={view.agent}
-        onBack={() => {
-          setView({ mode: "list" });
-          fetchAgents();
-        }}
-      />
+      <div className="fixed inset-x-0 bottom-0 top-12 z-30 bg-background">
+        <AgentChat
+          agent={view.agent}
+          onBack={() => {
+            setView({ mode: "list" });
+            fetchAgents();
+          }}
+        />
+      </div>
     );
   }
 

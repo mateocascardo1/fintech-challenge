@@ -10,6 +10,7 @@ import {
   type JourneyStepId,
   isJourneyComplete,
 } from "./journey-steps";
+import { JOURNEY_MARK_STEP } from "./journey-events";
 
 function loadProgress(userId: string | null): JourneyProgress {
   if (typeof window === "undefined") return { ...EMPTY_JOURNEY_PROGRESS };
@@ -161,6 +162,34 @@ export function useJourneyProgress() {
     },
     [mergeProgress],
   );
+
+  useEffect(() => {
+    function onMarkStep(event: Event) {
+      const stepId = (event as CustomEvent<JourneyStepId>).detail;
+      if (stepId) markStep(stepId);
+    }
+    window.addEventListener(JOURNEY_MARK_STEP, onMarkStep);
+    return () => window.removeEventListener(JOURNEY_MARK_STEP, onMarkStep);
+  }, [markStep]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    function onFocus() {
+      fetch("/api/agents")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          const agents = data?.agents ?? [];
+          if (Array.isArray(agents) && agents.length > 0) {
+            markStep("create_agent");
+          }
+        })
+        .catch(() => {});
+    }
+
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [ready, markStep]);
 
   return {
     progress,

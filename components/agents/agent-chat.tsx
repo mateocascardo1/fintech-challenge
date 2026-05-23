@@ -62,14 +62,24 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
   const { messages, sendMessage, status } = useChat({ transport });
   const isLoading = status === "submitted" || status === "streaming";
 
-  const scrollToBottom = useCallback(() => {
+  const isNearBottomRef = useRef(true);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
     }
   }, []);
 
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  }, []);
+
   useEffect(() => {
-    scrollToBottom();
+    if (isNearBottomRef.current) {
+      scrollToBottom(isLoading ? "auto" : "smooth");
+    }
   }, [messages, isLoading, scrollToBottom]);
 
   useEffect(() => {
@@ -81,11 +91,13 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
     const text = input.trim();
     if (!text || isLoading) return;
     setInput("");
+    isNearBottomRef.current = true;
     sendMessage({ text });
   }
 
   function handleSuggestion(text: string) {
     if (isLoading) return;
+    isNearBottomRef.current = true;
     sendMessage({ text });
   }
 
@@ -100,7 +112,7 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
 
   return (
     <>
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-6 py-6">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-thin px-4 sm:px-6 py-6">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(34,197,94,0.3)]">
@@ -156,7 +168,7 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
                       <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
                         <Sparkles className="h-4 w-4 text-primary" />
                       </div>
-                      <div className="max-w-[75%] rounded-2xl rounded-bl-sm bg-white/[0.03] border border-white/[0.08] px-5 py-4">
+                      <div className="max-w-[min(900px,90%)] rounded-2xl rounded-bl-sm bg-white/[0.03] border border-white/[0.08] px-5 py-4">
                         <div className="chat-markdown text-sm leading-relaxed text-foreground/90">
                           <ReactMarkdown
                             components={{
@@ -205,7 +217,7 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
 
                   {/* Completed tool results - rendered OUTSIDE the text bubble for full width */}
                   {completedTools.map((tp, i) => (
-                    <div key={`tool-${i}`} className="ml-11">
+                    <div key={`tool-${i}`} className="ml-11 mr-2 max-w-full">
                       <ToolResultRenderer
                         toolName={tp.toolName}
                         state={tp.state}
@@ -241,7 +253,7 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
 
       {/* Input area */}
       <div className="shrink-0 border-t border-white/[0.06] p-4 bg-card/50 backdrop-blur-sm">
-        <form onSubmit={handleSubmit} className="flex gap-3 max-w-[800px] mx-auto">
+        <form onSubmit={handleSubmit} className="flex gap-3 w-full max-w-4xl mx-auto px-2">
           <div className="relative flex-1">
             <textarea
               ref={inputRef}
@@ -367,7 +379,7 @@ export function AgentChat({ agent, onBack }: AgentChatProps) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-180px)] min-h-[500px] rounded-xl border border-border/30 bg-card overflow-hidden">
+    <div className="flex h-full min-h-0 bg-card overflow-hidden">
       {/* Sidebar */}
       <AgentSidebar
         tickers={agent.tickers}

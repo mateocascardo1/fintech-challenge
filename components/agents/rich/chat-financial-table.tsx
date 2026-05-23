@@ -56,13 +56,25 @@ function formatValue(val: string | null | undefined): string {
   return `${sign}$${abs.toFixed(2)}`;
 }
 
-function getYearFromRow(row: Record<string, string | null>): string {
-  if (row.date) {
-    try {
-      return new Date(row.date).getFullYear().toString();
-    } catch { /* */ }
-  }
-  return "—";
+function parsePeriod(row: Record<string, string | null>): Date | null {
+  const raw = row.period ?? row.date;
+  if (!raw || raw === "N/A") return null;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatPeriodLabel(row: Record<string, string | null>): string {
+  const d = parsePeriod(row);
+  if (!d) return "—";
+  return `FY ${d.getFullYear()}`;
+}
+
+function sortRowsByPeriod(rows: Array<Record<string, string | null>>) {
+  return [...rows].sort((a, b) => {
+    const da = parsePeriod(a)?.getTime() ?? 0;
+    const db = parsePeriod(b)?.getTime() ?? 0;
+    return db - da;
+  });
 }
 
 function SectionTable({
@@ -75,12 +87,13 @@ function SectionTable({
   labels: Record<string, string>;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const sortedRows = sortRowsByPeriod(rows);
 
   const keys = Object.keys(labels).filter((k) =>
-    rows.some((r) => r[k] != null && r[k] !== "null"),
+    sortedRows.some((r) => r[k] != null && r[k] !== "null"),
   );
 
-  if (keys.length === 0 || rows.length === 0) return null;
+  if (keys.length === 0 || sortedRows.length === 0) return null;
 
   return (
     <div className="border border-white/[0.08] rounded-xl overflow-hidden">
@@ -106,9 +119,9 @@ function SectionTable({
                 <th className="text-left px-4 py-2 font-semibold text-muted-foreground/60 sticky left-0 bg-card min-w-[140px]">
                   Concepto
                 </th>
-                {rows.map((row, i) => (
+                {sortedRows.map((row, i) => (
                   <th key={i} className="text-right px-3 py-2 font-bold text-foreground/80 min-w-[90px]">
-                    {getYearFromRow(row)}
+                    {formatPeriodLabel(row)}
                   </th>
                 ))}
               </tr>
@@ -119,7 +132,7 @@ function SectionTable({
                   <td className="px-4 py-2 text-muted-foreground/80 font-medium sticky left-0 bg-card">
                     {labels[key]}
                   </td>
-                  {rows.map((row, i) => {
+                  {sortedRows.map((row, i) => {
                     const val = row[key];
                     const numVal = val ? Number(val) : null;
                     const isNeg = numVal != null && numVal < 0;

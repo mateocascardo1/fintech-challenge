@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Suspense, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { MessageCircle, X } from "lucide-react";
 import { ChatbotPanel } from "./chatbot-panel";
 
@@ -14,9 +14,11 @@ function getStockSymbol(pathname: string | null): string | null {
   return match ? decodeURIComponent(match[1]).toUpperCase() : null;
 }
 
-export function ChatbotButton() {
+function ChatbotButtonInner() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab");
 
   const stockSymbol = useMemo(() => getStockSymbol(pathname), [pathname]);
 
@@ -25,7 +27,10 @@ export function ChatbotButton() {
     return `¿Me conviene agregar $${stockSymbol} a mi portafolio? ¿O debo reducir mi exposición?`;
   }, [stockSymbol]);
 
-  if (HIDDEN_PATHS.some((p) => pathname?.startsWith(p))) return null;
+  const hiddenOnAgents =
+    pathname?.startsWith("/dashboard") && tab?.toLowerCase() === "agents";
+
+  if (hiddenOnAgents || HIDDEN_PATHS.some((p) => pathname?.startsWith(p))) return null;
 
   return (
     <>
@@ -46,5 +51,13 @@ export function ChatbotButton() {
         {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-6 w-6" />}
       </button>
     </>
+  );
+}
+
+export function ChatbotButton() {
+  return (
+    <Suspense fallback={null}>
+      <ChatbotButtonInner />
+    </Suspense>
   );
 }
