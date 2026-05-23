@@ -2,10 +2,19 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Star, TrendingUp, Loader2, ArrowRight, Sparkles, Search, ChevronDown, LayoutGrid, Newspaper } from "lucide-react";
+import {
+  Plus,
+  Star,
+  TrendingUp,
+  Loader2,
+  ArrowRight,
+  Sparkles,
+  Search,
+  LayoutGrid,
+  Newspaper,
+} from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import { INDICES, ETFS, COMMODITIES, CURRENCIES } from "@/lib/tickers";
 import { StockCard } from "@/components/stock-card";
@@ -17,23 +26,19 @@ import type { Quote } from "@/lib/types";
 type WatchlistItem = { symbol: string };
 
 const SECTION_SYMBOLS = [...INDICES, ...ETFS, ...COMMODITIES, ...CURRENCIES];
+const PULSE_ETFS = ["SPY", "QQQ", "VTI"];
 
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-xl bg-muted/20 ${className ?? ""}`} />;
 }
 
-function CardSkeleton() {
-  return (
-    <div className="rounded-xl border border-border/30 bg-card p-4 space-y-2.5">
-      <Skeleton className="h-3 w-24 rounded-md" />
-      <Skeleton className="h-6 w-20 rounded-md" />
-      <Skeleton className="h-4 w-14 rounded-md" />
-    </div>
-  );
+function watchlistGridClass(count: number): string {
+  if (count <= 1) return "grid grid-cols-1 max-w-md";
+  if (count <= 4) return "grid grid-cols-1 sm:grid-cols-2 gap-3";
+  return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3";
 }
 
 export function MarketWatchTab() {
-  const router = useRouter();
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [watchQuotes, setWatchQuotes] = useState<Quote[]>([]);
   const [marketQuotes, setMarketQuotes] = useState<Quote[]>([]);
@@ -41,11 +46,13 @@ export function MarketWatchTab() {
   const [watchLoading, setWatchLoading] = useState(true);
   const [marketLoading, setMarketLoading] = useState(true);
   const [newsLoading, setNewsLoading] = useState(true);
+  const [heatmapLoading, setHeatmapLoading] = useState(true);
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ symbol: string; name: string; type?: string }[]>([]);
   const [searching, setSearching] = useState(false);
+  const [addingSymbol, setAddingSymbol] = useState<string | null>(null);
 
   const fetchWatchlist = useCallback(async () => {
     try {
@@ -59,6 +66,8 @@ export function MarketWatchTab() {
           const qData = await qRes.json();
           const list: Quote[] = Array.isArray(qData) ? qData : qData?.quotes ?? [];
           setWatchQuotes(list);
+        } else {
+          setWatchQuotes([]);
         }
       }
     } catch { /* ignore */ }
@@ -87,7 +96,10 @@ export function MarketWatchTab() {
   }, [fetchWatchlist]);
 
   useEffect(() => {
-    if (searchQuery.length < 2) { setSearchResults([]); return; }
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
     const timer = setTimeout(() => {
       setSearching(true);
       fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
@@ -98,8 +110,6 @@ export function MarketWatchTab() {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  const [addingSymbol, setAddingSymbol] = useState<string | null>(null);
 
   async function addToWatchlist(symbol: string) {
     if (addingSymbol) return;
@@ -130,19 +140,26 @@ export function MarketWatchTab() {
   }
 
   const indicesQuotes = marketQuotes.filter((q) => INDICES.includes(q.symbol));
+  const pulseQuotes = marketQuotes.filter(
+    (q) => INDICES.includes(q.symbol) || PULSE_ETFS.includes(q.symbol),
+  );
   const etfQuotes = marketQuotes.filter((q) => ETFS.includes(q.symbol));
   const commodityQuotes = marketQuotes.filter((q) => COMMODITIES.includes(q.symbol));
   const currencyQuotes = marketQuotes.filter((q) => CURRENCIES.includes(q.symbol));
 
-  return (
-    <div className="space-y-8">
-      {/* Two-column grid layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
-        {/* Main column */}
-        <div className="space-y-6">
-          <ScreenerCard />
+  const useCompactCards = watchQuotes.length > 2;
 
-          {/* Favoritos */}
+  return (
+    <div className="space-y-6">
+      {/* Row 1: Screener */}
+      <ScreenerCard />
+
+      {/* Row 2: Market pulse — indices + headline ETFs */}
+      <IndicesPulseStrip quotes={pulseQuotes} loading={marketLoading} />
+
+      {/* Row 3: Favoritos + Mercados */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 space-y-4">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -155,7 +172,13 @@ export function MarketWatchTab() {
                 onClick={() => setShowSearch(!showSearch)}
                 className="text-xs"
               >
-                {showSearch ? "Cerrar" : <><Plus className="h-3.5 w-3.5 mr-1" /> Agregar</>}
+                {showSearch ? (
+                  "Cerrar"
+                ) : (
+                  <>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
+                  </>
+                )}
               </Button>
             </div>
 
@@ -184,7 +207,7 @@ export function MarketWatchTab() {
                         type="button"
                         onClick={() => addToWatchlist(r.symbol)}
                         disabled={addingSymbol === r.symbol}
-                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/30 transition-colors text-left text-sm disabled:opacity-50 disabled:pointer-events-none"
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/30 transition-colors text-left text-sm disabled:opacity-50"
                       >
                         <div>
                           <span className="font-bold">{r.symbol}</span>
@@ -203,26 +226,25 @@ export function MarketWatchTab() {
             )}
 
             {watchLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className={watchlistGridClass(3)}>
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="rounded-xl bg-card border border-border/30 p-5 space-y-3">
-                    <Skeleton className="h-4 w-20 rounded-md" />
-                    <Skeleton className="h-3 w-32 rounded-md" />
-                    <Skeleton className="h-6 w-24 rounded-md" />
-                    <Skeleton className="h-3 w-16 rounded-md" />
-                  </div>
+                  <Skeleton key={i} className="h-14 rounded-xl" />
                 ))}
               </div>
             ) : watchQuotes.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className={watchlistGridClass(watchQuotes.length)}>
                 {watchQuotes.map((q, i) => (
                   <motion.div
                     key={q.symbol}
-                    initial={{ opacity: 0, y: 12 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05, duration: 0.3 }}
+                    transition={{ delay: i * 0.04, duration: 0.25 }}
                   >
-                    <StockCard quote={q} onRemove={removeFromWatchlist} />
+                    <StockCard
+                      quote={q}
+                      onRemove={removeFromWatchlist}
+                      variant={useCompactCards ? "compact" : "default"}
+                    />
                   </motion.div>
                 ))}
               </div>
@@ -230,21 +252,17 @@ export function MarketWatchTab() {
               <button
                 type="button"
                 onClick={() => setShowSearch(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border/40 text-sm text-muted-foreground/50 hover:border-primary/20 hover:text-muted-foreground/70 transition-all duration-200"
+                className="max-w-md w-full flex items-center justify-center gap-2 py-8 rounded-xl border border-dashed border-border/40 text-sm text-muted-foreground/50 hover:border-primary/20 hover:text-muted-foreground/70 transition-all"
               >
-                <Plus className="h-3.5 w-3.5" /> Agregar a favoritos
+                <Plus className="h-3.5 w-3.5" /> Agregar tu primer favorito
               </button>
             )}
           </div>
-
-          {/* Indices - always visible compact strip */}
-          <IndicesStrip quotes={indicesQuotes} loading={marketLoading} />
         </div>
 
-        {/* Sidebar column */}
-        <div className="space-y-6">
-          <EtfsCompact quotes={etfQuotes} loading={marketLoading} />
-          <CommoditiesDivisasCompact
+        <div className="lg:col-span-4">
+          <MarketQuotesPanel
+            etfs={etfQuotes}
             commodities={commodityQuotes}
             currencies={currencyQuotes}
             loading={marketLoading}
@@ -252,52 +270,73 @@ export function MarketWatchTab() {
         </div>
       </div>
 
-      {/* Below: News and Heatmap side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CollapsibleMarketSection
-          icon={<Newspaper className="h-4 w-4 text-blue-400" />}
-          title="NOTICIAS DEL MERCADO"
-          count={news.length}
-          loading={newsLoading}
-          skeletonCount={5}
-          defaultOpen
-        >
-          {news.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">No hay noticias disponibles.</p>
-          ) : (
-            <div className="space-y-2">
-              {news.map((n, i) => (
-                <a
-                  key={i}
-                  href={n.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block rounded-xl border border-border/30 bg-white/[0.02] py-3 px-4 hover:border-primary/20 hover:bg-white/[0.04] transition-all duration-200"
-                >
-                  <p className="font-medium text-sm leading-snug line-clamp-2">{n.title}</p>
-                  <p className="text-xs text-muted-foreground/50 mt-1.5">
-                    {n.source} · {n.pubDate}
-                  </p>
-                </a>
-              ))}
+      {/* Row 4: News (4) + Heatmap (8) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-4">
+          <div className="surface-elevated noise-overlay rounded-2xl overflow-hidden h-full flex flex-col">
+            <div className="px-5 py-3.5 border-b border-border/20 flex items-center gap-2.5">
+              <Newspaper className="h-4 w-4 text-blue-400" />
+              <p className="section-label">NOTICIAS DEL MERCADO</p>
+              {!newsLoading && news.length > 0 && (
+                <span className="text-[11px] tabular-nums text-muted-foreground/40 ml-auto">
+                  {news.length}
+                </span>
+              )}
             </div>
-          )}
-        </CollapsibleMarketSection>
+            <div className="flex-1 max-h-[min(480px,55vh)] overflow-y-auto px-4 py-3">
+              {newsLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-14 rounded-lg" />
+                  ))}
+                </div>
+              ) : news.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">No hay noticias disponibles.</p>
+              ) : (
+                <div className="space-y-2">
+                  {news.map((n, i) => (
+                    <a
+                      key={i}
+                      href={n.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block rounded-lg border border-border/25 bg-white/[0.02] py-2.5 px-3 hover:border-primary/20 hover:bg-white/[0.04] transition-all"
+                    >
+                      <p className="font-medium text-sm leading-snug line-clamp-2">{n.title}</p>
+                      <p className="text-[11px] text-muted-foreground/50 mt-1 line-clamp-1">
+                        {n.source} · {n.pubDate}
+                      </p>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
-        <CollapsibleMarketSection
-          icon={<LayoutGrid className="h-4 w-4 text-emerald-400" />}
-          title="S&P 500 HEAT MAP"
-          count={0}
-          loading={false}
-          skeletonCount={0}
-        >
-          <HeatmapTab />
-        </CollapsibleMarketSection>
+        <div className="lg:col-span-8">
+          <div className="surface-elevated noise-overlay rounded-2xl overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-border/20 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <LayoutGrid className="h-4 w-4 text-emerald-400" />
+                <p className="section-label">S&P 500 HEAT MAP</p>
+              </div>
+              {heatmapLoading && (
+                <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Cargando...
+                </span>
+              )}
+            </div>
+            <div className="p-4">
+              <HeatmapTab embedded onLoadingChange={setHeatmapLoading} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
 
 function ScreenerCard() {
   const [showModal, setShowModal] = useState(false);
@@ -307,41 +346,36 @@ function ScreenerCard() {
       <button
         type="button"
         onClick={() => setShowModal(true)}
-        className="screener-hero-card w-full rounded-2xl p-6 flex items-center gap-5 border border-primary/10 transition-all duration-300 group text-left relative overflow-hidden"
+        className="screener-hero-card w-full rounded-2xl p-4 flex items-center gap-4 border border-primary/10 transition-all duration-300 group text-left relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-transparent to-primary/[0.03] opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative flex items-center justify-center h-12 w-12 rounded-xl bg-primary/12 border border-primary/20 shrink-0 group-hover:bg-primary/18 group-hover:scale-105 transition-all duration-300">
-          <Sparkles className="h-5.5 w-5.5 text-primary" />
+        <div className="relative flex items-center justify-center h-10 w-10 rounded-xl bg-primary/12 border border-primary/20 shrink-0 group-hover:bg-primary/18 transition-all duration-300">
+          <Sparkles className="h-5 w-5 text-primary" />
         </div>
         <div className="relative flex-1 min-w-0">
-          <p className="text-base font-bold text-foreground mb-0.5 tracking-tight">Screener Inteligente</p>
-          <p className="text-sm text-muted-foreground/60">
+          <p className="text-sm font-bold text-foreground tracking-tight">Screener Inteligente</p>
+          <p className="text-xs text-muted-foreground/60 mt-0.5">
             Busca acciones con IA y datos reales del mercado
           </p>
         </div>
-        <ArrowRight className="relative h-5 w-5 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-1 transition-all duration-300 shrink-0" />
+        <ArrowRight className="relative h-4 w-4 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
       </button>
       {showModal && <ScreenerModal onClose={() => setShowModal(false)} />}
     </>
   );
 }
 
-
-function IndicesStrip({ quotes, loading }: { quotes: Quote[]; loading: boolean }) {
+function IndicesPulseStrip({ quotes, loading }: { quotes: Quote[]; loading: boolean }) {
   if (loading) {
     return (
       <div className="space-y-3">
         <p className="section-label flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
-          ÍNDICES
+          PULSO DEL MERCADO
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="rounded-xl bg-card border border-border/20 p-3 space-y-2">
-              <Skeleton className="h-3 w-16 rounded" />
-              <Skeleton className="h-5 w-20 rounded" />
-              <Skeleton className="h-3 w-12 rounded" />
-            </div>
+        <div className="flex gap-3 overflow-hidden">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-[72px] min-w-[140px] shrink-0 rounded-xl" />
           ))}
         </div>
       </div>
@@ -352,29 +386,34 @@ function IndicesStrip({ quotes, loading }: { quotes: Quote[]; loading: boolean }
     <div className="space-y-3">
       <p className="section-label flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-primary" />
-        ÍNDICES
+        PULSO DEL MERCADO
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+      <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-thin">
         {quotes.map((q, i) => (
           <motion.div
             key={q.symbol}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.06, duration: 0.25 }}
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.04, duration: 0.25 }}
+            className="snap-start shrink-0"
           >
             <Link
               href={`/stock/${encodeURIComponent(q.symbol)}`}
-              className={`surface-elevated rounded-lg px-3 py-2.5 flex flex-col gap-0.5 transition-all duration-200 block ${
+              className={`surface-elevated rounded-xl px-4 py-3 flex flex-col gap-1 min-w-[140px] transition-all duration-200 block ${
                 q.changePercent >= 0 ? "hover:surface-glow-positive" : "hover:surface-glow-negative"
               }`}
             >
-              <span className="text-[10px] text-muted-foreground/60 truncate leading-tight">{q.name ?? q.symbol}</span>
-              <span className="font-mono font-bold text-[15px] tabular-nums tracking-tight">
+              <span className="text-[10px] text-muted-foreground/60 truncate leading-tight">
+                {q.name ?? q.symbol}
+              </span>
+              <span className="font-mono font-bold text-base tabular-nums tracking-tight">
                 {formatPrice(q.price)}
               </span>
-              <span className={`font-mono text-[11px] tabular-nums font-semibold ${
-                q.changePercent >= 0 ? "text-positive" : "text-negative"
-              }`}>
+              <span
+                className={`font-mono text-xs tabular-nums font-semibold ${
+                  q.changePercent >= 0 ? "text-positive" : "text-negative"
+                }`}
+              >
                 {formatPercent(q.changePercent, { withSign: true })}
               </span>
             </Link>
@@ -385,49 +424,70 @@ function IndicesStrip({ quotes, loading }: { quotes: Quote[]; loading: boolean }
   );
 }
 
+type MarketTab = "etfs" | "commodities" | "fx";
 
-function EtfsCompact({ quotes, loading }: { quotes: Quote[]; loading: boolean }) {
+function MarketQuotesPanel({
+  etfs,
+  commodities,
+  currencies,
+  loading,
+}: {
+  etfs: Quote[];
+  commodities: Quote[];
+  currencies: Quote[];
+  loading: boolean;
+}) {
+  const [tab, setTab] = useState<MarketTab>("etfs");
+
+  const tabs: { id: MarketTab; label: string }[] = [
+    { id: "etfs", label: "ETFs" },
+    { id: "commodities", label: "Commodities" },
+    { id: "fx", label: "FX" },
+  ];
+
+  const activeQuotes =
+    tab === "etfs" ? etfs : tab === "commodities" ? commodities : currencies;
+
   return (
-    <div className="rounded-2xl border border-border/30 overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-border/20">
-        <p className="section-label flex items-center gap-2">
-          <TrendingUp className="h-3.5 w-3.5 text-chart-2" />
-          ETFS POPULARES
-        </p>
+    <div className="surface-elevated noise-overlay rounded-2xl overflow-hidden flex flex-col h-full min-h-[280px]">
+      <div className="px-4 py-3 border-b border-border/20">
+        <p className="section-label mb-3">MERCADOS</p>
+        <div className="flex gap-1 p-0.5 rounded-lg bg-muted/20">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`flex-1 text-[10px] font-semibold uppercase tracking-wider py-1.5 rounded-md transition-colors ${
+                tab === t.id
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground/50 hover:text-muted-foreground"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="divide-y divide-border/10">
+      <div className="flex-1 max-h-[min(480px,50vh)] overflow-y-auto divide-y divide-border/10">
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="px-5 py-3 flex items-center justify-between">
+            <div key={i} className="px-4 py-3 flex items-center justify-between">
               <Skeleton className="h-4 w-20 rounded" />
               <Skeleton className="h-4 w-24 rounded" />
             </div>
           ))
+        ) : activeQuotes.length === 0 ? (
+          <p className="text-xs text-muted-foreground px-4 py-6 text-center">Sin datos</p>
         ) : (
-          quotes.map((q, i) => (
+          activeQuotes.map((q, i) => (
             <motion.div
               key={q.symbol}
-              initial={{ opacity: 0, x: 8 }}
+              initial={{ opacity: 0, x: 6 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.04, duration: 0.2 }}
+              transition={{ delay: i * 0.03, duration: 0.2 }}
             >
-              <Link
-                href={`/stock/${encodeURIComponent(q.symbol)}`}
-                className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.03] transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-sm">{q.symbol}</span>
-                  <span className="text-xs text-muted-foreground/50 truncate max-w-[100px]">{q.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm tabular-nums">{formatPrice(q.price)}</span>
-                  <span className={`font-mono text-xs tabular-nums font-semibold min-w-[52px] text-right ${
-                    q.changePercent >= 0 ? "text-positive" : "text-negative"
-                  }`}>
-                    {formatPercent(q.changePercent, { withSign: true })}
-                  </span>
-                </div>
-              </Link>
+              <QuoteRow quote={q} showSymbol={tab !== "etfs"} />
             </motion.div>
           ))
         )}
@@ -436,121 +496,32 @@ function EtfsCompact({ quotes, loading }: { quotes: Quote[]; loading: boolean })
   );
 }
 
-
-function CommoditiesDivisasCompact({
-  commodities,
-  currencies,
-  loading,
-}: {
-  commodities: Quote[];
-  currencies: Quote[];
-  loading: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border border-border/30 overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-border/20">
-        <p className="section-label">COMMODITIES & DIVISAS</p>
-      </div>
-      <div className="divide-y divide-border/10">
-        {loading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="px-5 py-2.5 flex items-center justify-between">
-              <Skeleton className="h-3.5 w-24 rounded" />
-              <Skeleton className="h-3.5 w-20 rounded" />
-            </div>
-          ))
-        ) : (
-          <>
-            {commodities.length > 0 && (
-              <div className="px-5 pt-3 pb-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/35 mb-1">Commodities</p>
-              </div>
-            )}
-            {commodities.map((q) => (
-              <QuoteRow key={q.symbol} quote={q} />
-            ))}
-            {currencies.length > 0 && (
-              <div className="px-5 pt-3 pb-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/35 mb-1">Divisas</p>
-              </div>
-            )}
-            {currencies.map((q) => (
-              <QuoteRow key={q.symbol} quote={q} />
-            ))}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-function CollapsibleMarketSection({
-  icon,
-  title,
-  count,
-  loading,
-  skeletonCount,
-  children,
-  defaultOpen = false,
-}: {
-  icon?: React.ReactNode;
-  title: string;
-  count: number;
-  loading: boolean;
-  skeletonCount: number;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <div className="rounded-2xl border border-border/30 overflow-hidden transition-all duration-200">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors"
-      >
-        <div className="flex items-center gap-2.5">
-          {icon}
-          <p className="section-label">{title}</p>
-          {!loading && count > 0 && (
-            <span className="text-[11px] tabular-nums text-muted-foreground/30">{count}</span>
-          )}
-        </div>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground/40 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <div className="border-t border-border/20 px-5 py-4 animate-in slide-in-from-top-1 duration-200">
-          {loading ? (
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {Array.from({ length: skeletonCount }).map((_, i) => <CardSkeleton key={i} />)}
-            </div>
-          ) : (
-            children
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function QuoteRow({ quote }: { quote: Quote }) {
+function QuoteRow({ quote, showSymbol }: { quote: Quote; showSymbol?: boolean }) {
   return (
     <Link
       href={`/stock/${encodeURIComponent(quote.symbol)}`}
-      className="flex items-center justify-between py-2.5 px-5 hover:bg-white/[0.03] transition-colors"
+      className="flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.03] transition-colors"
     >
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-sm">{quote.name}</span>
-        <span className="text-[11px] text-muted-foreground/40">{quote.symbol}</span>
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        {showSymbol ? (
+          <>
+            <span className="font-medium text-sm truncate">{quote.name}</span>
+            <span className="text-[10px] text-muted-foreground/40 shrink-0">{quote.symbol}</span>
+          </>
+        ) : (
+          <>
+            <span className="font-mono font-bold text-sm shrink-0">{quote.symbol}</span>
+            <span className="text-xs text-muted-foreground/50 truncate">{quote.name}</span>
+          </>
+        )}
       </div>
-      <div className="flex items-center gap-3">
-        <span className="font-mono text-sm tabular-nums font-medium">{formatPrice(quote.price)}</span>
-        <span className={`font-mono text-xs tabular-nums font-semibold min-w-[52px] text-right ${
-          quote.changePercent >= 0 ? "text-positive" : "text-negative"
-        }`}>
+      <div className="flex items-center gap-2.5 shrink-0 ml-2">
+        <span className="font-mono text-sm tabular-nums">{formatPrice(quote.price)}</span>
+        <span
+          className={`font-mono text-xs tabular-nums font-semibold min-w-[48px] text-right ${
+            quote.changePercent >= 0 ? "text-positive" : "text-negative"
+          }`}
+        >
           {formatPercent(quote.changePercent, { withSign: true })}
         </span>
       </div>

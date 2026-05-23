@@ -101,7 +101,12 @@ const sectorLookup = new Map(SP500_TICKERS.map((t) => [t.symbol, t.sector]));
 
 /* ── Component ── */
 
-export function HeatmapTab() {
+type HeatmapTabProps = {
+  embedded?: boolean;
+  onLoadingChange?: (loading: boolean) => void;
+};
+
+export function HeatmapTab({ embedded = false, onLoadingChange }: HeatmapTabProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -147,6 +152,10 @@ export function HeatmapTab() {
     setItems(all);
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -214,21 +223,31 @@ export function HeatmapTab() {
     return { sectors: result };
   }, [filtered, containerSize]);
 
+  const treemapHeight = embedded
+    ? { minHeight: 420, height: "min(520px, 55vh)" }
+    : { height: "calc(100vh - 200px)", minHeight: 400 };
+
   return (
-    <div className="space-y-3">
-      {/* Sub-header with filter */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-bold tracking-wide text-foreground/90 uppercase">
-            S&P 500 Heat Map
-          </h3>
-          {!loading && items.length > 0 && (
-            <span className="text-[10px] text-muted-foreground">
-              Último día hábil · {filtered.length} empresas
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
+    <div className={embedded ? "space-y-2" : "space-y-3"}>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        {!embedded && (
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-bold tracking-wide text-foreground/90 uppercase">
+              S&P 500 Heat Map
+            </h3>
+            {!loading && items.length > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                Último día hábil · {filtered.length} empresas
+              </span>
+            )}
+          </div>
+        )}
+        {embedded && !loading && items.length > 0 && (
+          <span className="text-[10px] text-muted-foreground">
+            {filtered.length} empresas · último día hábil
+          </span>
+        )}
+        <div className={`flex items-center gap-2 ${embedded ? "ml-auto" : ""}`}>
           {!loading && sectors.length > 0 && (
             <select
               value={sectorFilter}
@@ -249,11 +268,10 @@ export function HeatmapTab() {
         </div>
       </div>
 
-      {/* Treemap container */}
       <div
         ref={containerRef}
         className="relative w-full rounded-xl overflow-hidden bg-[#0c0c12] border border-border/30"
-        style={{ height: "calc(100vh - 200px)", minHeight: 400 }}
+        style={treemapHeight}
       >
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
