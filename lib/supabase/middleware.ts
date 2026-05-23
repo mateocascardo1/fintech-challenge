@@ -53,9 +53,19 @@ export async function updateSession(request: NextRequest) {
 
   if (user && (request.nextUrl.pathname === "/auth" || request.nextUrl.pathname === "/")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    if (request.nextUrl.searchParams.get("demo") === "1") {
+      url.pathname = "/onboarding";
+      url.searchParams.set("demo", "1");
+    } else {
+      url.pathname = "/dashboard";
+      url.search = "";
+    }
     return NextResponse.redirect(url);
   }
+
+  const isDemoOnboarding =
+    request.nextUrl.pathname === "/onboarding" &&
+    request.nextUrl.searchParams.get("demo") === "1";
 
   if (user && (request.nextUrl.pathname === "/dashboard" || request.nextUrl.pathname === "/onboarding")) {
     const [{ data: profile }, { count }] = await Promise.all([
@@ -78,7 +88,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (hasPortfolio && request.nextUrl.pathname === "/onboarding") {
+    if (hasPortfolio && request.nextUrl.pathname === "/onboarding" && !isDemoOnboarding) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);

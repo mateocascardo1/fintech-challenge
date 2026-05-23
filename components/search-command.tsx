@@ -11,6 +11,7 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { SearchIcon } from "lucide-react";
+import { JOURNEY_OPEN_SEARCH } from "@/lib/journey/journey-events";
 import type { SearchResult } from "@/lib/types";
 
 type BondResult = { symbol: string; c: number; pct_change: number; sub_type?: string };
@@ -30,8 +31,13 @@ export function SearchCommand() {
         setOpen((o) => !o);
       }
     };
+    const openSearch = () => setOpen(true);
     document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+    window.addEventListener(JOURNEY_OPEN_SEARCH, openSearch);
+    return () => {
+      document.removeEventListener("keydown", down);
+      window.removeEventListener(JOURNEY_OPEN_SEARCH, openSearch);
+    };
   }, []);
 
   useEffect(() => {

@@ -97,7 +97,7 @@ export default function LandingPage() {
             </Button>
             <Button size="sm" asChild>
               <Link href="/auth">
-                Comenzar
+                Empezar mi camino
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Link>
             </Button>
@@ -113,18 +113,18 @@ export default function LandingPage() {
           </p>
 
           <h1 className="text-4xl font-bold tracking-tight leading-tight md:text-5xl lg:text-6xl">
-            Análisis cuantitativo de tu portfolio con inteligencia artificial
+            Ya invertís. Ahora invertí con criterio.
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground leading-relaxed md:text-lg">
-            Cargá tus posiciones y recibí un score de 0 a 1000, diagnóstico en 4 dimensiones
-            y recomendaciones accionables para optimizar diversificación, riesgo y retorno.
+            Capa de inteligencia sobre tu broker: score 0–1000, diagnóstico en 4 dimensiones
+            y recomendaciones accionables con impacto medible en puntos.
           </p>
 
           <div className="mt-10 flex items-center justify-center gap-4">
             <Button size="lg" className="h-11 px-8 rounded-lg font-medium" asChild>
-              <Link href="/auth">
-                Crear cuenta gratis
+              <Link href="/auth?demo=1">
+                Ver demo en 90 seg
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>
@@ -331,8 +331,8 @@ export default function LandingPage() {
           </p>
           <div className="mt-8">
             <Button size="lg" className="h-11 px-10 rounded-lg font-medium" asChild>
-              <Link href="/auth">
-                Crear cuenta gratis
+              <Link href="/auth?demo=1">
+                Ver demo en 90 seg
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { StepHasPortfolio } from "./step-has-portfolio";
 import { StepImportPortfolio } from "./step-import-portfolio";
 import { StepPositions } from "./step-positions";
@@ -11,13 +12,18 @@ import { StepSelectBonds } from "./step-select-bonds";
 import { StepFreeSelect } from "./step-free-select";
 import { StepReview } from "./step-review";
 import { StepScoreReveal } from "./step-score-reveal";
+import { StepDemoExpress } from "./step-demo-express";
 import type { InvestorProfile } from "@/lib/portfolio/types";
 import { computeModelAllocation } from "@/lib/portfolio/allocation";
 import { allocatePortfolio, guessAssetType } from "@/lib/portfolio/builder-allocator";
+import { DEMO_PROFILE, getDemoPositionsForSave } from "@/lib/demo/demo-config";
 
 type FreePick = { symbol: string; name: string; asset_type: string };
 
 export function OnboardingWizard() {
+  const searchParams = useSearchParams();
+  const isDemoMode = searchParams.get("demo") === "1";
+
   const [step, setStep] = useState(1);
   const [hasPortfolio, setHasPortfolio] = useState<boolean | null>(null);
   const [positions, setPositions] = useState<
@@ -71,7 +77,7 @@ export function OnboardingWizard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...prof,
-          has_portfolio: hasPortfolio ?? false,
+          has_portfolio: prof.has_portfolio ?? hasPortfolio ?? false,
           onboarding_completed: true,
         }),
       });
@@ -82,8 +88,8 @@ export function OnboardingWizard() {
         return;
       }
 
-      // Clear existing positions for builder flow to avoid stale data
-      if (isBuilderFlow) {
+      // Clear existing positions for builder/demo flow to avoid stale data
+      if (isBuilderFlow || isDemoMode) {
         const existingRes = await fetch("/api/portfolio");
         if (existingRes.ok) {
           const existing = await existingRes.json();
@@ -263,6 +269,29 @@ export function OnboardingWizard() {
           <p className="mt-1.5 text-xs text-muted-foreground">Tu portfolio está listo</p>
         </div>
         <StepScoreReveal isBuilder={isBuilderFlow} />
+      </div>
+    );
+  }
+
+
+  if (isDemoMode) {
+    return (
+      <div>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">
+            Signal<span className="text-primary">AI</span>
+          </h1>
+          <p className="mt-1.5 text-xs text-muted-foreground">Demo rápida</p>
+        </div>
+        <StepDemoExpress
+          saving={saving}
+          onAnalyze={() =>
+            saveProfileAndPositions(
+              { ...DEMO_PROFILE, has_portfolio: true },
+              getDemoPositionsForSave(),
+            )
+          }
+        />
       </div>
     );
   }

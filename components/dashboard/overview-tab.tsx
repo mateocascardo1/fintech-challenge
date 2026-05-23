@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AllocationCard } from "./allocation-card";
 import { PortfolioValueCard } from "./portfolio-value-card";
 import { PortfolioScoreCard } from "./portfolio-score-card";
 import { TopHoldingsCard } from "./top-holdings-card";
@@ -90,7 +91,11 @@ export function OverviewTab() {
         <PortfolioDiagnosisCard />
       </div>
 
-      <div className="animate-in fade-in duration-500" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
+      <div className="animate-in fade-in duration-500" style={{ animationDelay: "250ms", animationFillMode: "both" }}>
+        <AllocationCard positions={positions} />
+      </div>
+
+      <div id="ai-insights-card" className="animate-in fade-in duration-500" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
         {guardianStatus?.isGuardianMode ? (
           <GuardianInsightsCard nextAnalysisDate={guardianStatus.nextAnalysisDate} />
         ) : (
