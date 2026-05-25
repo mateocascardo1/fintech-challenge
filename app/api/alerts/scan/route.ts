@@ -3,8 +3,135 @@ import { createClient } from "@/lib/supabase/server";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { EQUITY_DISPLAY_INFO } from "@/lib/portfolio/constants";
+import { getNews } from "@/lib/providers/google-news";
+import {
+  getAnalystRatings,
+  getInsiderTransactions,
+  getEarningsHistory,
+} from "@/lib/providers/yahoo-extended";
 
-const SCAN_COOLDOWN_MS = 48 * 60 * 60 * 1000;
+const SCAN_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+const BATCH_SIZE = 3;
+
+type SymbolResult = {
+  symbol: string;
+  status: "scanned" | "skipped" | "error" | "no_events";
+  alertsCreated: number;
+  error?: string;
+};
+
+async function scanSymbol(
+  symbol: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<SymbolResult> {
+  const info = EQUITY_DISPLAY_INFO[symbol];
+  const companyName = info?.name ?? symbol;
+
+  const [newsItems, ratings, insiderTx, earnings] = await Promise.all([
+    getNews(symbol, 72).catch(() => []),
+    getAnalystRatings(symbol).catch(() => null),
+    getInsiderTransactions(symbol).catch(() => []),
+    getEarningsHistory(symbol).catch(() => []),
+  ]);
+
+  const prompt = `Eres un analista financiero CFA revisando las ultimas noticias y datos de ${symbol} (${companyName}).
+
+DATOS:
+- Noticias recientes: ${JSON.stringify((newsItems ?? []).slice(0, 10))}
+- Ratings de analistas: ${JSON.stringify(ratings)}
+- Trading de insiders: ${JSON.stringify(insiderTx)}
+- Historial de earnings: ${JSON.stringify(earnings)}
+
+Identifica UNICAMENTE eventos MATERIALES. Umbrales:
+- management: cambios de CEO, CFO, o directorio. NO contrataciones menores.
+- earnings: sorpresa >10% vs consenso (miss o beat).
+- analyst: upgrade/downgrade de firmas tier-1 (Goldman, JPMorgan, Morgan Stanley, BofA, Citi).
+- insider: ventas >US$1M en los ultimos 30 dias.
+- regulatory: investigaciones SEC, demandas colectivas confirmadas.
+- dividend: recorte, suspension, o aumento >20%.
+- market: movimiento >10% en una sesion sin explicacion en las categorias anteriores.
+
+Si NO hay eventos materiales, responde: []
+
+Si hay, responde (max 3 por ticker):
+[{
+  "title": "titulo conciso en espanol (max 80 chars)",
+  "body": "2-3 oraciones con datos concretos.",
+  "severity": "critical|warning|info",
+  "category": "management|earnings|analyst|insider|regulatory|dividend|market",
+  "sourceUrl": "url o null"
+}]
+
+Severity: critical = earnings miss >15%, cambio CEO. warning = downgrade, insider selling. info = contexto.
+SOLO JSON, sin texto adicional.`;
+
+  let result;
+  try {
+    result = await generateText({
+      model: anthropic("claude-sonnet-4-20250514"),
+      prompt,
+    });
+  } catch (e) {
+    console.error(`AI call failed for ${symbol}:`, e);
+    return { symbol, status: "error", alertsCreated: 0, error: "AI analysis failed" };
+  }
+
+  let parsed: Array<{
+    title: string;
+    body: string;
+    severity: string;
+    category: string;
+    sourceUrl?: string | null;
+  }> = [];
+
+  try {
+    const text = result.text.trim();
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      parsed = JSON.parse(jsonMatch[0]);
+    }
+  } catch {
+    console.error(`Failed to parse AI response for ${symbol}`);
+    return { symbol, status: "error", alertsCreated: 0, error: "Failed to parse AI response" };
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    return { symbol, status: "no_events", alertsCreated: 0 };
+  }
+
+  const rows = parsed.slice(0, 3).map((a) => ({
+    symbol,
+    title: a.title,
+    body: a.body,
+    severity: ["info", "warning", "critical"].includes(a.severity) ? a.severity : "info",
+    category: [
+      "management", "earnings", "analyst", "insider",
+      "regulatory", "dividend", "market", "other",
+    ].includes(a.category) ? a.category : "other",
+    source_url: a.sourceUrl ?? null,
+  }));
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("ticker_alerts")
+    .insert(rows)
+    .select("id");
+
+  if (insertError) {
+    console.error(`DB insert failed for ${symbol}:`, insertError);
+    return { symbol, status: "error", alertsCreated: 0, error: "Database write failed" };
+  }
+
+  const newIds = (inserted ?? []).map((r) => r.id);
+  if (newIds.length > 0) {
+    await supabase
+      .from("ticker_alerts")
+      .delete()
+      .eq("symbol", symbol)
+      .not("id", "in", `(${newIds.join(",")})`);
+  }
+
+  return { symbol, status: "scanned", alertsCreated: rows.length };
+}
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -30,107 +157,27 @@ export async function POST(req: Request) {
 
   const recentSet = new Set((existing ?? []).map((e) => e.symbol));
   const toScan = upperSymbols.filter((s) => !recentSet.has(s));
-  const skipped = upperSymbols.filter((s) => recentSet.has(s));
 
-  let alertsGenerated = 0;
+  const results: SymbolResult[] = upperSymbols
+    .filter((s) => recentSet.has(s))
+    .map((s) => ({ symbol: s, status: "skipped" as const, alertsCreated: 0 }));
 
-  for (const symbol of toScan) {
-    try {
-      const info = EQUITY_DISPLAY_INFO[symbol];
-      const companyName = info?.name ?? symbol;
-
-      const [newsRes, extRes] = await Promise.all([
-        fetch(new URL(`/api/news?symbol=${symbol}&hours=72`, req.url)),
-        fetch(new URL(`/api/stock-extended/${symbol}`, req.url)),
-      ]);
-
-      const newsData = newsRes.ok ? await newsRes.json() : { items: [] };
-      const extData = extRes.ok ? await extRes.json() : {};
-
-      const prompt = `Eres un analista financiero CFA revisando las ultimas noticias y datos de ${symbol} (${companyName}).
-
-DATOS:
-- Noticias recientes: ${JSON.stringify((newsData.items ?? []).slice(0, 10))}
-- Ratings de analistas: ${JSON.stringify(extData.ratings ?? null)}
-- Trading de insiders: ${JSON.stringify(extData.insiderTransactions ?? null)}
-- Historial de earnings: ${JSON.stringify(extData.earnings ?? null)}
-
-Identifica UNICAMENTE eventos MATERIALES. Umbrales:
-- management: cambios de CEO, CFO, o directorio. NO contrataciones menores.
-- earnings: sorpresa >10% vs consenso (miss o beat).
-- analyst: upgrade/downgrade de firmas tier-1 (Goldman, JPMorgan, Morgan Stanley, BofA, Citi).
-- insider: ventas >US$1M en los ultimos 30 dias.
-- regulatory: investigaciones SEC, demandas colectivas confirmadas.
-- dividend: recorte, suspension, o aumento >20%.
-- market: movimiento >10% en una sesion sin explicacion en las categorias anteriores.
-
-Si NO hay eventos materiales, responde: []
-
-Si hay, responde (max 3 por ticker):
-[{
-  "title": "titulo conciso en espanol (max 80 chars)",
-  "body": "2-3 oraciones con datos concretos.",
-  "severity": "critical|warning|info",
-  "category": "management|earnings|analyst|insider|regulatory|dividend|market",
-  "sourceUrl": "url o null"
-}]
-
-Severity: critical = earnings miss >15%, cambio CEO. warning = downgrade, insider selling. info = contexto.
-SOLO JSON, sin texto adicional.`;
-
-      const result = await generateText({
-        model: anthropic("claude-sonnet-4-20250514"),
-        prompt,
-      });
-
-      let parsed: Array<{
-        title: string;
-        body: string;
-        severity: string;
-        category: string;
-        sourceUrl?: string | null;
-      }> = [];
-
-      try {
-        const text = result.text.trim();
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0]);
-        }
-      } catch {
-        console.error(`Failed to parse AI response for ${symbol}`);
-        continue;
-      }
-
-      if (!Array.isArray(parsed) || parsed.length === 0) continue;
-
-      await supabase
-        .from("ticker_alerts")
-        .delete()
-        .eq("symbol", symbol);
-
-      const rows = parsed.slice(0, 3).map((a) => ({
-        symbol,
-        title: a.title,
-        body: a.body,
-        severity: ["info", "warning", "critical"].includes(a.severity) ? a.severity : "info",
-        category: [
-          "management", "earnings", "analyst", "insider",
-          "regulatory", "dividend", "market", "other",
-        ].includes(a.category) ? a.category : "other",
-        source_url: a.sourceUrl ?? null,
-      }));
-
-      await supabase.from("ticker_alerts").insert(rows);
-      alertsGenerated += rows.length;
-    } catch (e) {
-      console.error(`Scan failed for ${symbol}:`, e);
-    }
+  for (let i = 0; i < toScan.length; i += BATCH_SIZE) {
+    const batch = toScan.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map((symbol) => scanSymbol(symbol, supabase)),
+    );
+    results.push(...batchResults);
   }
 
+  const alertsGenerated = results.reduce((sum, r) => sum + r.alertsCreated, 0);
+  const errors = results.filter((r) => r.status === "error");
+
   return NextResponse.json({
-    scanned: toScan.length,
+    total: upperSymbols.length,
+    scanned: results.filter((r) => r.status === "scanned" || r.status === "no_events").length,
     alertsGenerated,
-    skipped,
+    errors: errors.length,
+    results,
   });
 }
