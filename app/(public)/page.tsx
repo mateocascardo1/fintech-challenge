@@ -347,153 +347,74 @@ export default function LandingPage() {
           />
         </div>
 
-        <div className="relative mx-auto max-w-5xl px-6">
-          <div className="grid lg:grid-cols-[1fr,300px] gap-10 lg:gap-12 items-center">
-            {/* Left: Text */}
-            <div className="max-w-2xl">
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="text-xs font-medium uppercase tracking-[0.25em] text-primary mb-6 flex items-center gap-2"
-              >
-                <span className="inline-block size-1.5 rounded-full bg-primary animate-shimmer" />
-                Plataforma de análisis de portfolios
-              </motion.p>
+        <div className="relative mx-auto max-w-4xl px-6 text-center">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-xs font-medium uppercase tracking-[0.25em] text-primary mb-6 inline-flex items-center gap-2"
+          >
+            <span className="inline-block size-1.5 rounded-full bg-primary animate-shimmer" />
+            Plataforma de análisis de portfolios
+          </motion.p>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="font-display text-5xl leading-[1.1] tracking-tight md:text-6xl lg:text-7xl"
-              >
-                Ya invertís.
-                <br />
-                <span className="text-primary">Ahora invertí</span>
-                <br />
-                con criterio.
-              </motion.h1>
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="font-display text-5xl leading-[1.1] tracking-tight md:text-6xl lg:text-7xl"
+          >
+            Ya invertís.
+            <br />
+            <span className="text-primary">Ahora invertí</span>
+            <br />
+            con criterio.
+          </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="mt-6 text-base text-muted-foreground leading-relaxed md:text-lg max-w-lg"
-              >
-                Score 0–1000, diagnóstico en 4 dimensiones, agentes IA personalizados
-                y recomendaciones accionables con impacto medible.
-              </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mx-auto mt-6 text-base text-muted-foreground leading-relaxed md:text-lg max-w-xl"
+          >
+            Score 0–1000, diagnóstico en 4 dimensiones, agentes IA personalizados
+            y recomendaciones accionables con impacto medible.
+          </motion.p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.55 }}
-                className="mt-10 flex items-center gap-4"
-              >
-                <Button
-                  size="lg"
-                  className="h-12 px-8 rounded-xl font-medium text-sm"
-                  asChild
-                >
-                  <Link href="/auth?demo=1">
-                    Ver demo en 90 seg
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-12 px-8 rounded-xl font-medium text-sm border-border/50"
-                  asChild
-                >
-                  <a href="#como-funciona">Cómo funciona</a>
-                </Button>
-              </motion.div>
-
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.7 }}
-                className="mt-4 text-xs text-muted-foreground/30"
-              >
-                Sin tarjeta de crédito. Acceso inmediato.
-              </motion.p>
-            </div>
-
-            {/* Right: Floating score card */}
-            <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{
-                duration: 0.9,
-                delay: 0.5,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              className="hidden lg:block"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="mt-10 flex items-center justify-center gap-4"
+          >
+            <Button
+              size="lg"
+              className="h-12 px-8 rounded-xl font-medium text-sm"
+              asChild
             >
-              <div className="relative">
-                <div
-                  className="absolute -inset-2 rounded-3xl animate-pulse-glow"
-                  style={{
-                    background:
-                      "radial-gradient(ellipse 70% 60% at 50% 40%, oklch(0.74 0.17 152 / 8%) 0%, transparent 70%)",
-                  }}
-                />
-                <div className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 w-full max-w-[280px] noise-overlay">
-                  <div className="relative z-10">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/40 mb-4">
-                      Portfolio Score
-                    </p>
-                    <div className="flex justify-center mb-5">
-                      <AnimatedScoreRing
-                        score={847}
-                        maxScore={1000}
-                        color={C.green}
-                        size={110}
-                        stroke={6}
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      {[
-                        { label: "Diversificación", val: 198, color: C.green },
-                        { label: "Risk Match", val: 221, color: C.blue },
-                        { label: "Sharpe", val: 214, color: C.yellow },
-                        { label: "Downside", val: 214, color: C.teal },
-                      ].map((d) => (
-                        <div key={d.label}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-muted-foreground/50">
-                              {d.label}
-                            </span>
-                            <span className="text-[10px] tabular-nums font-medium">
-                              {d.val}
-                            </span>
-                          </div>
-                          <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
-                            <div
-                              className="h-full rounded-full animate-count-bar"
-                              style={{
-                                width: `${(d.val / 250) * 100}%`,
-                                backgroundColor: d.color,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-border/30 flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground/40">
-                        Mejora potencial
-                      </span>
-                      <span className="text-sm font-bold tabular-nums text-primary">
-                        +127 pts
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+              <Link href="/auth?demo=1">
+                Ver demo en 90 seg
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12 px-8 rounded-xl font-medium text-sm border-border/50"
+              asChild
+            >
+              <a href="#como-funciona">Cómo funciona</a>
+            </Button>
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+            className="mt-4 text-xs text-muted-foreground/30"
+          >
+            Sin tarjeta de crédito. Acceso inmediato.
+          </motion.p>
         </div>
       </section>
 
