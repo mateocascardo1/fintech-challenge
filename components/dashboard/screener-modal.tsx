@@ -208,7 +208,7 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
-      className="fixed inset-0 z-[55] bg-[oklch(0.07_0.005_260)]"
+      className="fixed inset-x-0 bottom-0 top-12 z-[55] bg-[oklch(0.07_0.005_260)]"
     >
       <div className="flex h-full min-h-0">
         {/* Left sidebar — persistent, hidden on mobile */}
@@ -393,39 +393,39 @@ function ScreenerSidebar({
   onClose: () => void;
 }) {
   return (
-    <div className="hidden lg:flex w-56 shrink-0 border-r border-white/[0.06] flex-col h-full overflow-hidden bg-white/[0.01]">
+    <div className="hidden lg:flex w-72 shrink-0 border-r border-white/[0.06] flex-col h-full overflow-hidden bg-white/[0.01]">
       {/* Header */}
-      <div className="p-3 border-b border-white/[0.06]">
+      <div className="p-4 border-b border-white/[0.06]">
         <div className="flex items-center justify-between mb-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
             Vigilancia
           </p>
           <button
             type="button"
             onClick={onNewSearch}
-            className="p-1 rounded-md hover:bg-white/[0.06] text-muted-foreground hover:text-primary transition-colors"
+            className="p-1.5 rounded-md hover:bg-white/[0.06] text-muted-foreground hover:text-primary transition-colors"
             title="Nueva búsqueda"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
           </button>
         </div>
         {activeCount > 0 && (
-          <p className="text-[10px] text-emerald-400/60">
+          <p className="text-[11px] text-emerald-400/60">
             {activeCount} activa{activeCount > 1 ? "s" : ""}
           </p>
         )}
       </div>
 
       {/* Alert rows */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-0.5">
+      <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-0.5">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-16 rounded-lg bg-muted/10 animate-pulse" />
           ))
         ) : alerts.length === 0 ? (
-          <div className="text-center py-8 px-3">
-            <BellOff className="h-6 w-6 mx-auto text-muted-foreground/20 mb-2" />
-            <p className="text-[10px] text-muted-foreground/40 leading-relaxed">
+          <div className="text-center py-8 px-4">
+            <BellOff className="h-7 w-7 mx-auto text-muted-foreground/20 mb-2" />
+            <p className="text-[11px] text-muted-foreground/40 leading-relaxed">
               Cada tesis que busques queda en vigilancia automáticamente
             </p>
           </div>
@@ -465,7 +465,7 @@ function SidebarAlertRow({
           : "opacity-40 hover:opacity-60",
       )}
     >
-      <p className="text-[11px] font-medium text-foreground/80 leading-snug line-clamp-2 pr-5">
+      <p className="text-xs font-medium text-foreground/80 leading-snug line-clamp-2 pr-5">
         {alert.prompt}
       </p>
 
