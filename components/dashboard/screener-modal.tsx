@@ -283,7 +283,7 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-full flex flex-col items-center justify-center px-6 py-8 overflow-y-auto"
+                  className="h-full flex flex-col items-center justify-center px-6 pt-16 pb-8 overflow-y-auto"
                 >
                   <IdleState
                     prompt={prompt}
