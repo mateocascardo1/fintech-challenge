@@ -118,6 +118,7 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
   const [savedAlerts, setSavedAlerts] = useState<CustomAlertRule[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
   const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
+  const [showAlerts, setShowAlerts] = useState(false);
 
   const activeCount = savedAlerts.filter((a) => a.is_active).length;
   const isIdle = !searching && !result;
@@ -212,47 +213,66 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-[55] bg-[oklch(0.07_0.005_260)]"
     >
       <div className="h-full w-full flex flex-col">
-        {/* Top bar — minimal, only close */}
-        {isIdle && (
-          <div className="absolute top-0 right-0 p-4 sm:p-6 z-10">
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="p-2.5 rounded-xl hover:bg-white/[0.06] text-muted-foreground/40 hover:text-foreground transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        )}
+        {/* Header — persistent across all states */}
+        <div className="flex items-center justify-between px-5 sm:px-8 py-3.5 border-b border-border/15 shrink-0 bg-white/[0.01]">
+          <button
+            type="button"
+            onClick={isIdle ? onClose : resetDiscover}
+            className="flex items-center gap-2 text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">{isIdle ? "Volver" : "Nueva búsqueda"}</span>
+          </button>
 
-        {/* Results top bar */}
-        {!isIdle && (
-          <div className="flex items-center justify-between px-6 sm:px-10 py-4 border-b border-border/15 shrink-0 bg-white/[0.01]">
-            <button
-              type="button"
-              onClick={resetDiscover}
-              className="flex items-center gap-2 text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Nueva búsqueda</span>
-            </button>
-            <div className="flex-1 text-center mx-4 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1 justify-center mx-4">
+            {isIdle ? (
+              <>
+                <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10 border border-primary/15 shrink-0">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <span className="text-sm font-semibold text-foreground/80 truncate">
+                  Screener con IA
+                </span>
+              </>
+            ) : (
               <p className="text-sm text-muted-foreground/50 truncate">
                 <span className="text-muted-foreground/30">Tu tesis:</span>{" "}
                 <span className="text-foreground/70 font-medium">&ldquo;{prompt}&rdquo;</span>
               </p>
-            </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {savedAlerts.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAlerts(!showAlerts)}
+                aria-label="Ver alertas en vigilancia"
+                className={cn(
+                  "p-2 rounded-xl transition-colors relative",
+                  showAlerts
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-white/[0.06] text-muted-foreground/40 hover:text-foreground",
+                )}
+              >
+                <Bell className="h-4.5 w-4.5" />
+                {activeCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white px-1">
+                    {activeCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
               aria-label="Cerrar"
-              className="p-2 rounded-xl hover:bg-white/[0.06] text-muted-foreground/40 hover:text-foreground transition-colors shrink-0"
+              className="p-2 rounded-xl hover:bg-white/[0.06] text-muted-foreground/40 hover:text-foreground transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
-        )}
+        </div>
 
         {/* Body */}
         <div className="flex-1 min-h-0 flex overflow-hidden">
@@ -264,18 +284,50 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                className="flex-1 flex flex-col items-center justify-center px-6 py-8 overflow-y-auto"
+                className="flex-1 flex min-h-0"
               >
-                <IdleState
-                  prompt={prompt}
-                  setPrompt={setPrompt}
-                  composeRef={composeRef}
-                  onSubmit={handleSubmit}
-                  onSelectPattern={tryExample}
-                  searching={searching}
-                  activeCount={activeCount}
-                  onShowWatch={() => setTab("watch")}
-                />
+                <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 overflow-y-auto">
+                  <IdleState
+                    prompt={prompt}
+                    setPrompt={setPrompt}
+                    composeRef={composeRef}
+                    onSubmit={handleSubmit}
+                    onSelectPattern={tryExample}
+                    searching={searching}
+                    activeCount={activeCount}
+                    onShowWatch={() => setShowAlerts(true)}
+                  />
+                </div>
+
+                {/* Alerts sidebar — idle state */}
+                <AnimatePresence>
+                  {showAlerts && savedAlerts.length > 0 && (
+                    <motion.div
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: 360, opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                      className="shrink-0 border-l border-border/15 overflow-hidden bg-white/[0.01]"
+                    >
+                      <div className="w-[360px] h-full overflow-y-auto scrollbar-thin px-6 py-6">
+                        <AlertsPanel
+                          alerts={savedAlerts}
+                          loading={alertsLoading}
+                          activeCount={activeCount}
+                          expandedAlertId={expandedAlertId}
+                          onToggleExpand={(id) =>
+                            setExpandedAlertId(expandedAlertId === id ? null : id)
+                          }
+                          onToggleActive={toggleActive}
+                          onDelete={deleteAlert}
+                          onTryExample={() => tryExample(PATTERN_EXAMPLES[0].prompt)}
+                          onClose={onClose}
+                          embedded
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
@@ -369,26 +421,12 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
           </AnimatePresence>
         </div>
 
-        {/* Footer — idle only */}
+        {/* Footer */}
         {isIdle && (
-          <div className="px-6 sm:px-10 py-3 flex items-center justify-between shrink-0">
+          <div className="px-6 sm:px-10 py-2.5 shrink-0 border-t border-border/10">
             <p className="text-[10px] text-muted-foreground/20 uppercase tracking-widest">
               Datos en tiempo real via Yahoo Finance
             </p>
-            {activeCount > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setTab("watch");
-                  setResult(savedAlerts[0] ?? null);
-                  setPrompt(savedAlerts[0]?.prompt ?? "");
-                }}
-                className="flex items-center gap-2 text-xs text-muted-foreground/40 hover:text-foreground/70 transition-colors"
-              >
-                <Bell className="h-3.5 w-3.5" />
-                {activeCount} en vigilancia
-              </button>
-            )}
           </div>
         )}
       </div>
