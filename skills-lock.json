@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "product-lens": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "skillPath": "skills/product-lens/SKILL.md",
+      "computedHash": "ce3ccb3728a4ef118b2d17ee24f960f45dda9f1018519a30cbd8cb94de177dab"
+    }
+  }
+}

@@ -5,10 +5,44 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Trash2, X, DollarSign, Loader2, MinusCircle } from "lucide-react";
-import { HoldingAlertsBanner } from "@/components/dashboard/holding-alerts-banner";
+import { Plus, Search, Trash2, X, DollarSign, Loader2, MinusCircle, AlertTriangle, AlertCircle, Info, ExternalLink } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote } from "@/lib/types";
+
+type HoldingAlert = {
+  id: string;
+  symbol: string;
+  title: string;
+  body: string;
+  severity: "info" | "warning" | "critical";
+  category: string;
+  source_url: string | null;
+  generated_at: string;
+  is_read: boolean;
+};
+
+const SEVERITY_ICON = {
+  critical: AlertTriangle,
+  warning: AlertCircle,
+  info: Info,
+} as const;
+
+const SEVERITY_COLOR = {
+  critical: "text-red-400",
+  warning: "text-amber-400",
+  info: "text-blue-400",
+} as const;
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "ahora";
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
+}
 
 type SortKey = "symbol" | "value" | "weight" | "changePercent";
 type SortDir = "asc" | "desc";
@@ -416,14 +450,58 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
   const formatARS = (v: number) =>
     new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
 
-  const holdingSymbols = useMemo(
-    () => [...new Set(positions.filter((p) => p.asset_type !== "cash").map((p) => p.symbol.toUpperCase()))],
-    [positions],
-  );
+  const [alerts, setAlerts] = useState<HoldingAlert[]>([]);
+  const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (positions.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/alerts");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setAlerts(data.holdingAlerts ?? []);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [positions]);
+
+  const alertsBySymbol = useMemo(() => {
+    const map = new Map<string, HoldingAlert[]>();
+    for (const a of alerts) {
+      const key = a.symbol.toUpperCase();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(a);
+    }
+    return map;
+  }, [alerts]);
+
+  function toggleAlertRow(symbol: string) {
+    setExpandedAlerts((prev) => {
+      const next = new Set(prev);
+      if (next.has(symbol)) next.delete(symbol);
+      else next.add(symbol);
+      return next;
+    });
+  }
+
+  async function markRead(alertId: string) {
+    setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, is_read: true } : a)));
+    try {
+      const res = await fetch("/api/alerts/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertIds: [alertId] }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, is_read: false } : a)));
+    }
+  }
 
   return (
     <div className="space-y-4">
-      {!loading && positions.length > 0 && <HoldingAlertsBanner holdings={holdingSymbols} />}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex gap-1">
           {(["all", ...Array.from(new Set(positions.map((p) => resolveAssetType(p.symbol, p.asset_type))))] as const).map((f) => (
@@ -784,23 +862,24 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
-              {[
-                { key: "symbol" as SortKey, label: "Ticker" },
-                { key: "value" as SortKey, label: "Cantidad" },
-                { key: "value" as SortKey, label: "Valor" },
-                { key: "weight" as SortKey, label: "Peso %" },
-                { key: "changePercent" as SortKey, label: "Cambio" },
-              ].map((col, idx) => (
-                <th
-                  key={`${col.key}-${idx}`}
-                  className="py-2 px-3 font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                  onClick={() => idx !== 1 ? toggleSort(col.key) : undefined}
-                >
-                  {col.label}{" "}
-                  {idx !== 1 && sortKey === col.key && (sortDir === "asc" ? "↑" : "↓")}
-                </th>
-              ))}
-              <th className="py-2 px-3 w-10" />
+              <th className="py-2 px-3" colSpan={6}>
+                <div className="flex items-center text-muted-foreground font-medium">
+                  <div className="w-[28%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("symbol")}>
+                    Ticker {sortKey === "symbol" && (sortDir === "asc" ? "↑" : "↓")}
+                  </div>
+                  <div className="w-[16%]">Cantidad</div>
+                  <div className="w-[18%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("value")}>
+                    Valor {sortKey === "value" && (sortDir === "asc" ? "↑" : "↓")}
+                  </div>
+                  <div className="w-[14%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("weight")}>
+                    Peso % {sortKey === "weight" && (sortDir === "asc" ? "↑" : "↓")}
+                  </div>
+                  <div className="w-[14%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("changePercent")}>
+                    Cambio {sortKey === "changePercent" && (sortDir === "asc" ? "↑" : "↓")}
+                  </div>
+                  <div className="w-[10%]" />
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -811,59 +890,151 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
                 </td>
               </tr>
             )}
-            {enriched.map((p) => (
-              <tr
-                key={p.symbol}
-                className="border-b border-border/50 hover:bg-muted/30"
-              >
-                <td className="py-3 px-3">
-                  <Link
-                    href={`/stock/${p.symbol}`}
-                    className="flex items-center gap-2"
-                  >
-                    <span className="font-bold">{p.symbol}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {p.name}
-                    </span>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {p.asset_type === "bond" ? "bono" : p.asset_type === "cash" ? "cash" : p.asset_type}
-                    </Badge>
-                  </Link>
-                </td>
-                <td className="py-3 px-3 tabular-nums text-muted-foreground">
-                  {p.asset_type === "cash"
-                    ? `$${p.quantity.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
-                    : p.quantity % 1 === 0
-                      ? p.quantity.toLocaleString("en-US")
-                      : p.quantity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                </td>
-                <td className="py-3 px-3 tabular-nums">
-                  {formatPrice(p.value)}
-                </td>
-                <td className="py-3 px-3 tabular-nums">
-                  {(p.weight * 100).toFixed(1)}%
-                </td>
-                <td
-                  className={`py-3 px-3 tabular-nums ${
-                    p.changePercent >= 0 ? "text-positive" : "text-negative"
-                  }`}
+            {enriched.map((p) => {
+              const symbolAlerts = alertsBySymbol.get(p.symbol.toUpperCase()) ?? [];
+              const unread = symbolAlerts.filter((a) => !a.is_read);
+              const topSeverity = unread.some((a) => a.severity === "critical")
+                ? "critical"
+                : unread.some((a) => a.severity === "warning")
+                  ? "warning"
+                  : unread.length > 0
+                    ? "info"
+                    : null;
+              const isExpanded = expandedAlerts.has(p.symbol);
+
+              return (
+                <tr
+                  key={p.symbol}
+                  className="border-b border-border/50 hover:bg-muted/30 group/row"
                 >
-                  {formatPercent(p.changePercent, { withSign: true })}
-                </td>
-                <td className="py-3 px-3">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      deletePosition(p.symbol);
-                    }}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  <td className="py-3 px-3" colSpan={6}>
+                    <div className="flex items-center">
+                      {/* Ticker cell */}
+                      <div className="flex items-center gap-2 w-[28%] min-w-0">
+                        <Link
+                          href={`/stock/${p.symbol}`}
+                          className="flex items-center gap-2 min-w-0"
+                        >
+                          <span className="font-bold shrink-0">{p.symbol}</span>
+                          <span className="text-muted-foreground text-xs truncate">
+                            {p.name}
+                          </span>
+                          <Badge variant="secondary" className="text-[10px] shrink-0">
+                            {p.asset_type === "bond" ? "bono" : p.asset_type === "cash" ? "cash" : p.asset_type}
+                          </Badge>
+                        </Link>
+                        {topSeverity && (
+                          <button
+                            type="button"
+                            onClick={() => toggleAlertRow(p.symbol)}
+                            className="shrink-0 ml-1"
+                            aria-label={`${unread.length} alerta${unread.length > 1 ? "s" : ""}`}
+                          >
+                            {(() => {
+                              const Icon = SEVERITY_ICON[topSeverity];
+                              return (
+                                <span className="relative flex items-center">
+                                  <Icon className={`h-3.5 w-3.5 ${SEVERITY_COLOR[topSeverity]}`} />
+                                  {unread.length > 1 && (
+                                    <span className={`ml-0.5 text-[9px] font-bold ${SEVERITY_COLOR[topSeverity]}`}>
+                                      {unread.length}
+                                    </span>
+                                  )}
+                                </span>
+                              );
+                            })()}
+                          </button>
+                        )}
+                      </div>
+                      {/* Quantity */}
+                      <div className="w-[16%] tabular-nums text-muted-foreground">
+                        {p.asset_type === "cash"
+                          ? `$${p.quantity.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+                          : p.quantity % 1 === 0
+                            ? p.quantity.toLocaleString("en-US")
+                            : p.quantity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                      </div>
+                      {/* Value */}
+                      <div className="w-[18%] tabular-nums">
+                        {formatPrice(p.value)}
+                      </div>
+                      {/* Weight */}
+                      <div className="w-[14%] tabular-nums">
+                        {(p.weight * 100).toFixed(1)}%
+                      </div>
+                      {/* Change */}
+                      <div className={`w-[14%] tabular-nums ${p.changePercent >= 0 ? "text-positive" : "text-negative"}`}>
+                        {formatPercent(p.changePercent, { withSign: true })}
+                      </div>
+                      {/* Delete */}
+                      <div className="w-[10%] flex justify-end">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            deletePosition(p.symbol);
+                          }}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Inline alert sub-rows */}
+                    {isExpanded && symbolAlerts.length > 0 && (
+                      <div className="mt-2 mb-1 space-y-1.5 pl-1">
+                        {symbolAlerts.map((alert) => {
+                          const Icon = SEVERITY_ICON[alert.severity] ?? SEVERITY_ICON.info;
+                          const color = SEVERITY_COLOR[alert.severity] ?? SEVERITY_COLOR.info;
+                          return (
+                            <div
+                              key={alert.id}
+                              className={`
+                                flex items-start gap-2.5 rounded-lg px-3 py-2
+                                ${alert.is_read ? "opacity-50" : "bg-white/[0.02]"}
+                                transition-opacity duration-200
+                              `}
+                            >
+                              <Icon className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${color}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-medium leading-snug">{alert.title}</p>
+                                <p className="text-[12px] text-muted-foreground/60 leading-relaxed line-clamp-1 mt-0.5">
+                                  {alert.body}
+                                </p>
+                                {alert.source_url && (
+                                  <a
+                                    href={alert.source_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] text-primary/50 hover:text-primary mt-1 transition-colors"
+                                  >
+                                    Fuente <ExternalLink className="h-2.5 w-2.5" />
+                                  </a>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground/30 font-mono tabular-nums shrink-0 mt-0.5">
+                                {timeAgo(alert.generated_at)}
+                              </span>
+                              {!alert.is_read && (
+                                <button
+                                  type="button"
+                                  onClick={() => markRead(alert.id)}
+                                  aria-label="Marcar como leída"
+                                  className="shrink-0 p-0.5 rounded text-muted-foreground/25 hover:text-muted-foreground/60 transition-colors mt-0.5"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
