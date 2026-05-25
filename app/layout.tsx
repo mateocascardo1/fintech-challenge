@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, JetBrains_Mono } from "next/font/google";
+import { DM_Sans, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -18,6 +18,13 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500", "600", "700"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: "SignalAI — Tu portfolio analizado con IA",
   description:
@@ -32,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="es-AR"
-      className={`${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
+      className={`${dmSans.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <MobileGate>

@@ -10,6 +10,7 @@
   --font-sans: var(--font-dm-sans), "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-dm-sans), "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), "Instrument Serif", "Georgia", serif;
   --color-positive: oklch(0.74 0.17 152);
   --color-negative: oklch(0.66 0.21 20);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -351,4 +352,77 @@
 
 .animate-pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+@keyframes timeline-draw {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.animate-orb-float {
+  animation: orb-float 20s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-orb-float,
+  .animate-gradient-shift,
+  .animate-shimmer,
+  .animate-pulse-glow,
+  .animate-fade-in-up,
+  .animate-fade-in-up-delay-1,
+  .animate-fade-in-up-delay-2,
+  .animate-fade-in-up-delay-3,
+  .animate-fade-in-up-delay-4,
+  .animate-fade-in-up-delay-5,
+  .animate-count-bar {
+    animation: none !important;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.landing-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.landing-bento-grid > :first-child { grid-column: span 2; }
+
+@media (max-width: 768px) {
+  .landing-bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .landing-bento-grid > :first-child {
+    grid-column: span 1;
+  }
 }
