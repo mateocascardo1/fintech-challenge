@@ -327,58 +327,88 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── Hero ─── */}
-      <section className="relative py-28 md:py-36">
-        {/* Background orbs */}
+      <section className="relative pt-24 md:pt-32 pb-0">
+        {/* Layered background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 dot-grid opacity-40" />
           <div
-            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full animate-orb-float"
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[700px] rounded-full"
             style={{
               background:
-                "radial-gradient(circle, oklch(0.74 0.17 152 / 6%) 0%, transparent 70%)",
+                "radial-gradient(ellipse 50% 45% at 50% 30%, oklch(0.74 0.17 152 / 8%) 0%, transparent 70%)",
             }}
           />
           <div
-            className="absolute top-1/3 left-1/4 w-[400px] h-[400px] rounded-full animate-orb-float"
+            className="absolute top-[20%] right-[10%] w-[400px] h-[400px] rounded-full animate-orb-float"
             style={{
               background:
-                "radial-gradient(circle, oklch(0.60 0.12 200 / 4%) 0%, transparent 70%)",
-              animationDelay: "-7s",
+                "radial-gradient(circle, oklch(0.60 0.12 200 / 5%) 0%, transparent 70%)",
+              animationDelay: "-5s",
             }}
           />
         </div>
 
+        {/* Floating data chips — visual density around the headline */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
+          {[
+            { content: "847", sub: "Score", x: "8%", y: "22%", delay: 0.8, color: C.green },
+            { content: "+24", sub: "pts", x: "85%", y: "18%", delay: 1.0, color: C.green },
+            { content: "AAPL", sub: "+1.4%", x: "90%", y: "55%", delay: 1.3, color: C.blue },
+            { content: "VWO", sub: "Comprar", x: "5%", y: "60%", delay: 1.1, color: C.yellow },
+            { content: "0.18", sub: "HHI", x: "12%", y: "85%", delay: 1.4, color: C.teal },
+            { content: "S&P", sub: "+0.8%", x: "82%", y: "80%", delay: 1.5, color: C.green },
+          ].map((chip) => (
+            <motion.div
+              key={chip.content + chip.sub}
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: chip.delay, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute"
+              style={{ left: chip.x, top: chip.y }}
+            >
+              <div className="rounded-xl border border-border/30 bg-card/40 backdrop-blur-md px-3 py-2 shadow-lg shadow-black/10">
+                <p className="text-sm font-bold tabular-nums" style={{ color: chip.color }}>
+                  {chip.content}
+                </p>
+                <p className="text-[9px] text-muted-foreground/40 mt-0.5">{chip.sub}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
         <div className="relative mx-auto max-w-4xl px-6 text-center">
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-xs font-medium uppercase tracking-[0.25em] text-primary mb-6 inline-flex items-center gap-2"
+            className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 mb-8"
           >
             <span className="inline-block size-1.5 rounded-full bg-primary animate-shimmer" />
-            Plataforma de análisis de portfolios
-          </motion.p>
+            <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
+              Portfolio Intelligence
+            </span>
+          </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display text-5xl leading-[1.1] tracking-tight md:text-6xl lg:text-7xl"
+            className="font-display text-5xl leading-[1.08] tracking-tight md:text-6xl lg:text-[5.5rem]"
           >
-            Ya invertís.
+            Invertí como un
             <br />
-            <span className="text-primary">Ahora invertí</span>
-            <br />
-            con criterio.
+            <span className="text-primary text-glow-primary">experto</span> con IA
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="mx-auto mt-6 text-base text-muted-foreground leading-relaxed md:text-lg max-w-xl"
+            className="mx-auto mt-7 text-base text-muted-foreground/70 leading-relaxed md:text-lg max-w-xl"
           >
-            Score 0–1000, diagnóstico en 4 dimensiones, agentes IA personalizados
-            y recomendaciones accionables con impacto medible.
+            Tu portfolio analizado con inteligencia artificial: score 0–1000,
+            diagnóstico multidimensional, agentes personalizados y recomendaciones
+            con impacto medible en puntos.
           </motion.p>
 
           <motion.div
@@ -389,7 +419,7 @@ export default function LandingPage() {
           >
             <Button
               size="lg"
-              className="h-12 px-8 rounded-xl font-medium text-sm"
+              className="h-12 px-8 rounded-xl font-medium text-sm shadow-lg shadow-primary/20"
               asChild
             >
               <Link href="/auth?demo=1">
@@ -411,11 +441,140 @@ export default function LandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.7 }}
-            className="mt-4 text-xs text-muted-foreground/30"
+            className="mt-4 text-xs text-muted-foreground/25"
           >
             Sin tarjeta de crédito. Acceso inmediato.
           </motion.p>
         </div>
+
+        {/* Dashboard preview with perspective */}
+        <motion.div
+          initial={{ opacity: 0, y: 80 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mx-auto max-w-5xl px-6 mt-20"
+          style={{ perspective: "1200px" }}
+        >
+          <div
+            className="relative"
+            style={{
+              transform: "rotateX(2deg)",
+              transformOrigin: "center bottom",
+            }}
+          >
+            {/* Glow behind the card */}
+            <div
+              className="absolute -inset-6 rounded-3xl pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse 70% 50% at 50% 0%, oklch(0.74 0.17 152 / 12%) 0%, transparent 60%)",
+              }}
+            />
+            <div className="relative rounded-2xl border border-border/30 bg-card/70 backdrop-blur-xl overflow-hidden shadow-2xl shadow-black/40 noise-overlay">
+              <div className="relative z-10">
+                {/* Window chrome */}
+                <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border/20 bg-white/[0.01]">
+                  <div className="size-2.5 rounded-full bg-red-500/40" />
+                  <div className="size-2.5 rounded-full bg-yellow-500/40" />
+                  <div className="size-2.5 rounded-full bg-green-500/40" />
+                  <div className="ml-4 flex-1 h-5 rounded-md bg-white/[0.03] max-w-[220px] flex items-center justify-center gap-1.5">
+                    <div className="size-2.5 rounded-sm bg-primary/20" />
+                    <span className="text-[9px] text-muted-foreground/30 tabular-nums">signalai.app/dashboard</span>
+                  </div>
+                </div>
+
+                {/* Dashboard mock */}
+                <div className="p-4 md:p-6">
+                  <div className="grid grid-cols-12 gap-3 md:gap-4">
+                    {/* Score */}
+                    <div className="col-span-12 md:col-span-4 rounded-xl bg-white/[0.02] border border-border/15 p-4">
+                      <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-3">Portfolio Score</p>
+                      <div className="flex items-center gap-4">
+                        <AnimatedScoreRing score={847} maxScore={1000} color={C.green} size={72} stroke={4} />
+                        <div className="space-y-2 flex-1">
+                          {[
+                            { l: "Diversif.", v: 198, c: C.green },
+                            { l: "Risk", v: 221, c: C.blue },
+                            { l: "Sharpe", v: 214, c: C.yellow },
+                            { l: "Down.", v: 214, c: C.teal },
+                          ].map((d) => (
+                            <div key={d.l}>
+                              <div className="flex justify-between text-[8px] text-muted-foreground/40 mb-0.5">
+                                <span>{d.l}</span>
+                                <span className="tabular-nums">{d.v}</span>
+                              </div>
+                              <div className="h-1 rounded-full bg-white/[0.03]">
+                                <div className="h-full rounded-full animate-count-bar" style={{ width: `${(d.v / 250) * 100}%`, backgroundColor: d.c }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Recommendations */}
+                    <div className="col-span-12 md:col-span-4 rounded-xl bg-white/[0.02] border border-border/15 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40">Recomendaciones</p>
+                        <Zap className="size-3 text-yellow-500/50" />
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { action: "Aumentar", asset: "Bonds 20-30%", impact: "+18 pts", type: "allocation" },
+                          { action: "Comprar", asset: "VWO", impact: "+24 pts", type: "instrument" },
+                          { action: "Reducir", asset: "Tech exposure", impact: "+12 pts", type: "allocation" },
+                        ].map((r) => (
+                          <div key={r.asset} className="flex items-center gap-2 rounded-lg bg-white/[0.02] border border-border/10 px-2.5 py-1.5">
+                            <div className={`size-5 rounded flex items-center justify-center ${r.type === "allocation" ? "bg-blue-500/10" : "bg-primary/10"}`}>
+                              {r.type === "allocation" ? (
+                                <BarChart3 className="size-2.5 text-blue-400" />
+                              ) : (
+                                <TrendingUp className="size-2.5 text-primary" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[9px] text-muted-foreground/40">{r.action}</p>
+                              <p className="text-[10px] font-medium truncate">{r.asset}</p>
+                            </div>
+                            <span className="text-[10px] font-bold tabular-nums text-primary">{r.impact}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Diagnosis */}
+                    <div className="col-span-12 md:col-span-4 rounded-xl bg-white/[0.02] border border-border/15 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40">Diagnóstico</p>
+                        <Crosshair className="size-3 text-blue-400/50" />
+                      </div>
+                      <div className="space-y-2.5">
+                        {[
+                          { pillar: "Diversificación", status: "Atención", color: C.yellow, pct: 79 },
+                          { pillar: "Risk Match", status: "Saludable", color: C.green, pct: 88 },
+                          { pillar: "Sharpe Ratio", status: "Saludable", color: C.green, pct: 86 },
+                          { pillar: "Downside", status: "Saludable", color: C.green, pct: 86 },
+                        ].map((d) => (
+                          <div key={d.pillar}>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-[9px] text-muted-foreground/40">{d.pillar}</span>
+                              <span className="text-[8px] font-semibold" style={{ color: d.color }}>{d.status}</span>
+                            </div>
+                            <div className="h-1 rounded-full bg-white/[0.03]">
+                              <div className="h-full rounded-full animate-count-bar" style={{ width: `${d.pct}%`, backgroundColor: d.color }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Bottom fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none rounded-b-2xl z-20" />
+          </div>
+        </motion.div>
       </section>
 
       {/* ─── Score Demo (full) ─── */}
