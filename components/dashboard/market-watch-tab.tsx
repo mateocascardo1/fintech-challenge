@@ -355,7 +355,7 @@ function ScreenerCard() {
         <div className="relative flex-1 min-w-0">
           <p className="text-sm font-bold text-foreground tracking-tight">Screener Inteligente</p>
           <p className="text-xs text-muted-foreground/60 mt-0.5">
-            Busca acciones con IA y datos reales del mercado
+            Encontrá acciones por comportamiento y vigilá el mercado
           </p>
         </div>
         <ArrowRight className="relative h-4 w-4 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
