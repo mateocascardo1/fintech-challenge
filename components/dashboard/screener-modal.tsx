@@ -9,6 +9,7 @@ import {
   X,
   Loader2,
   ArrowRight,
+  ArrowLeft,
   Trash2,
   ChevronDown,
   TrendingUp,
@@ -16,6 +17,7 @@ import {
   BellOff,
   Target,
   Search,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -41,31 +43,38 @@ type TabId = "discover" | "watch";
 
 const PATTERN_EXAMPLES = [
   {
-    prompt: "Empresas defensivas con dividendo > 3%",
-    label: "Dividendo",
-    hint: "Defensivo",
+    prompt: "Empresas de semiconductores con flujo de caja positivo cerca de mínimos de 52 semanas",
+    label: "Semiconductores",
+    hint: "Value + Tesis sectorial",
   },
   {
-    prompt: "Tech con P/E bajo 20 y revenue creciendo",
-    label: "Tech",
-    hint: "Crecimiento",
+    prompt: "Empresas defensivas con dividendo mayor a 3% y baja volatilidad",
+    label: "Dividendos",
+    hint: "Income + Defensivo",
   },
   {
-    prompt: "Acciones 30%+ debajo de 52-week high",
-    label: "Pullback",
-    hint: "Oportunidad",
+    prompt: "Tech con P/E bajo 20, revenue creciendo y margen de ganancia alto",
+    label: "Tech infravalorado",
+    hint: "Growth a buen precio",
   },
   {
-    prompt: "Bajo ratio deuda/equity con margen alto",
-    label: "Balance",
-    hint: "Calidad",
+    prompt: "Empresas de energía renovable con bajo ratio deuda/equity",
+    label: "Energía limpia",
+    hint: "Temático + Calidad",
   },
 ];
 
 const IDLE_STEPS = [
-  { icon: Target, title: "Definí el patrón", desc: "Describí el comportamiento en español" },
-  { icon: TrendingUp, title: "Encontramos matches", desc: "Acciones que lo cumplen hoy" },
-  { icon: Bell, title: "Vigilamos por vos", desc: "Te avisamos cuando aparezcan más" },
+  { icon: Target, title: "Describí tu idea", desc: "En español, como se la contarías a alguien" },
+  { icon: Zap, title: "IA analiza el mercado", desc: "Evaluamos fundamentales en tiempo real" },
+  { icon: Bell, title: "Te avisamos", desc: "Si aparecen nuevas acciones que encajen" },
+];
+
+const LOADING_MESSAGES = [
+  "Analizando tu tesis de inversión…",
+  "Buscando en NYSE, NASDAQ y más…",
+  "Evaluando fundamentales…",
+  "Filtrando los mejores candidatos…",
 ];
 
 const METRIC_LABELS: Record<string, string> = {
@@ -101,6 +110,7 @@ function fmtMetric(key: string, val: number): string {
 export function ScreenerModal({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const composeRef = useRef<HTMLTextAreaElement>(null);
+  const submittingRef = useRef(false);
   const [tab, setTab] = useState<TabId>("discover");
   const [prompt, setPrompt] = useState("");
   const [searching, setSearching] = useState(false);
@@ -109,7 +119,6 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
   const [alertsLoading, setAlertsLoading] = useState(true);
   const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
 
-  const hasAlerts = savedAlerts.length > 0;
   const activeCount = savedAlerts.filter((a) => a.is_active).length;
   const isIdle = !searching && !result;
 
@@ -118,6 +127,7 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
       if (e.key === "Escape") onClose();
     }
     document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
     const t = setTimeout(() => composeRef.current?.focus(), 120);
 
     let cancelled = false;
@@ -135,12 +145,14 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
     return () => {
       cancelled = true;
       clearTimeout(t);
+      document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);
 
   async function handleSubmit() {
-    if (prompt.trim().length < 10 || searching) return;
+    if (prompt.trim().length < 10 || searching || submittingRef.current) return;
+    submittingRef.current = true;
     setSearching(true);
     setResult(null);
 
@@ -160,6 +172,7 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
     }
 
     setSearching(false);
+    submittingRef.current = false;
   }
 
   function tryExample(examplePrompt: string) {
@@ -171,6 +184,7 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
   function resetDiscover() {
     setResult(null);
     setPrompt("");
+    setTimeout(() => composeRef.current?.focus(), 80);
   }
 
   async function toggleActive(id: string, isActive: boolean) {
@@ -189,204 +203,195 @@ export function ScreenerModal({ onClose }: { onClose: () => void }) {
     await fetch(`/api/alerts/custom/${id}`, { method: "DELETE" });
   }
 
-  const alertsPanel = (
-    <AlertsPanel
-      alerts={savedAlerts}
-      loading={alertsLoading}
-      activeCount={activeCount}
-      expandedAlertId={expandedAlertId}
-      onToggleExpand={(id) =>
-        setExpandedAlertId(expandedAlertId === id ? null : id)
-      }
-      onToggleActive={toggleActive}
-      onDelete={deleteAlert}
-      onTryExample={() => tryExample(PATTERN_EXAMPLES[0].prompt)}
-      onClose={onClose}
-      embedded
-    />
-  );
-
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[55] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-[55] bg-[oklch(0.07_0.005_260)]"
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, filter: "blur(8px)" }}
-        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className={cn(
-          "relative w-full max-w-7xl rounded-2xl border border-border/40 bg-[oklch(0.11_0.005_260)] overflow-hidden flex flex-col shadow-2xl shadow-black/60 noise-overlay",
-          isIdle && !hasAlerts
-            ? "min-h-[520px] max-h-[min(88vh,900px)] h-auto"
-            : "h-[min(92vh,900px)] max-h-[92vh]",
+      <div className="h-full w-full flex flex-col">
+        {/* Top bar — minimal, only close */}
+        {isIdle && (
+          <div className="absolute top-0 right-0 p-4 sm:p-6 z-10">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="p-2.5 rounded-xl hover:bg-white/[0.06] text-muted-foreground/40 hover:text-foreground transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         )}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-8 py-4 border-b border-border/20 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-primary/12 border border-primary/20 shrink-0">
-              <Sparkles className="h-4.5 w-4.5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground truncate">
-                Encontrá acciones por comportamiento
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground/50 truncate">
-                Descubrí matches hoy y te avisamos cuando aparezcan nuevos
+
+        {/* Results top bar */}
+        {!isIdle && (
+          <div className="flex items-center justify-between px-6 sm:px-10 py-4 border-b border-border/15 shrink-0 bg-white/[0.01]">
+            <button
+              type="button"
+              onClick={resetDiscover}
+              className="flex items-center gap-2 text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Nueva búsqueda</span>
+            </button>
+            <div className="flex-1 text-center mx-4 min-w-0">
+              <p className="text-sm text-muted-foreground/50 truncate">
+                <span className="text-muted-foreground/30">Tu tesis:</span>{" "}
+                <span className="text-foreground/70 font-medium">&ldquo;{prompt}&rdquo;</span>
               </p>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="p-2 rounded-xl hover:bg-white/[0.06] text-muted-foreground/40 hover:text-foreground transition-colors shrink-0"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-white/[0.06] text-muted-foreground/50 hover:text-foreground transition-colors shrink-0"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Tabs — mobile always; desktop hidden when split layout active */}
-        <div
-          className={cn(
-            "flex gap-1 px-5 sm:px-8 pt-3 pb-0 shrink-0 border-b border-border/10",
-            hasAlerts && "lg:hidden",
-          )}
-        >
-            <TabButton
-              active={tab === "discover"}
-              onClick={() => setTab("discover")}
-              icon={Search}
-            >
-              Descubrir
-            </TabButton>
-            <TabButton
-              active={tab === "watch"}
-              onClick={() => setTab("watch")}
-              icon={Bell}
-              badge={activeCount > 0 ? activeCount : undefined}
-            >
-              Vigilancia
-            </TabButton>
-        </div>
+        )}
 
         {/* Body */}
         <div className="flex-1 min-h-0 flex overflow-hidden">
-          {/* Discover column */}
-          <div
-            className={cn(
-              "flex flex-col min-h-0 min-w-0 flex-1",
-              tab !== "discover" && "hidden",
-              hasAlerts && "lg:flex lg:flex-[0.65] lg:border-r lg:border-border/15",
+          <AnimatePresence mode="wait">
+            {isIdle && (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className="flex-1 flex flex-col items-center justify-center px-6 py-8 overflow-y-auto"
+              >
+                <IdleState
+                  prompt={prompt}
+                  setPrompt={setPrompt}
+                  composeRef={composeRef}
+                  onSubmit={handleSubmit}
+                  onSelectPattern={tryExample}
+                  searching={searching}
+                  activeCount={activeCount}
+                  onShowWatch={() => setTab("watch")}
+                />
+              </motion.div>
             )}
-          >
-              <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 scrollbar-thin min-h-0">
-                <AnimatePresence mode="wait">
-                  {searching && (
-                    <LoadingState key="loading" />
+
+            {searching && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="flex-1 flex flex-col items-center justify-center px-6 py-12"
+              >
+                <LoadingState prompt={prompt} />
+              </motion.div>
+            )}
+
+            {result && !searching && (
+              <motion.div
+                key="results"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="flex-1 flex min-h-0"
+              >
+                {/* Results main area */}
+                <div
+                  className={cn(
+                    "flex-1 overflow-y-auto scrollbar-thin min-w-0",
+                    tab !== "discover" && "hidden lg:block",
                   )}
-                  {result && !searching && (
+                >
+                  <div className="max-w-4xl mx-auto px-6 sm:px-10 py-8">
                     <ResultsState
-                      key="results"
                       result={result}
                       onReset={resetDiscover}
                       onClose={onClose}
                       router={router}
+                      prompt={prompt}
+                      composeRef={composeRef}
+                      onSubmit={handleSubmit}
+                      setPrompt={setPrompt}
+                      searching={searching}
                     />
-                  )}
-                  {isIdle && (
-                    <IdleState
-                      key="idle"
-                      onSelectPattern={tryExample}
-                    />
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Compose bar */}
-              <div className="shrink-0 border-t border-border/20 bg-black/25 px-5 sm:px-8 py-4 space-y-3">
-                <div className="flex gap-2 overflow-x-auto scrollbar-thin pb-0.5 -mx-1 px-1">
-                  {PATTERN_EXAMPLES.map((ex) => (
-                    <button
-                      key={ex.prompt}
-                      type="button"
-                      onClick={() => setPrompt(ex.prompt)}
-                      className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-border/25 bg-white/[0.02] hover:border-primary/30 hover:bg-primary/[0.06] text-muted-foreground/60 hover:text-foreground/90 transition-all"
-                    >
-                      <span className="text-primary/70 font-medium">{ex.label}</span>
-                      <span className="text-muted-foreground/30 mx-1">·</span>
-                      {ex.hint}
-                    </button>
-                  ))}
+                  </div>
                 </div>
-                <div className="flex gap-3">
-                  <textarea
-                    ref={composeRef}
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Ej: acciones con dividendo alto y beta bajo cerca del 52-week high…"
-                    rows={2}
-                    className="flex-1 rounded-xl border border-border/40 bg-white/[0.03] px-4 py-3 text-sm placeholder:text-muted-foreground/30 focus:border-primary/30 focus:ring-2 focus:ring-primary/10 focus:outline-none resize-none leading-relaxed"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit();
-                      }
-                    }}
+
+                {/* Vigilancia sidebar — desktop always, mobile tab */}
+                <div
+                  className={cn(
+                    "w-full lg:w-[360px] lg:shrink-0 border-l-0 lg:border-l border-border/15 overflow-y-auto scrollbar-thin bg-white/[0.01] px-6 py-6",
+                    tab !== "watch" && "hidden lg:block",
+                  )}
+                >
+                  <AlertsPanel
+                    alerts={savedAlerts}
+                    loading={alertsLoading}
+                    activeCount={activeCount}
+                    expandedAlertId={expandedAlertId}
+                    onToggleExpand={(id) =>
+                      setExpandedAlertId(expandedAlertId === id ? null : id)
+                    }
+                    onToggleActive={toggleActive}
+                    onDelete={deleteAlert}
+                    onTryExample={() => tryExample(PATTERN_EXAMPLES[0].prompt)}
+                    onClose={onClose}
+                    embedded
                   />
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={prompt.trim().length < 10 || searching}
-                    className="self-end h-11 px-5 bg-primary/12 border border-primary/20 text-foreground font-semibold hover:bg-primary/20 transition-all text-sm shrink-0"
-                  >
-                    {searching ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-1.5" />
-                        Encontrar
-                      </>
-                    )}
-                  </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground/30">
-                  Enter para encontrar · Shift+Enter nueva línea
-                </p>
-              </div>
-            </div>
 
-          {/* Watch: tab on mobile, sidebar on lg when has alerts */}
-          <div
-            className={cn(
-              "min-h-0 flex-1 overflow-y-auto px-5 sm:px-8 py-5 scrollbar-thin bg-white/[0.01]",
-              tab !== "watch" && "hidden",
-              hasAlerts && "lg:flex lg:flex-[0.35]",
+                {/* Mobile tab bar for results */}
+                <div className="fixed bottom-0 left-0 right-0 lg:hidden border-t border-border/20 bg-[oklch(0.08_0.005_260)] flex z-10">
+                  <TabButton
+                    active={tab === "discover"}
+                    onClick={() => setTab("discover")}
+                    icon={Search}
+                  >
+                    Resultados
+                  </TabButton>
+                  <TabButton
+                    active={tab === "watch"}
+                    onClick={() => setTab("watch")}
+                    icon={Bell}
+                    badge={activeCount > 0 ? activeCount : undefined}
+                  >
+                    Vigilancia
+                  </TabButton>
+                </div>
+              </motion.div>
             )}
-          >
-            {alertsPanel}
-          </div>
+          </AnimatePresence>
         </div>
 
-        {/* Footer */}
-        <div className="px-5 sm:px-8 py-3 border-t border-border/15 flex items-center justify-between shrink-0 bg-black/20">
-          <p className="text-[10px] text-muted-foreground/25 uppercase tracking-widest hidden sm:block">
-            Datos en tiempo real via Yahoo Finance
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs text-muted-foreground/40 hover:text-foreground/70 transition-colors ml-auto sm:ml-0"
-          >
-            Cerrar
-          </button>
-        </div>
-      </motion.div>
+        {/* Footer — idle only */}
+        {isIdle && (
+          <div className="px-6 sm:px-10 py-3 flex items-center justify-between shrink-0">
+            <p className="text-[10px] text-muted-foreground/20 uppercase tracking-widest">
+              Datos en tiempo real via Yahoo Finance
+            </p>
+            {activeCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("watch");
+                  setResult(savedAlerts[0] ?? null);
+                  setPrompt(savedAlerts[0]?.prompt ?? "");
+                }}
+                className="flex items-center gap-2 text-xs text-muted-foreground/40 hover:text-foreground/70 transition-colors"
+              >
+                <Bell className="h-3.5 w-3.5" />
+                {activeCount} en vigilancia
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </motion.div>,
     document.body,
   );
@@ -410,10 +415,10 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 -mb-px transition-colors",
+        "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors",
         active
-          ? "border-primary text-foreground bg-white/[0.03]"
-          : "border-transparent text-muted-foreground/50 hover:text-foreground/70",
+          ? "text-foreground bg-white/[0.03]"
+          : "text-muted-foreground/50 hover:text-foreground/70",
       )}
     >
       <Icon className="h-4 w-4" />
@@ -427,121 +432,223 @@ function TabButton({
   );
 }
 
-function IdleState({ onSelectPattern }: { onSelectPattern: (p: string) => void }) {
+function IdleState({
+  prompt,
+  setPrompt,
+  composeRef,
+  onSubmit,
+  onSelectPattern,
+  searching,
+  activeCount,
+  onShowWatch,
+}: {
+  prompt: string;
+  setPrompt: (v: string) => void;
+  composeRef: React.RefObject<HTMLTextAreaElement | null>;
+  onSubmit: () => void;
+  onSelectPattern: (p: string) => void;
+  searching: boolean;
+  activeCount: number;
+  onShowWatch: () => void;
+}) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="space-y-8 max-w-3xl mx-auto"
-    >
-      <div className="text-center pt-2 sm:pt-4">
-        <h3 className="text-xl font-bold text-foreground tracking-tight">
-          ¿Qué comportamiento querés detectar?
-        </h3>
-        <p className="text-sm text-muted-foreground/55 mt-2 max-w-lg mx-auto leading-relaxed">
-          Describí el patrón en español. Te mostramos acciones que lo cumplen hoy y seguimos
-          vigilando el mercado.
-        </p>
+    <div className="w-full max-w-2xl mx-auto space-y-8">
+      {/* Hero title */}
+      <div className="text-center space-y-3">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="flex items-center justify-center"
+        >
+          <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 border border-primary/15">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
+        </motion.div>
+        <motion.h2
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+          className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground"
+        >
+          Encontrá tu próxima inversión
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.12 }}
+          className="text-sm sm:text-base text-muted-foreground/50 max-w-md mx-auto leading-relaxed"
+        >
+          Describí qué buscás y la IA analiza el mercado por vos
+        </motion.p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {IDLE_STEPS.map((step, i) => (
-          <motion.div
-            key={step.title}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="rounded-xl border border-border/20 bg-white/[0.02] p-4 text-center"
+      {/* Hero input */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="relative group"
+      >
+        <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-primary/20 via-primary/5 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <div className="relative rounded-2xl border border-border/30 bg-white/[0.03] backdrop-blur-sm overflow-hidden group-focus-within:border-primary/25 transition-colors duration-300">
+          <textarea
+            ref={composeRef}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Ej: semiconductores con cash flow positivo y cerca de mínimos de 52 semanas…"
+            aria-label="Describí tu tesis de inversión"
+            rows={3}
+            className="w-full bg-transparent px-5 pt-5 pb-14 text-[15px] placeholder:text-muted-foreground/25 focus:outline-none resize-none leading-relaxed"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                onSubmit();
+              }
+            }}
+          />
+          <div className="absolute bottom-3 right-3 flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground/20 hidden sm:inline">
+              Enter para buscar
+            </span>
+            <Button
+              onClick={onSubmit}
+              disabled={prompt.trim().length < 10 || searching}
+              className="h-9 px-4 bg-primary/15 border border-primary/25 text-foreground font-semibold hover:bg-primary/25 transition-all text-sm disabled:opacity-30"
+            >
+              {searching ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  Buscar con IA
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Quick chips */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="flex flex-wrap justify-center gap-2"
+      >
+        {PATTERN_EXAMPLES.map((ex) => (
+          <button
+            key={ex.label}
+            type="button"
+            onClick={() => setPrompt(ex.prompt)}
+            className="text-xs px-3.5 py-2 rounded-full border border-border/20 bg-white/[0.02] hover:border-primary/30 hover:bg-primary/[0.06] text-muted-foreground/50 hover:text-foreground/80 transition-all"
           >
-            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10 border border-primary/15 mx-auto mb-2">
-              <step.icon className="h-4 w-4 text-primary/80" />
-            </div>
-            <p className="text-sm font-semibold text-foreground/85">{step.title}</p>
-            <p className="text-xs text-muted-foreground/45 mt-1">{step.desc}</p>
-          </motion.div>
+            {ex.label}
+          </button>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* Example cards */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto">
         {PATTERN_EXAMPLES.map((ex, i) => (
           <motion.button
             key={ex.prompt}
             type="button"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 + i * 0.06 }}
+            transition={{ delay: 0.25 + i * 0.06 }}
             onClick={() => onSelectPattern(ex.prompt)}
-            className="text-left rounded-xl border border-border/25 bg-gradient-to-br from-white/[0.04] to-transparent p-4 hover:border-primary/30 hover:from-primary/[0.06] transition-all group"
+            className="text-left rounded-xl border border-border/20 bg-white/[0.02] p-4 hover:border-primary/25 hover:bg-primary/[0.04] transition-all group"
           >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-primary/70">
-                Patrón
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-primary/60">
+                {ex.hint}
               </span>
-              <span className="text-[10px] text-muted-foreground/35">
-                {ex.label} · {ex.hint}
-              </span>
+              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/50 transition-colors" />
             </div>
-            <p className="text-sm text-foreground/75 leading-snug group-hover:text-foreground transition-colors">
+            <p className="text-sm text-foreground/65 leading-snug group-hover:text-foreground/85 transition-colors">
               {ex.prompt}
             </p>
           </motion.button>
         ))}
       </div>
 
-      {/* Mock result card */}
-      <div className="rounded-xl border border-border/15 bg-white/[0.02] p-4 opacity-40 pointer-events-none select-none">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-mono font-bold text-lg text-foreground/60">AAPL</span>
-          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/30" />
-        </div>
-        <p className="text-xs text-muted-foreground/50 italic">
-          Por qué cumple este comportamiento — ejemplo de resultado
-        </p>
-      </div>
-    </motion.div>
+      {/* How it works — subtle */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.45 }}
+        className="flex items-center justify-center gap-6 sm:gap-10 pt-4"
+      >
+        {IDLE_STEPS.map((step, i) => (
+          <div key={step.title} className="flex items-center gap-2 text-center">
+            <step.icon className="h-3.5 w-3.5 text-muted-foreground/20 shrink-0" />
+            <span className="text-[11px] text-muted-foreground/25">{step.title}</span>
+            {i < IDLE_STEPS.length - 1 && (
+              <ArrowRight className="h-3 w-3 text-muted-foreground/10 ml-2 sm:ml-4 shrink-0" />
+            )}
+          </div>
+        ))}
+      </motion.div>
+    </div>
   );
 }
 
-function LoadingState() {
+function LoadingState({ prompt }: { prompt: string }) {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="space-y-5"
-    >
-      <div className="rounded-xl border border-primary/15 bg-primary/[0.04] p-5 flex items-center gap-4">
-        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/12 border border-primary/20 shrink-0">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+    <div className="w-full max-w-md mx-auto space-y-8 text-center">
+      <div className="space-y-6">
+        <div className="flex items-center justify-center">
+          <div className="relative">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+            <div className="absolute -inset-3 rounded-3xl bg-primary/5 animate-pulse" />
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground/80">
-            Buscando acciones que cumplan tu patrón…
-          </p>
-          <p className="text-xs text-muted-foreground/50 mt-0.5">
-            Evaluando el mercado y activando vigilancia
+
+        <div className="space-y-2">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={messageIndex}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+              className="text-base font-semibold text-foreground/80"
+            >
+              {LOADING_MESSAGES[messageIndex]}
+            </motion.p>
+          </AnimatePresence>
+          <p className="text-sm text-muted-foreground/40 max-w-sm mx-auto leading-relaxed">
+            &ldquo;{prompt}&rdquo;
           </p>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+
+      <div className="grid gap-4 grid-cols-3 max-w-lg mx-auto">
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border/20 bg-white/[0.02] p-5 space-y-3 animate-pulse"
+            className="rounded-xl border border-border/15 bg-white/[0.02] p-4 space-y-3 animate-pulse"
             style={{ animationDelay: `${i * 200}ms` }}
           >
-            <div className="h-6 w-14 rounded-lg bg-muted/15" />
+            <div className="h-5 w-12 rounded-lg bg-muted/15" />
             <div className="h-3 w-full rounded bg-muted/8" />
-            <div className="h-3 w-4/5 rounded bg-muted/8" />
-            <div className="flex gap-2 pt-1">
-              <div className="h-5 w-16 rounded-lg bg-muted/8" />
-              <div className="h-5 w-16 rounded-lg bg-muted/8" />
-            </div>
+            <div className="h-3 w-3/4 rounded bg-muted/8" />
           </div>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -550,46 +657,47 @@ function ResultsState({
   onReset,
   onClose,
   router,
+  prompt,
+  composeRef,
+  onSubmit,
+  setPrompt,
+  searching,
 }: {
   result: CustomAlertRule;
   onReset: () => void;
   onClose: () => void;
   router: ReturnType<typeof useRouter>;
+  prompt: string;
+  composeRef: React.RefObject<HTMLTextAreaElement | null>;
+  onSubmit: () => void;
+  setPrompt: (v: string) => void;
+  searching: boolean;
 }) {
   const count = result.matched_data.length;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className="space-y-5"
-    >
+    <div className="space-y-6">
+      {/* Results header */}
       <div className="flex flex-wrap items-center gap-3">
         {count > 0 ? (
-          <h3 className="text-lg font-bold text-foreground">
-            {count} {count === 1 ? "acción con" : "acciones con"} este comportamiento
+          <h3 className="text-xl font-bold text-foreground">
+            {count} {count === 1 ? "acción con" : "acciones con"} esta tesis
           </h3>
         ) : (
-          <h3 className="text-lg font-bold text-foreground">Sin matches hoy</h3>
+          <h3 className="text-xl font-bold text-foreground">Sin matches hoy</h3>
         )}
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400/80 bg-emerald-500/10 border border-emerald-500/15 px-2.5 py-1 rounded-lg">
           <Bell className="h-3 w-3" />
-          Alerta de vigilancia activa
+          Vigilancia activa
         </span>
-        <button
-          type="button"
-          onClick={onReset}
-          className="ml-auto text-xs text-muted-foreground/50 hover:text-foreground/80 transition-colors"
-        >
-          Probar otro patrón
-        </button>
       </div>
 
-      <div className="rounded-xl border border-border/30 bg-white/[0.03] p-5">
-        <p className="text-sm text-foreground/80 leading-relaxed">{result.ai_response}</p>
+      {/* AI analysis */}
+      <div className="rounded-xl border border-border/25 bg-white/[0.03] p-5">
+        <p className="text-sm text-foreground/75 leading-relaxed">{result.ai_response}</p>
       </div>
 
+      {/* Stock cards */}
       {count > 0 ? (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {result.matched_data.map((m, i) => (
@@ -603,7 +711,7 @@ function ResultsState({
                 onClose();
                 router.push(`/stock/${encodeURIComponent(m.symbol)}`);
               }}
-              className="text-left rounded-xl border border-border/30 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-5 hover:border-primary/30 hover:from-primary/[0.06] transition-all group"
+              className="text-left rounded-xl border border-border/25 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-5 hover:border-primary/30 hover:from-primary/[0.06] transition-all group"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
@@ -634,24 +742,54 @@ function ResultsState({
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.03] p-6 text-center">
-          <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/15 mx-auto mb-3">
+        <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.03] p-8 text-center">
+          <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/15 mx-auto mb-4">
             <Bell className="h-5 w-5 text-emerald-400" />
           </div>
           <p className="text-base font-semibold text-foreground/85 mb-2">
-            Ninguna cumple hoy, pero vigilamos el mercado por vos
+            Ninguna cumple hoy, pero vigilamos por vos
           </p>
-          <p className="text-sm text-muted-foreground/55 leading-relaxed max-w-md mx-auto">
-            Seguimos vigilando; te avisamos cuando una acción encaje con tu patrón. Revisá la
-            pestaña Vigilancia para el estado.
+          <p className="text-sm text-muted-foreground/50 leading-relaxed max-w-md mx-auto">
+            Te avisamos cuando una acción encaje con tu tesis. Mientras tanto, probá con otra idea.
           </p>
         </div>
       )}
 
-      <p className="text-[10px] text-muted-foreground/20 uppercase tracking-widest">
+      {/* Compact re-search */}
+      <div className="pt-4 border-t border-border/10">
+        <div className="relative group">
+          <div className="absolute -inset-px rounded-xl bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          <div className="relative flex gap-3 items-end rounded-xl border border-border/20 bg-white/[0.02] p-3 group-focus-within:border-primary/20 transition-colors">
+            <textarea
+              ref={composeRef}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Probar otra tesis…"
+              rows={1}
+              className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground/25 focus:outline-none resize-none leading-relaxed"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  onSubmit();
+                }
+              }}
+            />
+            <Button
+              onClick={onSubmit}
+              disabled={prompt.trim().length < 10 || searching}
+              className="h-8 px-3 bg-primary/12 border border-primary/20 text-foreground font-medium hover:bg-primary/20 transition-all text-xs shrink-0 disabled:opacity-30"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              Buscar
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-[10px] text-muted-foreground/15 uppercase tracking-widest">
         generado por signalai · datos via yahoo finance
       </p>
-    </motion.div>
+    </div>
   );
 }
 
@@ -680,10 +818,10 @@ function AlertsPanel({
 }) {
   return (
     <div className={cn(!embedded && "h-full")}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-primary/70" />
-          <h3 className="text-base font-bold text-foreground/85">Patrones en vigilancia</h3>
+          <h3 className="text-base font-bold text-foreground/85">Vigilancia</h3>
         </div>
         {activeCount > 0 && (
           <span className="text-xs font-medium text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded-lg">
@@ -700,12 +838,12 @@ function AlertsPanel({
         </div>
       ) : alerts.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border/20 py-10 px-6 text-center">
-          <BellOff className="h-8 w-8 mx-auto text-muted-foreground/25 mb-3" />
+          <BellOff className="h-8 w-8 mx-auto text-muted-foreground/20 mb-3" />
           <p className="text-sm font-medium text-foreground/70 mb-1">
-            Sin patrones en vigilancia
+            Sin tesis en vigilancia
           </p>
-          <p className="text-xs text-muted-foreground/45 mb-4 leading-relaxed">
-            Creá un patrón en Descubrir; lo vigilamos automáticamente cuando el mercado cambie.
+          <p className="text-xs text-muted-foreground/40 mb-4 leading-relaxed">
+            Cada tesis que busques queda vigilando el mercado automáticamente.
           </p>
           <Button
             type="button"

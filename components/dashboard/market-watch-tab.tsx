@@ -20,7 +20,7 @@ import { INDICES, ETFS, COMMODITIES, CURRENCIES } from "@/lib/tickers";
 import { StockCard } from "@/components/stock-card";
 import { HeatmapTab } from "@/components/dashboard/market-heatmap";
 import { ScreenerModal } from "@/components/dashboard/screener-modal";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import type { Quote } from "@/lib/types";
 
 type WatchlistItem = { symbol: string };
@@ -338,25 +338,53 @@ export function MarketWatchTab() {
   );
 }
 
+const SCREENER_PROMPTS = [
+  "semiconductores con cash flow positivo…",
+  "dividendos > 3% y baja volatilidad…",
+  "tech infravalorado con revenue creciendo…",
+  "energía renovable con bajo endeudamiento…",
+];
+
 function ScreenerCard() {
   const [showModal, setShowModal] = useState(false);
+  const [promptIdx, setPromptIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPromptIdx((i) => (i + 1) % SCREENER_PROMPTS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
       <button
         type="button"
         onClick={() => setShowModal(true)}
-        className="screener-hero-card w-full rounded-2xl p-4 flex items-center gap-4 border border-primary/10 transition-all duration-300 group text-left relative overflow-hidden"
+        className="screener-hero-card w-full rounded-2xl p-5 flex items-center gap-4 border border-primary/10 transition-all duration-300 group text-left relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-transparent to-primary/[0.03] opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative flex items-center justify-center h-10 w-10 rounded-xl bg-primary/12 border border-primary/20 shrink-0 group-hover:bg-primary/18 transition-all duration-300">
+        <div className="relative flex items-center justify-center h-11 w-11 rounded-xl bg-primary/12 border border-primary/20 shrink-0 group-hover:bg-primary/18 transition-all duration-300">
           <Sparkles className="h-5 w-5 text-primary" />
         </div>
         <div className="relative flex-1 min-w-0">
-          <p className="text-sm font-bold text-foreground tracking-tight">Screener Inteligente</p>
-          <p className="text-xs text-muted-foreground/60 mt-0.5">
-            Encontrá acciones por comportamiento y vigilá el mercado
+          <p className="text-sm font-bold text-foreground tracking-tight">
+            Encontrá tu próxima inversión con IA
           </p>
+          <div className="h-5 mt-1 overflow-hidden relative">
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={promptIdx}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.35 }}
+                className="text-xs text-muted-foreground/50 absolute inset-0"
+              >
+                &ldquo;{SCREENER_PROMPTS[promptIdx]}&rdquo;
+              </motion.p>
+            </AnimatePresence>
+          </div>
         </div>
         <ArrowRight className="relative h-4 w-4 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
       </button>
