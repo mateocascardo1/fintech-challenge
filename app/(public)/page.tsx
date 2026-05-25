@@ -327,9 +327,9 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── Hero ─── */}
-      <section className="relative py-28 md:py-36 overflow-hidden">
+      <section className="relative py-28 md:py-36">
         {/* Background orbs */}
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
             className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full animate-orb-float"
             style={{
@@ -347,8 +347,8 @@ export default function LandingPage() {
           />
         </div>
 
-        <div className="relative mx-auto max-w-6xl px-6">
-          <div className="grid lg:grid-cols-[1fr,auto] gap-16 items-center">
+        <div className="relative mx-auto max-w-5xl px-6">
+          <div className="grid lg:grid-cols-[1fr,300px] gap-10 lg:gap-12 items-center">
             {/* Left: Text */}
             <div className="max-w-2xl">
               <motion.p
@@ -433,13 +433,13 @@ export default function LandingPage() {
             >
               <div className="relative">
                 <div
-                  className="absolute -inset-4 rounded-3xl animate-pulse-glow"
+                  className="absolute -inset-2 rounded-3xl animate-pulse-glow"
                   style={{
                     background:
                       "radial-gradient(ellipse 70% 60% at 50% 40%, oklch(0.74 0.17 152 / 8%) 0%, transparent 70%)",
                   }}
                 />
-                <div className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-7 w-[280px] noise-overlay">
+                <div className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 w-full max-w-[280px] noise-overlay">
                   <div className="relative z-10">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/40 mb-4">
                       Portfolio Score
