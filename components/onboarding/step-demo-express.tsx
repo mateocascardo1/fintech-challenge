@@ -80,7 +80,7 @@ export function StepDemoExpress({
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
               Perfil de inversor
             </p>
-            <p className="text-sm font-medium mt-0.5">8 preguntas auto-completadas</p>
+            <p className="text-sm font-medium mt-0.5">5 preguntas auto-completadas</p>
           </motion.div>
           {profileOpen ? (
             <ChevronUp className="h-4 w-4 text-muted-foreground" />

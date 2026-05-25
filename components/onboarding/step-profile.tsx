@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   type LucideIcon,
   ArrowLeft,
+  ArrowRight,
   Clock,
   Calendar,
   CalendarDays,
@@ -16,12 +17,6 @@ import {
   Banknote,
   TrendingUp,
   Rocket,
-  LogOut,
-  ArrowDownRight,
-  Pause,
-  ShoppingCart,
-  PieChart,
-  Zap,
   Flag,
   Globe,
   Globe2,
@@ -30,9 +25,10 @@ import {
   Equal,
   ArrowUp,
   Sparkles,
-  X,
+  Check,
 } from "lucide-react";
 import type { InvestorProfile } from "@/lib/portfolio/types";
+import { deriveFullProfile, type CoreProfile } from "@/lib/portfolio/profile-defaults";
 import { ONBOARDING_EXPLANATIONS } from "@/lib/financial-explanations";
 
 type OptionConfig = {
@@ -79,35 +75,6 @@ const QUESTIONS: QuestionConfig[] = [
     ],
   },
   {
-    key: "drawdown_reaction",
-    question: "Si tu portfolio cae un 20%, ¿qué hacés?",
-    options: [
-      { value: "sell_all", label: "Vendo todo", desc: "No tolero pérdidas significativas", icon: LogOut },
-      { value: "sell_partial", label: "Vendo parcial", desc: "Reduzco exposición parcialmente", icon: ArrowDownRight },
-      { value: "hold", label: "Espero", desc: "Mantengo posiciones y espero recuperación", icon: Pause },
-      { value: "buy_more", label: "Compro más", desc: "Aprovecho precios bajos para comprar", icon: ShoppingCart },
-    ],
-  },
-  {
-    key: "patrimony_percentage",
-    question: "¿Qué % de tu patrimonio total representa este portfolio?",
-    options: [
-      { value: "under_25", label: "Menos del 25%", desc: "Una porción menor de mis ahorros", icon: PieChart },
-      { value: "25_50", label: "25% – 50%", desc: "Una parte considerable", icon: PieChart },
-      { value: "50_75", label: "50% – 75%", desc: "La mayor parte de mis ahorros", icon: PieChart },
-      { value: "over_75", label: "Más del 75%", desc: "Casi todo mi patrimonio", icon: PieChart },
-    ],
-  },
-  {
-    key: "liquidity_need",
-    question: "¿Necesitás acceso rápido a parte de este dinero?",
-    options: [
-      { value: "frequent", label: "Sí, frecuentemente", desc: "Necesito retiros regulares", icon: Zap },
-      { value: "sometimes", label: "A veces", desc: "Eventualmente podría necesitarlo", icon: Clock },
-      { value: "none", label: "No, es dinero que no necesito", desc: "Puedo dejarlo invertido tranquilo", icon: Lock },
-    ],
-  },
-  {
     key: "geo_preference",
     question: "¿En qué mercados te gustaría invertir?",
     options: [
@@ -139,13 +106,11 @@ export function StepProfile({
   onBack: () => void;
   isBuilderFlow?: boolean;
 }) {
-  const [answers, setAnswers] = useState<Record<string, string | number>>({
-    income_vs_growth: 50,
-  });
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQ, setCurrentQ] = useState(0);
-  const [showSlider, setShowSlider] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
   const [bannerVisible, setBannerVisible] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
 
   useEffect(() => {
     const fadeIn = setTimeout(() => setBannerVisible(true), 100);
@@ -157,27 +122,39 @@ export function StepProfile({
     setTimeout(() => setShowBanner(false), 400);
   }
 
+  function goToQuestion(next: number) {
+    setTransitioning(true);
+    setTimeout(() => {
+      setCurrentQ(next);
+      setTransitioning(false);
+    }, 150);
+  }
+
   function selectAnswer(key: string, value: string) {
     setAnswers((prev) => ({ ...prev, [key]: value }));
     if (currentQ < QUESTIONS.length - 1) {
-      setTimeout(() => setCurrentQ(currentQ + 1), 250);
-    } else {
-      setTimeout(() => setShowSlider(true), 250);
+      setTimeout(() => goToQuestion(currentQ + 1), 200);
     }
   }
 
   function handleFinish() {
-    onComplete(answers as Partial<InvestorProfile>);
+    const core: CoreProfile = {
+      investment_horizon: (answers.investment_horizon as CoreProfile["investment_horizon"]) ?? null,
+      risk_tolerance: (answers.risk_tolerance as CoreProfile["risk_tolerance"]) ?? null,
+      objective: (answers.objective as CoreProfile["objective"]) ?? null,
+      geo_preference: (answers.geo_preference as CoreProfile["geo_preference"]) ?? null,
+      bond_preference: (answers.bond_preference as CoreProfile["bond_preference"]) ?? null,
+    };
+    onComplete(deriveFullProfile(core));
   }
 
   const allAnswered = QUESTIONS.every((q) => answers[q.key] !== undefined);
   const q = QUESTIONS[currentQ];
   const isLastQuestion = currentQ === QUESTIONS.length - 1;
-  const sliderValue = answers.income_vs_growth as number;
   const explanation = ONBOARDING_EXPLANATIONS[q.key];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 relative">
       {/* Welcome overlay */}
       {showBanner && (
         <div
@@ -186,181 +163,149 @@ export function StepProfile({
           }`}
         >
           <div className="absolute inset-0 bg-background" />
-          <div className="relative w-full max-w-sm surface-elevated rounded-2xl p-8 border border-primary/20 shadow-2xl text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-5">
-              <Sparkles className="h-7 w-7 text-primary" />
+          <div className="relative w-full max-w-sm noise-overlay rounded-2xl p-8 border border-primary/20 shadow-2xl text-center"
+               style={{ background: "linear-gradient(145deg, oklch(0.14 0.02 152 / 40%) 0%, oklch(0.12 0.005 260) 60%, oklch(0.10 0.005 260) 100%)" }}>
+            <div className="relative z-10">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mb-6 shadow-[0_0_30px_-5px_oklch(0.74_0.17_152_/_25%)]">
+                <Sparkles className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground tracking-tight">
+                Primero queremos conocerte
+              </h2>
+              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+                5 preguntas rápidas para armar el portfolio ideal
+                para tu situación y tolerancia al riesgo.
+              </p>
+              <Button
+                onClick={dismissBanner}
+                className="mt-7 w-full h-11 font-semibold"
+                size="sm"
+              >
+                Empezar
+                <ArrowRight className="h-4 w-4 ml-1.5" />
+              </Button>
             </div>
-            <h2 className="text-xl font-bold text-foreground">
-              Primero queremos conocerte
-            </h2>
-            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-              Con estas preguntas armamos el portfolio ideal para tu situación, objetivos y tolerancia al riesgo.
-            </p>
-            <Button
-              onClick={dismissBanner}
-              className="mt-6 w-full"
-              size="sm"
-            >
-              Empezar
-            </Button>
           </div>
         </div>
       )}
 
-      {/* Circular progress */}
-      <div className={`flex items-center justify-center py-1 ${showBanner ? "invisible" : ""}`}>
-        <div className="relative h-20 w-20">
-          <svg className="h-20 w-20 -rotate-90" viewBox="0 0 80 80">
-            <circle
-              cx="40" cy="40" r="34"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="4"
-              className="text-muted/30"
-            />
-            <circle
-              cx="40" cy="40" r="34"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="4"
-              className="text-primary transition-all duration-500 ease-out"
-              strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 34}`}
-              strokeDashoffset={`${2 * Math.PI * 34 * (1 - (currentQ + 1) / TOTAL_QUESTIONS)}`}
-            />
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums text-foreground">
-            {currentQ + 1}/{TOTAL_QUESTIONS}
-          </span>
+      {/* Segmented progress */}
+      <div className={`${showBanner ? "invisible" : ""}`}>
+        <div className="flex items-center gap-2 mb-1.5">
+          {QUESTIONS.map((_, i) => {
+            const isCompleted = answers[QUESTIONS[i].key] !== undefined;
+            const isCurrent = i === currentQ;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  if (isCompleted || i <= currentQ) goToQuestion(i);
+                }}
+                className={`
+                  relative h-1.5 flex-1 rounded-full transition-all duration-500 ease-out
+                  ${isCurrent ? "bg-primary shadow-[0_0_8px_oklch(0.74_0.17_152_/_40%)]" : ""}
+                  ${isCompleted && !isCurrent ? "bg-primary/50" : ""}
+                  ${!isCompleted && !isCurrent ? "bg-muted/40" : ""}
+                  ${isCompleted || i <= currentQ ? "cursor-pointer hover:opacity-80" : "cursor-default"}
+                `}
+              />
+            );
+          })}
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-medium text-muted-foreground/60 tabular-nums">
+            {currentQ + 1} de {TOTAL_QUESTIONS}
+          </p>
+          {allAnswered && (
+            <p className="text-[11px] font-medium text-primary/70 flex items-center gap-1">
+              <Check className="h-3 w-3" /> Completo
+            </p>
+          )}
         </div>
       </div>
 
       {/* Question area */}
       <div className={`min-h-[380px] ${showBanner ? "invisible" : ""}`}>
-        {!showSlider ? (
-          <div key={currentQ} className="animate-in fade-in duration-300">
-            {/* Question title + explanation subtitle */}
-            <div className="text-center mb-7">
-              <p className="text-xl font-bold leading-snug">
-                {q.question}
+        <div
+          key={currentQ}
+          className={`transition-all duration-200 ${transitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}
+        >
+          <div className="text-center mb-8">
+            <p className="text-[22px] font-bold leading-snug tracking-tight">
+              {q.question}
+            </p>
+            {explanation && (
+              <p className="mt-3 text-[13px] text-muted-foreground/60 leading-relaxed max-w-md mx-auto">
+                {explanation.content}
               </p>
-              {explanation && (
-                <p className="mt-3 text-sm text-muted-foreground/70 leading-relaxed max-w-md mx-auto italic">
-                  {explanation.content}
-                </p>
-              )}
-            </div>
+            )}
+          </div>
 
-            {/* Option cards */}
-            <div className={`${
-              q.options.length <= 4 ? "space-y-3" : "space-y-2.5"
-            }`}>
-              {q.options.map((opt) => {
-                const Icon = opt.icon;
-                const isSelected = answers[q.key] === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => selectAnswer(q.key as string, opt.value)}
+          <div className="space-y-2.5">
+            {q.options.map((opt, i) => {
+              const Icon = opt.icon;
+              const isSelected = answers[q.key] === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => selectAnswer(q.key as string, opt.value)}
+                  style={{
+                    animationDelay: `${i * 50}ms`,
+                    animationFillMode: "both",
+                  }}
+                  className={`
+                    group w-full flex items-center gap-4 rounded-xl px-5 py-4
+                    transition-all duration-200 text-left cursor-pointer
+                    hover:scale-[1.008] active:scale-[0.995]
+                    animate-in fade-in slide-in-from-bottom-1 duration-300
+                    ${
+                      isSelected
+                        ? "border border-primary/60 bg-primary/[0.06] shadow-[0_0_24px_-6px_oklch(0.74_0.17_152_/_20%),inset_0_1px_0_oklch(0.74_0.17_152_/_10%)]"
+                        : "border border-transparent surface-elevated hover:border-primary/20 hover:shadow-[0_0_20px_-8px_oklch(0.74_0.17_152_/_12%)]"
+                    }
+                  `}
+                >
+                  <div
                     className={`
-                      group w-full flex items-center gap-4 rounded-xl px-6 py-5
-                      transition-all duration-200 text-left cursor-pointer
-                      hover:scale-[1.01] active:scale-[0.99]
-                      ${
-                        isSelected
-                          ? "border border-primary bg-primary/5 surface-glow-positive shadow-[0_0_20px_-6px_rgba(34,197,94,0.15)]"
-                          : "surface-elevated hover:border-primary/30 hover:shadow-[0_0_15px_-6px_rgba(34,197,94,0.1)]"
-                      }
+                      flex-shrink-0 flex items-center justify-center
+                      h-11 w-11 rounded-lg transition-all duration-200
+                      ${isSelected
+                        ? "bg-primary/20 text-primary scale-105"
+                        : "bg-muted/40 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary/80"}
                     `}
                   >
-                    <div
-                      className={`
-                        flex-shrink-0 flex items-center justify-center
-                        h-12 w-12 rounded-xl transition-all duration-200
-                        ${isSelected
-                          ? "bg-primary/15 text-primary scale-110"
-                          : "bg-muted/50 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary/70"}
-                      `}
-                    >
-                      <Icon className="h-6 w-6" />
+                    <Icon className={`h-5 w-5 transition-transform duration-200 ${isSelected ? "scale-110" : "group-hover:scale-105"}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={`font-semibold text-[15px] leading-tight ${isSelected ? "text-foreground" : "text-foreground/90"}`}>
+                      {opt.label}
+                    </p>
+                    <p className="text-[13px] text-muted-foreground/70 mt-0.5 leading-relaxed">
+                      {opt.desc}
+                    </p>
+                  </div>
+                  {isSelected && (
+                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Check className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className={`font-semibold text-[15px] ${isSelected ? "text-foreground" : "text-foreground/90"}`}>
-                        {opt.label}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
-                        {opt.desc}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          <div key="slider" className="animate-in fade-in duration-300">
-            <div className="text-center mb-7">
-              <p className="text-xl font-bold leading-snug">
-                ¿Preferís recibir plata periódicamente o que tu inversión crezca?
-              </p>
-              <p className="mt-3 text-sm text-muted-foreground/70 leading-relaxed max-w-md mx-auto italic">
-                Algunas inversiones te pagan regularmente (como un alquiler). Otras crecen en valor con el tiempo pero no te dan plata hasta que vendas.
-              </p>
-            </div>
-
-            <div className="surface-elevated rounded-2xl p-8 space-y-7">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Banknote className="h-5 w-5 text-primary" />
-                  <span className="text-[15px] font-medium">Cobrar regularmente</span>
-                </div>
-                <span className="tabular-nums text-[15px] font-bold text-primary">
-                  {100 - sliderValue}% / {sliderValue}%
-                </span>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[15px] font-medium">Que crezca el valor</span>
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-
-              <div className="relative py-3">
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={5}
-                  value={sliderValue}
-                  onChange={(e) =>
-                    setAnswers((prev) => ({
-                      ...prev,
-                      income_vs_growth: Number(e.target.value),
-                    }))
-                  }
-                  className="profile-slider w-full"
-                />
-              </div>
-
-              <div className="flex justify-between text-xs text-muted-foreground/60 px-0.5">
-                <span>100% cobrar</span>
-                <span>Balanceado</span>
-                <span>100% crecimiento</span>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Navigation */}
-      <div className={`flex items-center justify-between ${showBanner ? "invisible" : ""}`}>
+      <div className={`flex items-center justify-between pt-1 ${showBanner ? "invisible" : ""}`}>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => {
-            if (showSlider) {
-              setShowSlider(false);
-            } else if (currentQ > 0) {
-              setCurrentQ(currentQ - 1);
+            if (currentQ > 0) {
+              goToQuestion(currentQ - 1);
             } else {
               onBack();
             }
@@ -370,20 +315,10 @@ export function StepProfile({
           <ArrowLeft className="h-4 w-4 mr-1" /> Volver
         </Button>
 
-        {isLastQuestion && answers[q.key] && !showSlider && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowSlider(true)}
-            className="text-primary"
-          >
-            Siguiente
-          </Button>
-        )}
-
-        {showSlider && allAnswered && (
-          <Button onClick={handleFinish} size="sm">
+        {isLastQuestion && allAnswered && (
+          <Button onClick={handleFinish} size="sm" className="px-5">
             {isBuilderFlow ? "Continuar" : "Finalizar"}
+            <ArrowRight className="h-4 w-4 ml-1.5" />
           </Button>
         )}
       </div>
