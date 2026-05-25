@@ -239,7 +239,7 @@ describe("recommendation-engine", () => {
       moves,
       picks,
     );
-    expect(combined).toBeLessThanOrEqual(Math.max(naiveSum, 60));
+    expect(combined).toBeLessThanOrEqual(Math.max(naiveSum, 80));
     expect(combined).toBeGreaterThan(0);
   });
 

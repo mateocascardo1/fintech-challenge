@@ -8,11 +8,8 @@ import {
 } from "./scoring";
 import {
   type PortfolioAnalysis,
-  type AssetClassKey,
-  classifySymbol,
   computeSubScoresFromPositions,
   rebalanceWeights,
-  simulateScoreDelta,
 } from "./portfolio-analysis";
 export type PillarKey =
   | "diversification"
@@ -26,7 +23,9 @@ export type AllocationMoveInput = {
 };
 import { SECTOR_MAP, EQUITY_DISPLAY_INFO } from "./constants";
 
-const SIMULATION_USD = 5000;
+const SIMULATION_PCT = 0.05;
+const MIN_IMPACT_PTS = 3;
+const MAX_ALLOC_BOND_ADDITIONS = 3;
 
 export type InstrumentCandidate = {
   action: "buy" | "sell";
@@ -74,10 +73,6 @@ export function classifyCandidateAssetType(
   return "equity";
 }
 
-function clampImpact(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, Math.round(value)));
-}
-
 function defaultReason(
   action: "buy" | "sell",
   name: string,
@@ -97,23 +92,27 @@ function defaultReason(
   return `Incorporar ${name} refuerza ${pillarNames[pillar]} con un impacto estimado de +${impact} pts.`;
 }
 
-function simulateBuy(
+type SimResult = {
+  total: number;
+  byPillar: Record<PillarKey, number>;
+};
+
+function simulateBuyDetailed(
   enriched: PositionWithMarket[],
   investorProfile: InvestorProfile,
   info: CandidateInfo,
-): number {
+  cachedBeforeSub?: SubScores,
+): SimResult {
+  const zeroResult: SimResult = { total: 0, byPillar: { diversification: 0, risk_match: 0, risk_adjusted_return: 0, downside_protection: 0 } };
   const totalPortfolioValue = enriched.reduce((s, p) => s + p.value, 0);
-  const simulatedQuantity = Math.floor(SIMULATION_USD / info.price);
-  if (simulatedQuantity < 1) return 0;
+  const simBudget = totalPortfolioValue * SIMULATION_PCT;
+  const simulatedQuantity = Math.floor(simBudget / info.price);
+  if (simulatedQuantity < 1) return zeroResult;
 
   const simulatedValue = simulatedQuantity * info.price;
-  const newTotal = totalPortfolioValue + simulatedValue;
 
-  const simulatedPositions: PositionWithMarket[] = [
-    ...enriched.map((p) => ({
-      ...p,
-      weight: p.value / newTotal,
-    })),
+  const simulatedPositions = rebalanceWeights([
+    ...enriched,
     {
       id: "sim",
       symbol: info.symbol,
@@ -124,40 +123,69 @@ function simulateBuy(
       change: 0,
       changePercent: 0,
       value: simulatedValue,
-      weight: simulatedValue / newTotal,
+      weight: 0,
       sector:
         info.sector ??
         SECTOR_MAP[info.symbol] ??
         EQUITY_DISPLAY_INFO[info.symbol]?.sector,
     },
-  ];
+  ]);
 
-  const before = computePortfolioScore(
-    computeSubScoresFromPositions(enriched, investorProfile).sub_scores,
-  ).total;
-  const after = computePortfolioScore(
-    computeSubScoresFromPositions(simulatedPositions, investorProfile).sub_scores,
-  ).total;
+  const beforeSub = cachedBeforeSub ?? computeSubScoresFromPositions(enriched, investorProfile).sub_scores;
+  const afterSub = computeSubScoresFromPositions(simulatedPositions, investorProfile).sub_scores;
 
-  return after - before;
+  const byPillar: Record<PillarKey, number> = {
+    diversification: afterSub.diversification - beforeSub.diversification,
+    risk_match: afterSub.risk_match - beforeSub.risk_match,
+    risk_adjusted_return: afterSub.risk_adjusted_return - beforeSub.risk_adjusted_return,
+    downside_protection: afterSub.downside_protection - beforeSub.downside_protection,
+  };
+
+  const beforeTotal = computePortfolioScore(beforeSub).total;
+  const afterTotal = computePortfolioScore(afterSub).total;
+
+  return { total: afterTotal - beforeTotal, byPillar };
 }
 
-function simulateSell(
+function bestPillarFor(byPillar: Record<PillarKey, number>, fallback: PillarKey = "diversification"): PillarKey {
+  const entries = Object.entries(byPillar) as [PillarKey, number][];
+  entries.sort(([, a], [, b]) => b - a);
+  return entries[0][1] > 0 ? entries[0][0] : fallback;
+}
+
+function simulateSellDetailed(
   enriched: PositionWithMarket[],
   investorProfile: InvestorProfile,
   symbol: string,
   sellFraction = 0.25,
-): number {
+  cachedBeforeSub?: SubScores,
+): SimResult {
+  const zeroResult: SimResult = { total: 0, byPillar: { diversification: 0, risk_match: 0, risk_adjusted_return: 0, downside_protection: 0 } };
   const position = enriched.find((p) => p.symbol === symbol);
-  if (!position || position.value <= 0) return 0;
+  if (!position || position.value <= 0) return zeroResult;
 
-  return simulateScoreDelta(enriched, investorProfile, (positions) =>
-    positions.map((p) =>
+  const modified = rebalanceWeights(
+    enriched.map((p) =>
       p.symbol === symbol
         ? { ...p, value: p.value * (1 - sellFraction) }
         : p,
     ),
   );
+
+  const beforeSub = cachedBeforeSub ?? computeSubScoresFromPositions(enriched, investorProfile).sub_scores;
+  const afterSub = computeSubScoresFromPositions(modified, investorProfile).sub_scores;
+
+  const byPillar: Record<PillarKey, number> = {
+    diversification: afterSub.diversification - beforeSub.diversification,
+    risk_match: afterSub.risk_match - beforeSub.risk_match,
+    risk_adjusted_return: afterSub.risk_adjusted_return - beforeSub.risk_adjusted_return,
+    downside_protection: afterSub.downside_protection - beforeSub.downside_protection,
+  };
+
+  const beforeTotal = computePortfolioScore(beforeSub).total;
+  const afterTotal = computePortfolioScore(afterSub).total;
+
+  return { total: afterTotal - beforeTotal, byPillar };
 }
 
 function getBuyPool(
@@ -169,7 +197,8 @@ function getBuyPool(
 
   for (const m of moves) {
     if (m.asset_class === "bonds" && m.direction === "increase") {
-      BOND_ETFS.forEach((s) => pool.add(s));
+      const available = BOND_ETFS.filter((s) => !pool.has(s) && !heldSymbols.has(s));
+      available.slice(0, MAX_ALLOC_BOND_ADDITIONS).forEach((s) => pool.add(s));
     }
     if (
       (m.asset_class === "us_equities" || m.asset_class === "intl_equities") &&
@@ -217,23 +246,26 @@ export async function rankInstrumentCandidates(
   const heldSymbols = new Set(enriched.map((p) => p.symbol.toUpperCase()));
   const results: InstrumentCandidate[] = [];
 
+  const beforeSub = computeSubScoresFromPositions(enriched, investorProfile).sub_scores;
+
   const buyPool = getBuyPool(weakestPillar, allocationMoves, heldSymbols);
   for (const symbol of buyPool) {
     try {
       const info = await fetchQuote(symbol);
-      const impact = simulateBuy(enriched, investorProfile, info);
-      if (impact > 0) {
-        const clamped = clampImpact(impact, 5, 25);
+      const sim = simulateBuyDetailed(enriched, investorProfile, info, beforeSub);
+      if (sim.total >= MIN_IMPACT_PTS) {
+        const improves = bestPillarFor(sim.byPillar, weakestPillar);
+        const impact = Math.round(sim.total);
         results.push({
           action: "buy",
           symbol: info.symbol,
           asset_type: classifyCandidateAssetType(info.symbol),
           name: info.name,
-          score_impact: clamped,
-          improves: weakestPillar,
+          score_impact: impact,
+          improves,
           priority: "medium",
           sim_price: info.price,
-          reason: defaultReason("buy", info.name, info.symbol, clamped, weakestPillar),
+          reason: defaultReason("buy", info.name, info.symbol, impact, improves),
         });
       }
     } catch {
@@ -245,9 +277,10 @@ export async function rankInstrumentCandidates(
   for (const symbol of sellCandidates) {
     const pos = enriched.find((p) => p.symbol === symbol);
     if (!pos) continue;
-    const impact = simulateSell(enriched, investorProfile, symbol);
-    if (impact > 0) {
-      const clamped = clampImpact(impact, 5, 25);
+    const sim = simulateSellDetailed(enriched, investorProfile, symbol, 0.25, beforeSub);
+    if (sim.total >= MIN_IMPACT_PTS) {
+      const improves = bestPillarFor(sim.byPillar, weakestPillar);
+      const impact = Math.round(sim.total);
       results.push({
         action: "sell",
         symbol,
@@ -258,11 +291,11 @@ export async function rankInstrumentCandidates(
               ? "etf"
               : "equity",
         name: pos.name,
-        score_impact: clamped,
-        improves: weakestPillar,
+        score_impact: impact,
+        improves,
         priority: "medium",
         sim_price: pos.price,
-        reason: defaultReason("sell", pos.name, symbol, clamped, weakestPillar),
+        reason: defaultReason("sell", pos.name, symbol, impact, improves),
       });
     }
   }
@@ -271,12 +304,29 @@ export async function rankInstrumentCandidates(
 
   const seen = new Set<string>();
   const deduped: InstrumentCandidate[] = [];
+  const weakestPillarPicks: InstrumentCandidate[] = [];
+  const otherPicks: InstrumentCandidate[] = [];
+
   for (const r of results) {
     const key = r.symbol.toUpperCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    deduped.push(r);
+    if (r.improves === weakestPillar) {
+      weakestPillarPicks.push(r);
+    } else {
+      otherPicks.push(r);
+    }
+  }
+
+  const minWeakestSlots = Math.min(2, weakestPillarPicks.length);
+  for (let i = 0; i < minWeakestSlots; i++) {
+    deduped.push(weakestPillarPicks[i]);
+  }
+  const remaining = [...weakestPillarPicks.slice(minWeakestSlots), ...otherPicks];
+  remaining.sort((a, b) => b.score_impact - a.score_impact);
+  for (const r of remaining) {
     if (deduped.length >= topN) break;
+    deduped.push(r);
   }
 
   return deduped;
@@ -331,20 +381,25 @@ export async function rankCandidatesByScoreImpact(
     },
   };
 
+  const candidateSet = new Set(candidates.map((s) => s.toUpperCase()));
+
   const ranked = await rankInstrumentCandidates(
     analysis,
     _profile,
     "diversification",
     [],
     fetchQuote,
-    topN,
+    topN + candidateSet.size,
   );
 
-  return ranked.map((r) => ({
-    symbol: r.symbol,
-    name: r.name,
-    action: "add" as const,
-    score_impact: r.score_impact,
-    reason: r.reason,
-  }));
+  return ranked
+    .filter((r) => candidateSet.has(r.symbol.toUpperCase()))
+    .slice(0, topN)
+    .map((r) => ({
+      symbol: r.symbol,
+      name: r.name,
+      action: "add" as const,
+      score_impact: r.score_impact,
+      reason: r.reason,
+    }));
 }

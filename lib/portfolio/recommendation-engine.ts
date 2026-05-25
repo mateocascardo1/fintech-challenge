@@ -66,7 +66,7 @@ const PILLAR_LABELS: Record<PillarKey, string> = {
 
 const MIN_GAP_PCT = 5;
 const REALLOC_STEP = 0.08;
-const SIMULATION_USD = 5000;
+const SIMULATION_PCT = 0.05;
 const SELL_FRACTION = 0.25;
 
 export function hashPortfolioSnapshot(
@@ -186,10 +186,10 @@ export function computeCombinedPotentialImpact(
 
     if (topBuy && topBuy.sim_price > 0) {
       const totalValue = pos.reduce((s, p) => s + p.value, 0);
-      const qty = Math.floor(SIMULATION_USD / topBuy.sim_price);
+      const simBudget = totalValue * SIMULATION_PCT;
+      const qty = Math.floor(simBudget / topBuy.sim_price);
       if (qty >= 1) {
         const simValue = qty * topBuy.sim_price;
-        const newTotal = totalValue + simValue;
         pos = [
           ...pos.map((p) => ({ ...p, value: p.value })),
           {
@@ -213,7 +213,7 @@ export function computeCombinedPotentialImpact(
   });
 
   if (combinedDelta > 0) {
-    return clampImpact(combinedDelta, 5, 60);
+    return clampImpact(combinedDelta, 5, 80);
   }
 
   const singleBest = Math.max(
@@ -221,7 +221,7 @@ export function computeCombinedPotentialImpact(
     ...allocation_moves.map((m) => m.score_impact),
     ...instrument_picks.map((p) => p.score_impact),
   );
-  return singleBest > 0 ? clampImpact(singleBest, 5, 60) : 0;
+  return singleBest > 0 ? clampImpact(singleBest, 5, 80) : 0;
 }
 
 export function buildAllocationMoves(
