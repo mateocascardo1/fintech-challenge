@@ -5,6 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Send, Loader2, Bot, User, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 function extractTextContent(parts: Array<{ type: string; text?: string }>): string {
   return parts
@@ -166,6 +167,7 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
                   ) : (
                     <div className="chat-markdown text-[13px] leading-relaxed text-foreground/90">
                       <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                           strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
@@ -191,6 +193,16 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
                               {children}
                             </blockquote>
                           ),
+                          table: ({ children }) => (
+                            <div className="my-2 overflow-x-auto rounded-xl border border-white/[0.08]">
+                              <table className="w-full text-[11px]">{children}</table>
+                            </div>
+                          ),
+                          thead: ({ children }) => <thead className="border-b border-white/[0.06] bg-white/[0.02]">{children}</thead>,
+                          tbody: ({ children }) => <tbody>{children}</tbody>,
+                          tr: ({ children }) => <tr className="border-b border-white/[0.04] last:border-0">{children}</tr>,
+                          th: ({ children }) => <th className="text-left px-3 py-2 font-semibold text-muted-foreground">{children}</th>,
+                          td: ({ children }) => <td className="px-3 py-2 tabular-nums">{children}</td>,
                         }}
                       >
                         {text}

@@ -1,5 +1,7 @@
 "use client";
 
+import { TrendingUp, BarChart3, Newspaper } from "lucide-react";
+import type { ReactNode } from "react";
 import { ChatPriceChart } from "./chat-price-chart";
 import { ChatNewsCard } from "./chat-news-card";
 import { ChatTickerCard, ChatTickerGrid } from "./chat-ticker-card";
@@ -14,6 +16,17 @@ type Props = {
   agentTickers?: string[];
 };
 
+function WidgetLabel({ icon, label }: { icon: ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-1.5">
+      <span className="text-muted-foreground/50">{icon}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export function ToolResultRenderer({ toolName, state, output, agentTickers }: Props) {
   if (state !== "output-available" || !output) return null;
 
@@ -23,12 +36,22 @@ export function ToolResultRenderer({ toolName, state, output, agentTickers }: Pr
 
   switch (toolName) {
     case "getStockQuote": {
-      return <ChatTickerCard data={result as Parameters<typeof ChatTickerCard>[0]["data"]} />;
+      return (
+        <div>
+          <WidgetLabel icon={<TrendingUp className="h-3 w-3" />} label="Cotización" />
+          <ChatTickerCard data={result as Parameters<typeof ChatTickerCard>[0]["data"]} />
+        </div>
+      );
     }
 
     case "compareStocks": {
       const quotes = result.quotes as Parameters<typeof ChatTickerGrid>[0]["quotes"];
-      return <ChatTickerGrid quotes={quotes} />;
+      return (
+        <div>
+          <WidgetLabel icon={<TrendingUp className="h-3 w-3" />} label="Comparación de cotizaciones" />
+          <ChatTickerGrid quotes={quotes} />
+        </div>
+      );
     }
 
     case "getHistoricalPrices": {
@@ -38,11 +61,21 @@ export function ToolResultRenderer({ toolName, state, output, agentTickers }: Pr
     case "getStockNews":
     case "getSectorNews": {
       const articles = result.articles as Parameters<typeof ChatNewsCard>[0]["articles"];
-      return <ChatNewsCard articles={articles} />;
+      return (
+        <div>
+          <WidgetLabel icon={<Newspaper className="h-3 w-3" />} label="Noticias" />
+          <ChatNewsCard articles={articles} />
+        </div>
+      );
     }
 
     case "getStockFundamentals": {
-      return <ChatComparisonTable rows={[result as Parameters<typeof ChatComparisonTable>[0]["rows"][0]]} />;
+      return (
+        <div>
+          <WidgetLabel icon={<BarChart3 className="h-3 w-3" />} label="Datos Fundamentales" />
+          <ChatComparisonTable rows={[result as Parameters<typeof ChatComparisonTable>[0]["rows"][0]]} />
+        </div>
+      );
     }
 
     case "getFinancialData": {

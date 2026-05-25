@@ -5,6 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Send, Loader2, Bot, Sparkles, ArrowLeft, RotateCcw, TrendingUp, Newspaper, BarChart3 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { AgentSidebar } from "./agent-sidebar";
 import { ToolResultRenderer } from "./rich/tool-result-renderer";
 import type { UserAgent, AgentSession } from "@/lib/types";
@@ -171,6 +172,7 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
                       <div className="max-w-[min(900px,90%)] rounded-2xl rounded-bl-sm bg-white/[0.03] border border-white/[0.08] px-5 py-4">
                         <div className="chat-markdown text-sm leading-relaxed text-foreground/90">
                           <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
                             components={{
                               p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
                               strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
@@ -188,6 +190,16 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
                                   {children}
                                 </code>
                               ),
+                              table: ({ children }) => (
+                                <div className="my-3 overflow-x-auto rounded-xl border border-white/[0.08]">
+                                  <table className="w-full text-[12px]">{children}</table>
+                                </div>
+                              ),
+                              thead: ({ children }) => <thead className="border-b border-white/[0.06] bg-white/[0.02]">{children}</thead>,
+                              tbody: ({ children }) => <tbody>{children}</tbody>,
+                              tr: ({ children }) => <tr className="border-b border-white/[0.04] last:border-0">{children}</tr>,
+                              th: ({ children }) => <th className="text-left px-3 py-2 font-semibold text-muted-foreground">{children}</th>,
+                              td: ({ children }) => <td className="px-3 py-2 tabular-nums">{children}</td>,
                             }}
                           >
                             {text}
