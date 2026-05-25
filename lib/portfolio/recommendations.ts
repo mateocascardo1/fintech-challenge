@@ -24,6 +24,7 @@ export type AllocationMoveInput = {
 import { SECTOR_MAP, EQUITY_DISPLAY_INFO } from "./constants";
 
 const SIMULATION_PCT = 0.05;
+const SIMULATION_MIN_USD = 3000;
 const MIN_IMPACT_PTS = 3;
 const MAX_ALLOC_BOND_ADDITIONS = 3;
 
@@ -105,7 +106,7 @@ function simulateBuyDetailed(
 ): SimResult {
   const zeroResult: SimResult = { total: 0, byPillar: { diversification: 0, risk_match: 0, risk_adjusted_return: 0, downside_protection: 0 } };
   const totalPortfolioValue = enriched.reduce((s, p) => s + p.value, 0);
-  const simBudget = totalPortfolioValue * SIMULATION_PCT;
+  const simBudget = Math.max(totalPortfolioValue * SIMULATION_PCT, SIMULATION_MIN_USD);
   const simulatedQuantity = Math.floor(simBudget / info.price);
   if (simulatedQuantity < 1) return zeroResult;
 

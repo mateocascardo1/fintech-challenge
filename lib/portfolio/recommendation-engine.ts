@@ -67,6 +67,7 @@ const PILLAR_LABELS: Record<PillarKey, string> = {
 const MIN_GAP_PCT = 5;
 const REALLOC_STEP = 0.08;
 const SIMULATION_PCT = 0.05;
+const SIMULATION_MIN_USD = 3000;
 const SELL_FRACTION = 0.25;
 
 export function hashPortfolioSnapshot(
@@ -186,7 +187,7 @@ export function computeCombinedPotentialImpact(
 
     if (topBuy && topBuy.sim_price > 0) {
       const totalValue = pos.reduce((s, p) => s + p.value, 0);
-      const simBudget = totalValue * SIMULATION_PCT;
+      const simBudget = Math.max(totalValue * SIMULATION_PCT, SIMULATION_MIN_USD);
       const qty = Math.floor(simBudget / topBuy.sim_price);
       if (qty >= 1) {
         const simValue = qty * topBuy.sim_price;
