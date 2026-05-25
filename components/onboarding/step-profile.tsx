@@ -189,39 +189,31 @@ export function StepProfile({
         </div>
       )}
 
-      {/* Segmented progress */}
-      <div className={`${showBanner ? "invisible" : ""}`}>
-        <div className="flex items-center gap-2 mb-1.5">
-          {QUESTIONS.map((_, i) => {
-            const isCompleted = answers[QUESTIONS[i].key] !== undefined;
-            const isCurrent = i === currentQ;
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => {
-                  if (isCompleted || i <= currentQ) goToQuestion(i);
-                }}
-                className={`
-                  relative h-1.5 flex-1 rounded-full transition-all duration-500 ease-out
-                  ${isCurrent ? "bg-primary shadow-[0_0_8px_oklch(0.74_0.17_152_/_40%)]" : ""}
-                  ${isCompleted && !isCurrent ? "bg-primary/50" : ""}
-                  ${!isCompleted && !isCurrent ? "bg-muted/40" : ""}
-                  ${isCompleted || i <= currentQ ? "cursor-pointer hover:opacity-80" : "cursor-default"}
-                `}
-              />
-            );
-          })}
-        </div>
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-medium text-muted-foreground/60 tabular-nums">
-            {currentQ + 1} de {TOTAL_QUESTIONS}
-          </p>
-          {allAnswered && (
-            <p className="text-[11px] font-medium text-primary/70 flex items-center gap-1">
-              <Check className="h-3 w-3" /> Completo
-            </p>
-          )}
+      {/* Circular progress */}
+      <div className={`flex items-center justify-center py-1 ${showBanner ? "invisible" : ""}`}>
+        <div className="relative h-20 w-20">
+          <svg className="h-20 w-20 -rotate-90" viewBox="0 0 80 80">
+            <circle
+              cx="40" cy="40" r="34"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="4"
+              className="text-muted/30"
+            />
+            <circle
+              cx="40" cy="40" r="34"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="4"
+              className="text-primary transition-all duration-500 ease-out"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 34}`}
+              strokeDashoffset={`${2 * Math.PI * 34 * (1 - (currentQ + 1) / TOTAL_QUESTIONS)}`}
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums text-foreground">
+            {currentQ + 1}/{TOTAL_QUESTIONS}
+          </span>
         </div>
       </div>
 
