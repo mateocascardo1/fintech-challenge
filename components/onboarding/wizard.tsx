@@ -147,8 +147,8 @@ export function OnboardingWizard() {
 
   async function handleProfileComplete(prof: Partial<InvestorProfile>) {
     setProfile(prof);
-    setProfileMethod(null);
     if (isBuilderFlow) {
+      setProfileMethod(null);
       setStep(4);
     } else {
       await saveProfileAndPositions(prof, positions);
