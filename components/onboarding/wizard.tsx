@@ -6,6 +6,8 @@ import { StepHasPortfolio } from "./step-has-portfolio";
 import { StepImportPortfolio } from "./step-import-portfolio";
 import { StepPositions } from "./step-positions";
 import { StepProfile } from "./step-profile";
+import { StepProfileMethod } from "./step-profile-method";
+import { StepGoalChat } from "./step-goal-chat";
 import { StepCapital } from "./step-capital";
 import { StepSelectEquities } from "./step-select-equities";
 import { StepSelectBonds } from "./step-select-bonds";
@@ -37,6 +39,7 @@ export function OnboardingWizard() {
   const [optimizedWeights, setOptimizedWeights] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [showScoreReveal, setShowScoreReveal] = useState(false);
+  const [profileMethod, setProfileMethod] = useState<"form" | "chat" | null>(null);
 
   const isBuilderFlow = hasPortfolio === false;
 
@@ -144,6 +147,7 @@ export function OnboardingWizard() {
 
   async function handleProfileComplete(prof: Partial<InvestorProfile>) {
     setProfile(prof);
+    setProfileMethod(null);
     if (isBuilderFlow) {
       setStep(4);
     } else {
@@ -370,18 +374,48 @@ export function OnboardingWizard() {
         />
       )}
 
-      {step === 3 && !hasPortfolio && (
+      {step === 3 && !hasPortfolio && profileMethod === null && (
+        <StepProfileMethod
+          onChoose={(method) => setProfileMethod(method)}
+          onBack={() => { setStep(1); setProfileMethod(null); }}
+        />
+      )}
+
+      {step === 3 && !hasPortfolio && profileMethod === "form" && (
         <StepProfile
           onComplete={handleProfileComplete}
-          onBack={() => setStep(1)}
+          onBack={() => setProfileMethod(null)}
           isBuilderFlow={isBuilderFlow}
         />
       )}
 
-      {step === 4 && hasPortfolio && (
+      {step === 3 && !hasPortfolio && profileMethod === "chat" && (
+        <StepGoalChat
+          onComplete={handleProfileComplete}
+          onBack={() => setProfileMethod(null)}
+          isBuilderFlow={isBuilderFlow}
+        />
+      )}
+
+      {step === 4 && hasPortfolio && profileMethod === null && (
+        <StepProfileMethod
+          onChoose={(method) => setProfileMethod(method)}
+          onBack={() => { setStep(3); setProfileMethod(null); }}
+        />
+      )}
+
+      {step === 4 && hasPortfolio && profileMethod === "form" && (
         <StepProfile
           onComplete={handleProfileComplete}
-          onBack={() => setStep(3)}
+          onBack={() => setProfileMethod(null)}
+          isBuilderFlow={false}
+        />
+      )}
+
+      {step === 4 && hasPortfolio && profileMethod === "chat" && (
+        <StepGoalChat
+          onComplete={handleProfileComplete}
+          onBack={() => setProfileMethod(null)}
           isBuilderFlow={false}
         />
       )}
