@@ -577,6 +577,116 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
+      {/* ─── Broker Migration ─── */}
+      <section className="py-20 border-t border-border/20">
+        <div className="mx-auto max-w-5xl px-6">
+          <RevealSection>
+            <div className="text-center mb-12">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary/60 mb-3">
+                Migración instantánea
+              </p>
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                Importá tu portfolio en segundos
+              </h2>
+              <p className="mt-4 text-sm text-muted-foreground/60 max-w-lg mx-auto leading-relaxed">
+                Subí un screenshot o PDF de tu broker y la AI detecta automáticamente todas tus posiciones. Sin cargar nada a mano.
+              </p>
+            </div>
+          </RevealSection>
+
+          <RevealSection delay={0.15}>
+            <div className="relative rounded-2xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden p-6 md:p-10 noise-overlay">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full pointer-events-none" />
+
+              <div className="relative z-10 grid md:grid-cols-2 gap-10 items-center">
+                {/* Left: Broker logos + text */}
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold">Soportamos tu broker</h3>
+                    <p className="text-xs text-muted-foreground/60 leading-relaxed">
+                      Elegí tu broker, seguí los pasos guiados y subí la captura. La AI extrae tickers y cantidades al instante.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {[
+                      { name: "Cocos Capital", logo: "/brokers/cocos.jpg" },
+                      { name: "Balanz", logo: "/brokers/balanz.jpg" },
+                      { name: "Bull Market", logo: "/brokers/bullmarket.png" },
+                      { name: "Galicia Inversiones", logo: "/brokers/galicia.jpg" },
+                    ].map((broker, i) => (
+                      <motion.div
+                        key={broker.name}
+                        initial={{ opacity: 0, x: -12 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.3, delay: 0.2 + i * 0.08 }}
+                        className="flex items-center gap-3 rounded-xl bg-white/[0.03] border border-border/20 px-4 py-3 hover:border-primary/20 transition-colors"
+                      >
+                        <div className="relative h-9 w-9 rounded-full overflow-hidden flex-shrink-0 border border-border/20">
+                          <img src={broker.logo} alt={broker.name} className="h-full w-full object-cover" />
+                        </div>
+                        <span className="text-sm font-medium">{broker.name}</span>
+                      </motion.div>
+                    ))}
+                    <div className="flex items-center gap-3 rounded-xl bg-white/[0.03] border border-border/20 px-4 py-3">
+                      <div className="h-9 w-9 rounded-full flex-shrink-0 bg-muted/20 border border-border/20 flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground/40">+</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground/50">Cualquier otro broker</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Visual mock of the flow */}
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-border/20 bg-white/[0.02] p-5 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-primary/80">Resultado AI</span>
+                    </div>
+                    {[
+                      { symbol: "GGAL", qty: "150", type: "Acción" },
+                      { symbol: "AL30D", qty: "50", type: "Bono" },
+                      { symbol: "SPY", qty: "12", type: "ETF" },
+                      { symbol: "AAPL", qty: "25", type: "Acción" },
+                    ].map((pos, i) => (
+                      <motion.div
+                        key={pos.symbol}
+                        initial={{ opacity: 0, y: 8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.3, delay: 0.5 + i * 0.1 }}
+                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.02] border border-border/10"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-bold tabular-nums">{pos.symbol}</span>
+                          <span className="text-[10px] text-muted-foreground/40 bg-white/[0.04] px-1.5 py-0.5 rounded">{pos.type}</span>
+                        </div>
+                        <span className="text-xs tabular-nums text-muted-foreground/60">x{pos.qty}</span>
+                      </motion.div>
+                    ))}
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/10">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-[11px] text-muted-foreground/50">4 posiciones detectadas automáticamente</span>
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <Button size="lg" className="h-11 px-8 rounded-xl font-medium text-sm shadow-lg shadow-primary/20" asChild>
+                      <Link href="/auth">
+                        Importar mi portfolio
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </RevealSection>
+        </div>
+      </section>
+
       {/* ─── Score Demo (full) ─── */}
       <section id="demo" className="py-24 border-t border-border/20" ref={scoreRef}>
         <div className="mx-auto max-w-5xl px-6">
