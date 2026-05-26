@@ -366,7 +366,7 @@ function InitialView({
               </div>
 
               <div className="space-y-1.5">
-                <h3 className="text-sm font-bold tracking-tight">Importar con AI</h3>
+                <h3 className="text-sm font-bold tracking-tight">Importar de tu broker</h3>
                 <p className="text-xs text-muted-foreground/60 leading-relaxed">
                   Elegí tu broker, seguí los pasos y subí capturas o archivos. La AI detecta todo automáticamente.
                 </p>
