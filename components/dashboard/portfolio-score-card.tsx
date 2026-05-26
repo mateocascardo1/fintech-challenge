@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, Target, BarChart3, TrendingDown } from "lucide-react";
+import { Shield, Target, BarChart3, TrendingDown, MessageCircle } from "lucide-react";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
 import { SCORE_EXPLANATIONS } from "@/lib/financial-explanations";
+import { useChatContext } from "@/components/chatbot/chat-context";
 
 type ScoreData = {
   total: number;
@@ -54,6 +55,7 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
   const hasPositions = positions && positions.length > 0;
   const [data, setData] = useState<ScoreData | null>(hasPositions ? null : EMPTY_SCORE);
   const [loading, setLoading] = useState(hasPositions);
+  const { openChat } = useChatContext();
 
   useEffect(() => {
     if (!positions || positions.length === 0) return;
@@ -149,6 +151,22 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
             );
           })}
         </div>
+
+        <button
+          type="button"
+          onClick={openChat}
+          className="w-full mt-5 flex items-center justify-center gap-2.5 py-3
+            rounded-xl border border-primary/25 bg-primary/[0.06]
+            hover:bg-primary/[0.12] hover:border-primary/40
+            text-foreground/90 hover:text-foreground
+            text-sm font-semibold tracking-wide
+            transition-all duration-200
+            shadow-[0_0_20px_rgba(34,197,94,0.06)]
+            hover:shadow-[0_0_24px_rgba(34,197,94,0.12)]"
+        >
+          <MessageCircle className="h-4 w-4 text-primary/80" />
+          Habla con tu Investment Advisor
+        </button>
       </div>
     </div>
   );

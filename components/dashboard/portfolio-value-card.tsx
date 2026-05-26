@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote } from "@/lib/types";
-import { TrendingUp, TrendingDown, Minus, Sparkles, MessageCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
 import { PortfolioSparkline } from "./portfolio-sparkline";
 import { PortfolioSummaryModal } from "./portfolio-summary";
-import { useChatContext } from "@/components/chatbot/chat-context";
 
 type Position = { symbol: string; quantity: number; asset_type: string };
 
@@ -23,7 +22,6 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [mepRate, setMepRate] = useState<number>(1200);
   const [showSummary, setShowSummary] = useState(false);
-  const { openChat } = useChatContext();
 
   useEffect(() => {
     if (positions.length === 0) return;
@@ -210,22 +208,6 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
           >
             <Sparkles className="h-4 w-4 text-primary/80" />
             Resumen del dia
-          </button>
-
-          <button
-            type="button"
-            onClick={openChat}
-            className="w-full mt-2.5 flex items-center justify-center gap-2.5 py-3
-              rounded-xl border border-primary/25 bg-primary/[0.06]
-              hover:bg-primary/[0.12] hover:border-primary/40
-              text-foreground/90 hover:text-foreground
-              text-sm font-semibold tracking-wide
-              transition-all duration-200
-              shadow-[0_0_20px_rgba(34,197,94,0.06)]
-              hover:shadow-[0_0_24px_rgba(34,197,94,0.12)]"
-          >
-            <MessageCircle className="h-4 w-4 text-primary/80" />
-            Habla con tu Investment Advisor
           </button>
 
           {showSummary && (
