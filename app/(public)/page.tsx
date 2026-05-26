@@ -422,8 +422,8 @@ export default function LandingPage() {
               className="h-12 px-8 rounded-xl font-medium text-sm shadow-lg shadow-primary/20"
               asChild
             >
-              <Link href="/auth?demo=1">
-                Ver demo en 90 seg
+              <Link href="/auth">
+                Analizar mi portfolio
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>
@@ -1108,7 +1108,7 @@ export default function LandingPage() {
                 className="h-13 px-10 rounded-xl font-medium text-sm"
                 asChild
               >
-                <Link href="/auth?demo=1">
+                <Link href="/auth">
                   Empezar gratis
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
