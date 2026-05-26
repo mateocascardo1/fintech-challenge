@@ -444,10 +444,10 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.75 }}
             className="mt-8 flex flex-col items-center gap-3"
           >
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/30 font-medium">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-foreground/50 font-medium">
               Importá tu portfolio desde
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center gap-4">
               {[
                 { name: "Cocos Capital", logo: "/brokers/cocos.jpg" },
                 { name: "Balanz", logo: "/brokers/balanz.jpg" },
@@ -456,15 +456,12 @@ export default function LandingPage() {
               ].map((broker) => (
                 <div
                   key={broker.name}
-                  className="relative h-9 w-9 rounded-full overflow-hidden border border-border/30 hover:border-primary/40 hover:scale-110 transition-all duration-200 cursor-default"
+                  className="relative h-11 w-11 rounded-full overflow-hidden border-2 border-border/40 hover:border-primary/50 hover:scale-110 transition-all duration-200 cursor-default shadow-lg shadow-black/20"
                   title={broker.name}
                 >
                   <img src={broker.logo} alt={broker.name} className="h-full w-full object-cover" />
                 </div>
               ))}
-              <div className="h-9 w-9 rounded-full bg-white/[0.03] border border-border/20 flex items-center justify-center">
-                <span className="text-[10px] text-muted-foreground/30 font-medium">+</span>
-              </div>
             </div>
           </motion.div>
         </div>
