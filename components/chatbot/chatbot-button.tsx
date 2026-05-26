@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useState, useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { MessageCircle, X } from "lucide-react";
 import { ChatbotPanel } from "./chatbot-panel";
+import { useChatContext } from "./chat-context";
 
 const HIDDEN_PATHS = ["/onboarding"];
 
@@ -15,7 +16,7 @@ function getStockSymbol(pathname: string | null): string | null {
 }
 
 function ChatbotButtonInner() {
-  const [open, setOpen] = useState(false);
+  const { isOpen, toggleChat, closeChat } = useChatContext();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab");
@@ -34,21 +35,21 @@ function ChatbotButtonInner() {
 
   return (
     <>
-      {open &&
+      {isOpen &&
         createPortal(
-          <ChatbotPanel onClose={() => setOpen(false)} initialInput={initialInput} />,
+          <ChatbotPanel onClose={closeChat} initialInput={initialInput} />,
           document.body,
         )}
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggleChat}
         className={`fixed bottom-6 right-6 z-50 flex items-center justify-center rounded-full shadow-xl transition-all duration-300 ${
-          open
+          isOpen
             ? "h-12 w-12 bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/15"
             : "h-14 w-14 bg-primary text-primary-foreground hover:scale-105 hover:shadow-[0_0_30px_-5px_rgba(34,197,94,0.3)]"
         }`}
       >
-        {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-6 w-6" />}
+        {isOpen ? <X className="h-5 w-5" /> : <MessageCircle className="h-6 w-6" />}
       </button>
     </>
   );
