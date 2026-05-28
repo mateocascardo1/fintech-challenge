@@ -355,39 +355,46 @@ const INDEX_TO_ETF: Record<string, { symbol: string; name: string }> = {
 
 export async function searchSymbols(query: string): Promise<SearchResult[]> {
   if (!query.trim()) return [];
-  const res = (await yahooFinance.search(query, { quotesCount: 15, newsCount: 0 })) as SearchResponse;
+
+  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=15&newsCount=0`;
+  const resp = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; SignalAI/1.0)" },
+  });
+  if (!resp.ok) throw new Error(`Yahoo search HTTP ${resp.status}`);
+  const data = await resp.json() as {
+    quotes: Array<{
+      symbol: string;
+      shortname?: string;
+      longname?: string;
+      quoteType?: string;
+      exchange?: string;
+      exchDisp?: string;
+    }>;
+  };
+
   const out: SearchResult[] = [];
   const seen = new Set<string>();
-  for (const q of res.quotes) {
-    if ("symbol" in q && typeof q.symbol === "string") {
-      const item = q as {
-        symbol: string;
-        shortname?: string;
-        longname?: string;
-        quoteType?: string;
-        exchange?: string;
-      };
-      if (item.quoteType === "FUTURE") continue;
+  for (const item of data.quotes) {
+    if (!item.symbol) continue;
+    if (item.quoteType === "FUTURE") continue;
 
-      // Convert indices to their investable ETF equivalents
-      if (item.symbol.startsWith("^") || item.quoteType === "INDEX") {
-        const etf = INDEX_TO_ETF[item.symbol];
-        if (etf && !seen.has(etf.symbol)) {
-          seen.add(etf.symbol);
-          out.push({ symbol: etf.symbol, name: etf.name, exchange: "NYSE", type: "ETF" });
-        }
-        continue;
+    if (item.symbol.startsWith("^") || item.quoteType === "INDEX") {
+      const etf = INDEX_TO_ETF[item.symbol];
+      if (etf && !seen.has(etf.symbol)) {
+        seen.add(etf.symbol);
+        out.push({ symbol: etf.symbol, name: etf.name, exchange: "NYSE", type: "ETF" });
       }
-
-      if (seen.has(item.symbol)) continue;
-      seen.add(item.symbol);
-      out.push({
-        symbol: item.symbol,
-        name: item.shortname ?? item.longname ?? item.symbol,
-        exchange: item.exchange,
-        type: item.quoteType,
-      });
+      continue;
     }
+
+    if (seen.has(item.symbol)) continue;
+    seen.add(item.symbol);
+    out.push({
+      symbol: item.symbol,
+      name: item.shortname ?? item.longname ?? item.symbol,
+      exchange: item.exchDisp ?? item.exchange,
+      type: item.quoteType,
+    });
   }
   return out.slice(0, 10);
 }
