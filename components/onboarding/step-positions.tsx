@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -69,17 +69,25 @@ export function StepPositions({
   // Cash state
   const [cashAmount, setCashAmount] = useState("");
 
-  // Equity search
-  const search = useCallback(async (q: string) => {
-    if (q.length < 1) { setResults([]); return; }
+  // Equity search (debounced)
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const search = useCallback((q: string) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (q.length < 1) { setResults([]); setSearching(false); return; }
     setSearching(true);
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      setResults(Array.isArray(data) ? data : data?.results ?? []);
-    } finally {
-      setSearching(false);
-    }
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) { setResults([]); return; }
+        const data = await res.json();
+        setResults(Array.isArray(data) ? data : data?.results ?? []);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
   }, []);
 
   // Bond search via data912
