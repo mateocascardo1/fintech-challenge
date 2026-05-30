@@ -199,7 +199,15 @@ export function PortfolioDiagnosisCard() {
     }
   }, [fetchData]);
 
-  // Refetches on remount (parent OverviewTab uses key={refreshKey} to trigger this)
+  useEffect(() => {
+    function handlePillarClick(e: Event) {
+      const category = (e as CustomEvent).detail?.category;
+      if (category) setExpandedCategory(category);
+    }
+    window.addEventListener("score-pillar-click", handlePillarClick);
+    return () => window.removeEventListener("score-pillar-click", handlePillarClick);
+  }, []);
+
   useEffect(() => {
     fetchData()
       .then((count) => {
@@ -264,7 +272,7 @@ export function PortfolioDiagnosisCard() {
   }
 
   return (
-    <div className="surface-elevated noise-overlay rounded-2xl p-6">
+    <div data-diagnosis-card className="surface-elevated noise-overlay rounded-2xl p-6">
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">

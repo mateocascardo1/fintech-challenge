@@ -176,7 +176,7 @@ export function PortfolioSparkline({ positions }: { positions: Position[] }) {
 
     const chart = createChart(containerRef.current, {
       width: containerRef.current.clientWidth,
-      height: 120,
+      height: 170,
       layout: {
         background: { color: "transparent" },
         textColor: "rgba(255,255,255,0.4)",
@@ -296,7 +296,7 @@ export function PortfolioSparkline({ positions }: { positions: Position[] }) {
         </div>
 
         {/* Chart container */}
-        <div className="relative h-[120px]">
+        <div className="relative h-[170px]">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="h-full w-full rounded-lg bg-muted/5 animate-pulse" />
