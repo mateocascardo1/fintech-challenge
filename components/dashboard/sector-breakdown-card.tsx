@@ -17,20 +17,20 @@ function isArsDenominated(symbol: string): boolean {
 }
 
 const SECTOR_COLORS: Record<string, string> = {
-  Technology: "bg-blue-400",
-  Healthcare: "bg-emerald-400",
-  Financials: "bg-amber-400",
-  Energy: "bg-orange-400",
-  "Consumer Discretionary": "bg-pink-400",
-  "Consumer Staples": "bg-lime-400",
-  Industrials: "bg-slate-400",
-  Utilities: "bg-teal-400",
-  "Real Estate": "bg-violet-400",
-  "Communication Services": "bg-cyan-400",
-  International: "bg-indigo-400",
-  Bonds: "bg-yellow-400",
-  "Renta Fija": "bg-yellow-400",
-  Efectivo: "bg-emerald-300",
+  Technology: "bg-cat-plum",
+  Healthcare: "bg-cat-teal",
+  Financials: "bg-brass",
+  Energy: "bg-cat-terracotta",
+  "Consumer Discretionary": "bg-cat-sand",
+  "Consumer Staples": "bg-cat-steel",
+  Industrials: "bg-cat-steel",
+  Utilities: "bg-cat-teal",
+  "Real Estate": "bg-cat-plum",
+  "Communication Services": "bg-cat-sand",
+  International: "bg-slate-info",
+  Bonds: "bg-brass",
+  "Renta Fija": "bg-brass",
+  Efectivo: "bg-signal",
 };
 
 const SECTOR_LABELS: Record<string, string> = {

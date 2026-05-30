@@ -111,7 +111,7 @@ export function TopHoldingsCard({ positions }: { positions: Position[] }) {
   }, [holdings.items]);
 
   const concentrationLabel = hhi > 0.25 ? "Alta concentración" : hhi > 0.15 ? "Concentración moderada" : "Bien diversificado";
-  const concentrationColor = hhi > 0.25 ? "text-yellow-400" : hhi > 0.15 ? "text-blue-400" : "text-positive";
+  const concentrationColor = hhi > 0.25 ? "text-brass" : hhi > 0.15 ? "text-slate-info" : "text-signal";
 
   if (loading) {
     return (
@@ -183,7 +183,7 @@ export function TopHoldingsCard({ positions }: { positions: Position[] }) {
                 </div>
                 <div className="h-1.5 rounded-full bg-muted/10 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-primary/60 transition-all duration-500"
+                    className={`h-full rounded-full transition-all duration-500 ${h.changePercent >= 0 ? "bg-positive/60" : "bg-negative/60"}`}
                     style={{ width: `${(h.pct / maxPct) * 100}%` }}
                   />
                 </div>

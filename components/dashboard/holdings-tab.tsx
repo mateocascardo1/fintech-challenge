@@ -859,25 +859,27 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
         <TableSkeleton />
       ) : (
       <div className="rounded-2xl border border-border bg-card overflow-x-auto animate-in fade-in duration-500">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="py-2 px-3" colSpan={6}>
-                <div className="flex items-center text-muted-foreground font-medium">
-                  <div className="w-[28%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("symbol")}>
+              <th className="py-1.5 px-3" colSpan={8}>
+                <div className="flex items-center text-muted-foreground font-medium text-[11px]">
+                  <div className="w-[22%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("symbol")}>
                     Ticker {sortKey === "symbol" && (sortDir === "asc" ? "↑" : "↓")}
                   </div>
-                  <div className="w-[16%]">Cantidad</div>
-                  <div className="w-[18%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("value")}>
+                  <div className="w-[12%]">Precio</div>
+                  <div className="w-[10%]">Cantidad</div>
+                  <div className="w-[14%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("value")}>
                     Valor {sortKey === "value" && (sortDir === "asc" ? "↑" : "↓")}
                   </div>
-                  <div className="w-[14%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("weight")}>
+                  <div className="w-[12%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("weight")}>
                     Peso % {sortKey === "weight" && (sortDir === "asc" ? "↑" : "↓")}
                   </div>
-                  <div className="w-[14%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("changePercent")}>
-                    Cambio {sortKey === "changePercent" && (sortDir === "asc" ? "↑" : "↓")}
+                  <div className="w-[12%] cursor-pointer hover:text-foreground" onClick={() => toggleSort("changePercent")}>
+                    Cambio día {sortKey === "changePercent" && (sortDir === "asc" ? "↑" : "↓")}
                   </div>
-                  <div className="w-[10%]" />
+                  <div className="w-[12%]">Cambio total</div>
+                  <div className="w-[6%]" />
                 </div>
               </th>
             </tr>
@@ -885,7 +887,7 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
           <tbody>
             {enriched.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={8} className="py-8 text-center text-xs text-muted-foreground">
                   No hay posiciones. Usá el botón &quot;Agregar&quot; para empezar.
                 </td>
               </tr>
@@ -907,16 +909,15 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
                   key={p.symbol}
                   className="border-b border-border/50 hover:bg-muted/30 group/row"
                 >
-                  <td className="py-3 px-3" colSpan={6}>
+                  <td className="py-2 px-3" colSpan={8}>
                     <div className="flex items-center">
-                      {/* Ticker cell */}
-                      <div className="flex items-center gap-2 w-[28%] min-w-0">
+                      <div className="flex items-center gap-2 w-[22%] min-w-0">
                         <Link
                           href={`/stock/${p.symbol}`}
                           className="flex items-center gap-2 min-w-0"
                         >
                           <span className="font-bold shrink-0">{p.symbol}</span>
-                          <span className="text-muted-foreground text-xs truncate">
+                          <span className="text-muted-foreground text-[11px] truncate">
                             {p.name}
                           </span>
                           <Badge variant="secondary" className="text-[10px] shrink-0">
@@ -946,28 +947,29 @@ export function HoldingsTab({ onPortfolioChange }: { onPortfolioChange?: () => v
                           </button>
                         )}
                       </div>
-                      {/* Quantity */}
-                      <div className="w-[16%] tabular-nums text-muted-foreground">
+                      <div className="w-[12%] tabular-nums text-muted-foreground">
+                        {p.asset_type === "cash" ? "—" : formatPrice(p.price)}
+                      </div>
+                      <div className="w-[10%] tabular-nums text-muted-foreground">
                         {p.asset_type === "cash"
                           ? `$${p.quantity.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
                           : p.quantity % 1 === 0
                             ? p.quantity.toLocaleString("en-US")
                             : p.quantity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
                       </div>
-                      {/* Value */}
-                      <div className="w-[18%] tabular-nums">
+                      <div className="w-[14%] tabular-nums">
                         {formatPrice(p.value)}
                       </div>
-                      {/* Weight */}
-                      <div className="w-[14%] tabular-nums">
+                      <div className="w-[12%] tabular-nums">
                         {(p.weight * 100).toFixed(1)}%
                       </div>
-                      {/* Change */}
-                      <div className={`w-[14%] tabular-nums ${p.changePercent >= 0 ? "text-positive" : "text-negative"}`}>
+                      <div className={`w-[12%] tabular-nums ${p.changePercent >= 0 ? "text-positive" : "text-negative"}`}>
                         {formatPercent(p.changePercent, { withSign: true })}
                       </div>
-                      {/* Delete */}
-                      <div className="w-[10%] flex justify-end">
+                      <div className="w-[12%] tabular-nums text-muted-foreground">
+                        —
+                      </div>
+                      <div className="w-[6%] flex justify-end">
                         <button
                           type="button"
                           onClick={(e) => {

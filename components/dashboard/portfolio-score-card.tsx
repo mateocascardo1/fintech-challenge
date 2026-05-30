@@ -38,10 +38,10 @@ function getScoreGradient(score: number): string {
 }
 
 function getSubScoreBarColor(ratio: number): string {
-  if (ratio >= 0.75) return "bg-positive";
-  if (ratio >= 0.5) return "bg-chart-2";
-  if (ratio >= 0.25) return "bg-yellow-400";
-  return "bg-negative";
+  if (ratio >= 0.75) return "bg-signal";
+  if (ratio >= 0.5) return "bg-cat-plum";
+  if (ratio >= 0.25) return "bg-brass";
+  return "bg-ember";
 }
 
 const SUB_SCORE_META = [
@@ -68,17 +68,17 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
 
   if (loading) {
     return (
-      <div className="surface-elevated noise-overlay rounded-2xl p-6">
-        <div className="relative z-10">
+      <div className="surface-elevated noise-overlay rounded-2xl p-6 h-full">
+        <div className="relative z-10 flex flex-col h-full">
           <p className="section-label">PORTFOLIO SCORE</p>
-          <div className="mt-6 flex justify-center">
-            <div className="h-32 w-32 animate-pulse rounded-full bg-muted/30" />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="h-32 w-32 animate-pulse rounded-full bg-white/[0.03]" />
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 mt-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i}>
-                <div className="h-3 w-20 animate-pulse rounded bg-muted/30" />
-                <div className="mt-2 h-2 w-full animate-pulse rounded-full bg-muted/30" />
+                <div className="h-2 w-14 animate-pulse rounded bg-white/[0.04]" />
+                <div className="mt-1.5 h-1 w-full animate-pulse rounded-full bg-white/[0.03]" />
               </div>
             ))}
           </div>
@@ -93,16 +93,16 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
   const color = getScoreGradient(score);
 
   return (
-    <div className="surface-elevated noise-overlay rounded-2xl p-6 relative overflow-hidden">
-      <div className="relative z-10 animate-in fade-in duration-500">
+    <div className="surface-elevated noise-overlay rounded-2xl p-6 relative overflow-hidden h-full flex flex-col">
+      <div className="relative z-10 flex flex-col flex-1 gap-5">
         <p className="section-label">PORTFOLIO SCORE</p>
 
-        <div className="mt-5 flex justify-center">
-          <div className="relative h-36 w-36">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="relative h-32 w-32">
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: `conic-gradient(${color} 0% ${scorePercent}%, rgba(30,30,30,0.4) ${scorePercent}% 100%)`,
+                background: `conic-gradient(${color} 0% ${scorePercent}%, rgba(255,255,255,0.04) ${scorePercent}% 100%)`,
                 mask: "radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 7px))",
                 WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 7px))",
               }}
@@ -122,16 +122,16 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-x-5 gap-y-4">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-3">
           {SUB_SCORE_META.map((s) => {
             const value = subScores[s.key];
             const ratio = value / 250;
             const Icon = s.icon;
             return (
               <div key={s.key}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground/60" />
-                  <span className="text-[11px] text-muted-foreground/80">{s.label}</span>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground/40" />
+                  <span className="text-[11px] text-muted-foreground/60">{s.label}</span>
                   {SCORE_EXPLANATIONS[s.key] && (
                     <FinancialTooltip
                       title={SCORE_EXPLANATIONS[s.key].title}
@@ -139,9 +139,9 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
                       side="top"
                     />
                   )}
-                  <span className="ml-auto text-[11px] tabular-nums font-semibold">{value}</span>
+                  <span className="ml-auto text-[11px] tabular-nums font-semibold text-foreground/70">{value}</span>
                 </div>
-                <div className="h-2 rounded-full bg-muted/30 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ease-out ${getSubScoreBarColor(ratio)}`}
                     style={{ width: `${ratio * 100}%` }}
@@ -155,16 +155,15 @@ export function PortfolioScoreCard({ positions }: { positions: Position[] }) {
         <button
           type="button"
           onClick={openChat}
-          className="w-full mt-5 flex items-center justify-center gap-2.5 py-3
-            rounded-xl border border-primary/25 bg-primary/[0.06]
-            hover:bg-primary/[0.12] hover:border-primary/40
-            text-foreground/90 hover:text-foreground
+          className="w-full mt-auto flex items-center justify-center gap-2.5 py-3
+            rounded-xl bg-primary text-primary-foreground
+            hover:bg-primary/90
             text-sm font-semibold tracking-wide
             transition-all duration-200
-            shadow-[0_0_20px_rgba(34,197,94,0.06)]
-            hover:shadow-[0_0_24px_rgba(34,197,94,0.12)]"
+            shadow-[0_0_20px_rgba(34,197,94,0.15)]
+            hover:shadow-[0_0_30px_rgba(34,197,94,0.25)]"
         >
-          <MessageCircle className="h-4 w-4 text-primary/80" />
+          <MessageCircle className="h-4 w-4" />
           Habla con tu Investment Advisor
         </button>
       </div>

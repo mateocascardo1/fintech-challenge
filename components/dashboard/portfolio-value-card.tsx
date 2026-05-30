@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, useSpring, useTransform, useMotionValue } from "motion/react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
@@ -122,6 +123,14 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
     return sum + (quote ? quote.price * p.quantity : 0);
   }, 0);
 
+  const motionValue = useMotionValue(0);
+  const springValue = useSpring(motionValue, { stiffness: 50, damping: 20 });
+  const displayValue = useTransform(springValue, (v) => formatPrice(v));
+
+  useEffect(() => {
+    motionValue.set(totalValue);
+  }, [totalValue, motionValue]);
+
   const totalChange = positions.reduce((sum: number, p: Position) => {
     const quote = quotes[p.symbol];
     return sum + (quote ? quote.change * p.quantity : 0);
@@ -134,7 +143,7 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
 
   return (
     <div
-      className="surface-elevated noise-overlay rounded-2xl p-6 relative overflow-hidden"
+      className="surface-elevated noise-overlay rounded-2xl p-6 relative overflow-hidden h-full flex flex-col"
       style={{
         backgroundImage: `
           radial-gradient(ellipse 80% 60% at 20% 10%, rgba(34,197,94,0.04) 0%, transparent 60%),
@@ -142,7 +151,7 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
         `,
       }}
     >
-      <div className="relative z-10 animate-in fade-in duration-500">
+      <div className="relative z-10 flex flex-col flex-1 gap-1">
         <div className="flex items-center justify-between mb-4">
           <p className="section-label">PORTFOLIO</p>
           <span className="text-[11px] text-muted-foreground/60">
@@ -159,7 +168,7 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
                 : "drop-shadow-[0_0_24px_rgba(239,68,68,0.2)]"
           }`}
         >
-          {formatPrice(totalValue)}
+          <motion.span>{displayValue}</motion.span>
         </p>
 
         <div className="mt-3 flex items-center gap-3">
@@ -197,14 +206,12 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
           <button
             type="button"
             onClick={() => setShowSummary(true)}
-            className="w-full mt-5 flex items-center justify-center gap-2.5 py-3
-              rounded-xl border border-primary/25 bg-primary/[0.06]
-              hover:bg-primary/[0.12] hover:border-primary/40
-              text-foreground/90 hover:text-foreground
-              text-sm font-semibold tracking-wide
-              transition-all duration-200
-              shadow-[0_0_20px_rgba(34,197,94,0.06)]
-              hover:shadow-[0_0_24px_rgba(34,197,94,0.12)]"
+            className="w-full mt-auto flex items-center justify-center gap-2.5 py-3
+              rounded-xl border border-white/[0.08]
+              hover:border-white/[0.14] hover:bg-white/[0.03]
+              text-foreground/70 hover:text-foreground/90
+              text-sm font-medium tracking-wide
+              transition-all duration-200"
           >
             <Sparkles className="h-4 w-4 text-primary/80" />
             Resumen del dia

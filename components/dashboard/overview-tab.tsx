@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AllocationCard } from "./allocation-card";
+import { motion } from "motion/react";
 import { PortfolioValueCard } from "./portfolio-value-card";
 import { PortfolioScoreCard } from "./portfolio-score-card";
-import { TopHoldingsCard } from "./top-holdings-card";
-import { SectorBreakdownCard } from "./sector-breakdown-card";
+import { CompositionCard } from "./composition-card";
 import { PortfolioDiagnosisCard } from "./portfolio-diagnosis-card";
 import { AiInsightsCard } from "./ai-insights-card";
 import { GuardianInsightsCard } from "./guardian-insights-card";
@@ -77,36 +76,54 @@ export function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-2 animate-in fade-in duration-500">
+      <motion.div
+        className="grid gap-6 lg:grid-cols-2 lg:auto-rows-[minmax(460px,auto)]"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0 }}
+      >
         <PortfolioValueCard positions={positions} />
         <PortfolioScoreCard positions={positions} />
-      </div>
+      </motion.div>
 
-      <div className="grid gap-6 lg:grid-cols-2 animate-in fade-in duration-500" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
-        <TopHoldingsCard positions={positions} />
-        <SectorBreakdownCard positions={positions} />
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.05 }}
+      >
+        <CompositionCard positions={positions} />
+      </motion.div>
 
-      <div className="animate-in fade-in duration-500" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+      >
         <PortfolioDiagnosisCard />
-      </div>
+      </motion.div>
 
-      <div className="animate-in fade-in duration-500" style={{ animationDelay: "250ms", animationFillMode: "both" }}>
-        <AllocationCard positions={positions} />
-      </div>
-
-      <div id="ai-insights-card" className="animate-in fade-in duration-500" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
+      <motion.div
+        id="ai-insights-card"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+      >
         {guardianStatus?.isGuardianMode ? (
           <GuardianInsightsCard nextAnalysisDate={guardianStatus.nextAnalysisDate} />
         ) : (
           <AiInsightsCard isCalibrated={guardianStatus?.isCalibrated ?? false} />
         )}
-      </div>
+      </motion.div>
 
-      <div className="grid gap-6 lg:grid-cols-2 items-start animate-in fade-in duration-500" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
+      <motion.div
+        className="grid gap-6 lg:grid-cols-2 items-start"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+      >
         <MarketRecapCard />
         <EarningsCalendarCard />
-      </div>
+      </motion.div>
     </div>
   );
 }

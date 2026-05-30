@@ -11,10 +11,10 @@ type AllocData = {
 };
 
 const CATEGORIES = [
-  { key: "us_equities", label: "US Equities", color: "bg-primary", dotColor: "bg-primary", hex: "#22c55e" },
-  { key: "intl_equities", label: "Intl. Equities", color: "bg-chart-2", dotColor: "bg-chart-2", hex: "#3b82f6" },
-  { key: "bonds", label: "Bonos", color: "bg-yellow-400", dotColor: "bg-yellow-400", hex: "#eab308" },
-  { key: "cash", label: "Cash", color: "bg-emerald-400", dotColor: "bg-emerald-400", hex: "#34d399" },
+  { key: "us_equities", label: "US Equities", color: "bg-signal", dotColor: "bg-signal", hex: "#22c55e" },
+  { key: "intl_equities", label: "Intl. Equities", color: "bg-cat-plum", dotColor: "bg-cat-plum", hex: "#8b5cf6" },
+  { key: "bonds", label: "Bonos", color: "bg-brass", dotColor: "bg-brass", hex: "#d4a017" },
+  { key: "cash", label: "Cash", color: "bg-cat-teal", dotColor: "bg-cat-teal", hex: "#0d9488" },
 ];
 
 type Position = { symbol: string; quantity: number; asset_type: string };
@@ -134,8 +134,8 @@ export function AllocationCard({ positions }: { positions: Position[] }) {
                     <span
                       className={`text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-md ${
                         overAllocated
-                          ? "bg-yellow-400/10 text-yellow-400"
-                          : "bg-chart-2/10 text-chart-2"
+                          ? "bg-brass/10 text-brass"
+                          : "bg-cat-plum/10 text-cat-plum"
                       }`}
                     >
                       {overAllocated ? "+" : ""}
