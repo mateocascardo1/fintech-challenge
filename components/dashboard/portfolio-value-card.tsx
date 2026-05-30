@@ -145,10 +145,11 @@ export function PortfolioValueCard({ positions }: { positions: Position[] }) {
     <div
       className="surface-elevated noise-overlay rounded-2xl p-6 relative overflow-hidden h-full flex flex-col"
       style={{
-        backgroundImage: `
-          radial-gradient(ellipse 80% 60% at 20% 10%, rgba(34,197,94,0.04) 0%, transparent 60%),
-          radial-gradient(ellipse 50% 50% at 80% 80%, rgba(59,130,246,0.03) 0%, transparent 50%)
-        `,
+        backgroundImage: isNeutral
+          ? "none"
+          : isPositive
+            ? `radial-gradient(ellipse 80% 60% at 15% 8%, rgba(34,197,94,0.07) 0%, transparent 60%)`
+            : `radial-gradient(ellipse 80% 60% at 15% 8%, rgba(239,68,68,0.07) 0%, transparent 60%)`,
       }}
     >
       <div className="relative z-10 flex flex-col flex-1 gap-1">
