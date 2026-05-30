@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { Send, Loader2, Bot, User, Sparkles } from "lucide-react";
+import { Send, Loader2, Sparkles, X, ActivityIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -12,6 +12,12 @@ function extractTextContent(parts: Array<{ type: string; text?: string }>): stri
     .filter((p) => p.type === "text" && p.text)
     .map((p) => p.text!)
     .join("");
+}
+
+function normalizeMarkdown(text: string): string {
+  return text
+    .replace(/([^\n])(#{1,6}\s)/g, "$1\n\n$2")
+    .replace(/([^\n])(\n)(#{1,6}\s)/g, "$1\n\n$3");
 }
 
 export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; initialInput?: string }) {
@@ -71,16 +77,16 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
       />
 
       {/* Panel */}
-      <div className="relative w-full max-w-md h-full flex flex-col bg-[#0a0a0f] border-l border-white/[0.06] shadow-2xl animate-in slide-in-from-right duration-300">
+      <div className="relative w-full max-w-md h-full flex flex-col bg-[#0a0a0f] border-l border-white/[0.04] shadow-2xl animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="shrink-0 px-5 pt-5 pb-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-primary" />
+        <div className="shrink-0 px-6 py-5 shadow-[0_1px_0_oklch(1_0_0/5%)]">
+          <div className="flex items-center gap-3.5">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/12 to-primary/[0.04] flex items-center justify-center">
+              <ActivityIcon className="h-4.5 w-4.5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-bold tracking-tight">Investment Advisor</h2>
-              <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1.5">
+              <h2 className="text-[15px] font-bold tracking-tight">Investment Advisor</h2>
+              <p className="text-xs text-muted-foreground/50 flex items-center gap-1.5 mt-0.5">
                 {isLoading ? (
                   <>
                     <span className="relative flex h-1.5 w-1.5">
@@ -91,7 +97,7 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
                   </>
                 ) : (
                   <>
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary/70" />
                     Disponible
                   </>
                 )}
@@ -100,28 +106,26 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.06] transition-all"
+              className="p-2.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-white/[0.05] transition-all"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="h-4.5 w-4.5" />
             </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-4 py-4 space-y-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-4 py-5 space-y-4">
           {/* Empty state */}
           {messages.length === 0 && !isLoading && (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="h-14 w-14 rounded-2xl bg-primary/[0.08] border border-primary/10 flex items-center justify-center mb-5">
-                <Bot className="h-7 w-7 text-primary/70" />
+            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/[0.03] flex items-center justify-center mb-10 shadow-[0_0_80px_-15px_rgba(34,197,94,0.2)]">
+                <ActivityIcon className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-base font-bold mb-1.5">¿En qué puedo ayudarte?</h3>
-              <p className="text-xs text-muted-foreground/60 max-w-[260px] leading-relaxed mb-6">
+              <h3 className="text-2xl font-display mb-3 text-foreground tracking-tight">¿En qué puedo ayudarte?</h3>
+              <p className="text-[15px] text-muted-foreground/45 max-w-[300px] leading-[1.7] mb-12">
                 Analizo tu portfolio en tiempo real y te doy recomendaciones personalizadas.
               </p>
-              <div className="w-full space-y-2">
+              <div className="w-full space-y-1">
                 {suggestions.map((s) => (
                   <button
                     key={s}
@@ -130,9 +134,9 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
                       setInput("");
                       sendMessage({ text: s });
                     }}
-                    className="w-full text-left px-4 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] text-xs text-muted-foreground hover:text-foreground hover:bg-white/[0.05] hover:border-primary/20 transition-all group"
+                    className="w-full text-left px-5 py-4 rounded-2xl text-[15px] text-muted-foreground/50 hover:text-foreground/90 hover:bg-white/[0.04] transition-all"
                   >
-                    <span className="group-hover:text-primary transition-colors">{s}</span>
+                    {s}
                   </button>
                 ))}
               </div>
@@ -151,21 +155,21 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
                 className={`flex gap-3 ${m.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
               >
                 {m.role === "assistant" && (
-                  <div className="h-7 w-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="h-7 w-7 rounded-xl bg-primary/[0.08] flex items-center justify-center shrink-0 mt-1">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
                   </div>
                 )}
                 <div
-                  className={`max-w-[82%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[82%] rounded-2xl px-5 py-4 ${
                     m.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-white/[0.04] border border-white/[0.06] rounded-bl-md"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-white/[0.025]"
                   }`}
                 >
                   {m.role === "user" ? (
-                    <p className="text-[13px] leading-relaxed">{text}</p>
+                    <p className="text-[15px] leading-relaxed">{text}</p>
                   ) : (
-                    <div className="chat-markdown text-[13px] leading-relaxed text-foreground/90">
+                    <div className="chat-markdown text-[15px] leading-[1.75] text-foreground/90">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -187,34 +191,29 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
                           h1: ({ children }) => <h1 className="text-sm font-bold mb-2 text-foreground">{children}</h1>,
                           h2: ({ children }) => <h2 className="text-sm font-bold mb-1.5 text-foreground">{children}</h2>,
                           h3: ({ children }) => <h3 className="text-[13px] font-bold mb-1 text-foreground">{children}</h3>,
-                          hr: () => <hr className="my-3 border-white/[0.06]" />,
+                          hr: () => <hr className="my-3 border-white/[0.05]" />,
                           blockquote: ({ children }) => (
                             <blockquote className="border-l-2 border-primary/30 pl-3 my-2 text-muted-foreground italic">
                               {children}
                             </blockquote>
                           ),
                           table: ({ children }) => (
-                            <div className="my-2 overflow-x-auto rounded-xl border border-white/[0.08]">
+                            <div className="my-2 overflow-x-auto rounded-xl border border-white/[0.06]">
                               <table className="w-full text-[11px]">{children}</table>
                             </div>
                           ),
-                          thead: ({ children }) => <thead className="border-b border-white/[0.06] bg-white/[0.02]">{children}</thead>,
+                          thead: ({ children }) => <thead className="border-b border-white/[0.05] bg-white/[0.02]">{children}</thead>,
                           tbody: ({ children }) => <tbody>{children}</tbody>,
                           tr: ({ children }) => <tr className="border-b border-white/[0.04] last:border-0">{children}</tr>,
                           th: ({ children }) => <th className="text-left px-3 py-2 font-semibold text-muted-foreground">{children}</th>,
                           td: ({ children }) => <td className="px-3 py-2 tabular-nums">{children}</td>,
                         }}
                       >
-                        {text}
+                        {normalizeMarkdown(text)}
                       </ReactMarkdown>
                     </div>
                   )}
                 </div>
-                {m.role === "user" && (
-                  <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 mt-0.5">
-                    <User className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -222,33 +221,26 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
           {/* Loading indicator */}
           {isLoading && (!messages.length || messages[messages.length - 1]?.role === "user" || !extractTextContent(messages[messages.length - 1]?.parts ?? [])) && (
             <div className="flex gap-3 justify-start animate-in fade-in duration-200">
-              <div className="h-7 w-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="h-7 w-7 rounded-xl bg-primary/[0.08] flex items-center justify-center shrink-0 mt-1">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
               </div>
-              <div className="rounded-2xl rounded-bl-md bg-white/[0.04] border border-white/[0.06] px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </div>
-                  <span className="text-[11px] text-muted-foreground/50 ml-1">Analizando tu portfolio...</span>
-                </div>
+              <div className="rounded-2xl bg-white/[0.025] px-5 py-5">
+                <div className="chat-shimmer" />
               </div>
             </div>
           )}
 
           {error && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] px-4 py-3">
+            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.04] px-4 py-3">
               <p className="text-[12px] text-red-400">{error.message}</p>
             </div>
           )}
         </div>
 
         {/* Input area */}
-        <div className="shrink-0 border-t border-white/[0.06] p-4">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <div className="relative flex-1">
+        <div className="shrink-0 px-4 pb-4 pt-3">
+          <form onSubmit={handleSubmit}>
+            <div className="chat-input-capsule">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -261,21 +253,20 @@ export function ChatbotPanel({ onClose, initialInput }: { onClose: () => void; i
                 }}
                 placeholder="Escribí tu pregunta..."
                 disabled={isLoading}
-                rows={2}
-                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 focus:ring-1 focus:ring-primary/20 disabled:opacity-50 transition-all resize-none"
+                rows={1}
               />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="shrink-0 h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-95 hover:shadow-[0_0_20px_-4px_rgba(34,197,94,0.4)]"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                ) : (
+                  <Send className="h-4.5 w-4.5" />
+                )}
+              </button>
             </div>
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="self-end h-[46px] w-[46px] rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:shadow-[0_0_20px_-5px_rgba(34,197,94,0.4)] active:scale-95"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </button>
           </form>
         </div>
       </div>

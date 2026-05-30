@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { Send, Loader2, Bot, Sparkles, ArrowLeft, RotateCcw, TrendingUp, Newspaper, BarChart3 } from "lucide-react";
+import { Send, Loader2, Sparkles, ArrowLeft, Plus, TrendingUp, Newspaper, BarChart3, ActivityIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AgentSidebar } from "./agent-sidebar";
@@ -20,6 +20,12 @@ function extractTextContent(parts: Array<{ type: string; text?: string }>): stri
     .filter((p) => p.type === "text" && p.text)
     .map((p) => p.text!)
     .join("");
+}
+
+function normalizeMarkdown(text: string): string {
+  return text
+    .replace(/([^\n])(#{1,6}\s)/g, "$1\n\n$2")
+    .replace(/([^\n])(\n)(#{1,6}\s)/g, "$1\n\n$3");
 }
 
 function isToolPart(part: { type: string }): boolean {
@@ -115,24 +121,24 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
     <>
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-thin px-4 sm:px-6 py-6">
         {messages.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(34,197,94,0.3)]">
-              <Bot className="h-8 w-8 text-primary" />
+          <div className="flex flex-col items-center justify-center h-full text-center px-6">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/[0.03] flex items-center justify-center mb-10 shadow-[0_0_80px_-15px_rgba(34,197,94,0.2)]">
+              <ActivityIcon className="h-8 w-8 text-primary" />
             </div>
-            <h3 className="text-lg font-bold mb-2">{agent.name}</h3>
-            <p className="text-sm text-muted-foreground/70 max-w-[400px] leading-relaxed mb-8">
+            <h3 className="text-3xl font-display mb-4 text-foreground tracking-tight">{agent.name}</h3>
+            <p className="text-base text-muted-foreground/60 max-w-[440px] leading-[1.8] mb-14">
               {agent.description || "Tu experto dedicado. Preguntame lo que necesites."}
             </p>
-            <div className="flex flex-wrap gap-3 justify-center max-w-[500px]">
+            <div className="flex flex-col gap-1 w-full max-w-[480px]">
               {suggestions.map((s, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => handleSuggestion(s.text)}
-                  className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] hover:border-primary/20 transition-all text-left group"
+                  className="flex items-center gap-4 px-6 py-4 rounded-2xl hover:bg-white/[0.04] transition-all text-left group"
                 >
-                  <s.icon className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
-                  <span className="text-sm text-muted-foreground/80 group-hover:text-foreground transition-colors">
+                  <s.icon className="h-5 w-5 text-muted-foreground/25 group-hover:text-primary/80 transition-colors shrink-0" />
+                  <span className="text-[15px] text-muted-foreground/50 group-hover:text-foreground/90 transition-colors">
                     {s.text}
                   </span>
                 </button>
@@ -158,19 +164,31 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
               className={`mb-5 ${m.role === "user" ? "flex justify-end" : ""} animate-in fade-in slide-in-from-bottom-2 duration-300`}
             >
               {m.role === "user" ? (
-                <div className="max-w-[70%] rounded-2xl rounded-br-sm bg-primary text-primary-foreground px-5 py-3.5 shadow-sm">
-                  <p className="text-sm leading-relaxed">{text}</p>
+                <div className="max-w-[70%] rounded-2xl bg-primary text-primary-foreground px-5 py-4">
+                  <p className="text-[15px] leading-relaxed">{text}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {/* Text content */}
-                  {text && (
-                    <div className="flex gap-3">
-                      <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                  {/* Shimmer placeholder while text is streaming but tools already completed */}
+                  {!text && completedTools.length > 0 && isLoading && (
+                    <div className="flex gap-3.5">
+                      <div className="h-8 w-8 rounded-xl bg-primary/[0.08] flex items-center justify-center shrink-0">
                         <Sparkles className="h-4 w-4 text-primary" />
                       </div>
-                      <div className="max-w-[min(900px,90%)] rounded-2xl rounded-bl-sm bg-white/[0.03] border border-white/[0.08] px-5 py-4">
-                        <div className="chat-markdown text-sm leading-relaxed text-foreground/90">
+                      <div className="rounded-2xl bg-white/[0.025] px-6 py-5">
+                        <div className="chat-shimmer" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Text always renders first */}
+                  {text && (
+                    <div className="flex gap-3.5">
+                      <div className="h-8 w-8 rounded-xl bg-primary/[0.08] flex items-center justify-center shrink-0 mt-1">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="max-w-[min(900px,88%)] rounded-2xl bg-white/[0.025] px-6 py-5">
+                        <div className="chat-markdown text-[15px] leading-[1.75] text-foreground/90">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
@@ -191,7 +209,7 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
                                 </code>
                               ),
                               table: ({ children }) => (
-                                <div className="my-3 overflow-x-auto rounded-xl border border-white/[0.08]">
+                                <div className="my-3 overflow-x-auto rounded-xl border border-white/[0.06]">
                                   <table className="w-full text-[12px]">{children}</table>
                                 </div>
                               ),
@@ -202,18 +220,18 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
                               td: ({ children }) => <td className="px-3 py-2 tabular-nums">{children}</td>,
                             }}
                           >
-                            {text}
+                            {normalizeMarkdown(text)}
                           </ReactMarkdown>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Loading tools */}
+                  {/* Loading tools below text */}
                   {loadingTools.map((tp, i) => (
-                    <div key={`loading-${i}`} className="ml-11 flex items-center gap-2.5 px-4 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] w-fit animate-pulse">
-                      <Loader2 className="h-3.5 w-3.5 text-primary/60 animate-spin" />
-                      <span className="text-xs text-muted-foreground/60">
+                    <div key={`loading-${i}`} className="ml-12 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-white/[0.02] w-fit">
+                      <Loader2 className="h-3.5 w-3.5 text-primary/50 animate-spin" />
+                      <span className="text-[13px] text-muted-foreground/50">
                         {tp.toolName === "getHistoricalPrices" && "Cargando gráfico de precios..."}
                         {tp.toolName === "getStockQuote" && "Obteniendo cotización..."}
                         {tp.toolName === "getStockFundamentals" && "Buscando datos fundamentales..."}
@@ -227,9 +245,9 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
                     </div>
                   ))}
 
-                  {/* Completed tool results - rendered OUTSIDE the text bubble for full width */}
+                  {/* Rich tool results always render last (below text) */}
                   {completedTools.map((tp, i) => (
-                    <div key={`tool-${i}`} className="ml-11 mr-2 max-w-full">
+                    <div key={`tool-${i}`} className="ml-12 mr-2 max-w-full">
                       <ToolResultRenderer
                         toolName={tp.toolName}
                         state={tp.state}
@@ -245,28 +263,21 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
         })}
 
         {isLoading && (!messages.length || messages[messages.length - 1]?.role === "user") && (
-          <div className="flex gap-3 justify-start animate-in fade-in duration-200 mb-5">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
+          <div className="flex gap-3.5 justify-start animate-in fade-in duration-200 mb-5">
+            <div className="h-8 w-8 rounded-xl bg-primary/[0.08] flex items-center justify-center shrink-0">
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
-            <div className="rounded-2xl rounded-bl-sm bg-white/[0.03] border border-white/[0.08] px-5 py-4">
-              <div className="flex items-center gap-2.5">
-                <div className="flex gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
-                <span className="text-xs text-muted-foreground/50 ml-1">Analizando...</span>
-              </div>
+            <div className="rounded-2xl bg-white/[0.025] px-6 py-5">
+              <div className="chat-shimmer" />
             </div>
           </div>
         )}
       </div>
 
       {/* Input area */}
-      <div className="shrink-0 border-t border-white/[0.06] p-4 bg-card/50 backdrop-blur-sm">
-        <form onSubmit={handleSubmit} className="flex gap-3 w-full max-w-4xl mx-auto px-2">
-          <div className="relative flex-1">
+      <div className="shrink-0 px-4 pb-4 pt-3">
+        <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto">
+          <div className="chat-input-capsule">
             <textarea
               ref={inputRef}
               value={input}
@@ -280,20 +291,19 @@ function LiveChat({ agent, sessionId }: { agent: UserAgent; sessionId: string })
               placeholder="Preguntale algo..."
               disabled={isLoading}
               rows={1}
-              className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 disabled:opacity-50 transition-all resize-none leading-relaxed"
             />
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="shrink-0 h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-95 hover:shadow-[0_0_20px_-4px_rgba(34,197,94,0.4)]"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4.5 w-4.5 animate-spin" />
+              ) : (
+                <Send className="h-4.5 w-4.5" />
+              )}
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="self-end h-[46px] w-[46px] rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-20 disabled:cursor-not-allowed transition-all hover:shadow-[0_0_24px_-5px_rgba(34,197,94,0.5)] active:scale-95"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4.5 w-4.5 animate-spin" />
-            ) : (
-              <Send className="h-4.5 w-4.5" />
-            )}
-          </button>
         </form>
       </div>
     </>
@@ -406,28 +416,28 @@ export function AgentChat({ agent, onBack }: AgentChatProps) {
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="shrink-0 px-6 py-4 border-b border-white/[0.06] flex items-center gap-4 bg-gradient-to-r from-white/[0.02] to-transparent">
+        <div className="shrink-0 px-6 py-4 flex items-center gap-4 shadow-[0_1px_0_oklch(1_0_0/5%)]">
           <button
             type="button"
             onClick={onBack}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-all"
+            className="p-2 -ml-2 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.05] transition-all"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-primary" />
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/12 to-primary/[0.04] flex items-center justify-center">
+            <ActivityIcon className="h-4.5 w-4.5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold truncate">{agent.name}</h2>
-            <p className="text-xs text-muted-foreground/60 truncate">{agent.description}</p>
+            <h2 className="text-[15px] font-semibold truncate tracking-tight">{agent.name}</h2>
+            <p className="text-xs text-muted-foreground/40 truncate mt-0.5">{agent.description}</p>
           </div>
           <button
             type="button"
             onClick={createNewSession}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground border border-white/[0.08] hover:border-primary/20 hover:bg-white/[0.04] transition-all"
+            title="Nueva sesión"
+            className="p-2.5 rounded-lg text-muted-foreground/40 hover:text-primary hover:bg-white/[0.05] transition-all"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Nueva sesión
+            <Plus className="h-5 w-5" />
           </button>
         </div>
 
@@ -453,15 +463,15 @@ export function AgentChat({ agent, onBack }: AgentChatProps) {
                   className={`flex gap-3 mb-5 ${m.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {m.role === "assistant" && (
-                    <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Sparkles className="h-4 w-4 text-primary" />
+                    <div className="h-7 w-7 rounded-full bg-primary/[0.08] flex items-center justify-center shrink-0 mt-1">
+                      <Sparkles className="h-3.5 w-3.5 text-primary/70" />
                     </div>
                   )}
                   <div
                     className={`max-w-[70%] rounded-2xl px-5 py-3.5 ${
                       m.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-sm shadow-sm"
-                        : "bg-white/[0.03] border border-white/[0.08] rounded-bl-sm"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-white/[0.025]"
                     }`}
                   >
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{m.content}</p>

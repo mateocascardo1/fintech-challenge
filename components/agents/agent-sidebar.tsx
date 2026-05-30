@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, MessageSquare, Clock, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { formatPrice, formatPercent } from "@/lib/format";
 import type { Quote, AgentSession } from "@/lib/types";
 
@@ -67,16 +67,16 @@ export function AgentSidebar({
   }
 
   return (
-    <div className="w-52 shrink-0 border-r border-white/[0.06] flex flex-col h-full overflow-hidden">
+    <div className="w-64 shrink-0 border-r border-white/[0.05] flex flex-col h-full overflow-hidden bg-[#080810]">
       {/* Tickers section */}
-      <div className="p-3 border-b border-white/[0.06]">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">
+      <div className="px-5 pt-5 pb-4 border-b border-white/[0.05]">
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40 mb-4">
           Tickers
         </p>
-        <div className="space-y-0.5 max-h-[240px] overflow-y-auto scrollbar-thin">
+        <div className="space-y-0.5 max-h-[280px] overflow-y-auto scrollbar-thin sidebar-fade-bottom">
           {loadingQuotes ? (
             Array.from({ length: Math.min(tickers.length, 5) }).map((_, i) => (
-              <div key={i} className="h-9 rounded-lg bg-muted/10 animate-pulse" />
+              <div key={i} className="h-11 rounded-lg bg-white/[0.02] animate-pulse" />
             ))
           ) : (
             quotes.map((q) => (
@@ -84,17 +84,17 @@ export function AgentSidebar({
                 key={q.symbol}
                 type="button"
                 onClick={() => onTickerClick(q.symbol)}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors group"
+                className="w-full flex items-center justify-between px-3.5 py-3 rounded-lg hover:bg-white/[0.04] transition-colors group"
               >
-                <span className="text-[11px] font-bold group-hover:text-primary transition-colors">
+                <span className="text-[13px] font-bold text-foreground/90 group-hover:text-primary transition-colors tracking-tight">
                   {q.symbol}
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] tabular-nums font-medium">
+                <div className="flex items-center gap-3">
+                  <span className="text-[13px] tabular-nums font-medium text-foreground/60">
                     {formatPrice(q.price)}
                   </span>
                   <span
-                    className={`text-[10px] tabular-nums font-semibold ${
+                    className={`text-[12px] tabular-nums font-bold ${
                       q.changePercent >= 0 ? "text-positive" : "text-negative"
                     }`}
                   >
@@ -108,33 +108,33 @@ export function AgentSidebar({
       </div>
 
       {/* Sessions section */}
-      <div className="flex-1 p-3 overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+      <div className="flex-1 px-5 pt-5 overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40">
             Sesiones
           </p>
           <button
             type="button"
             onClick={onNewSession}
-            className="p-1 rounded-md hover:bg-white/[0.06] text-muted-foreground hover:text-primary transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-muted-foreground/40 hover:text-primary transition-colors"
             title="Nueva sesión"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto scrollbar-thin space-y-0.5">
+        <div className="flex-1 overflow-y-auto scrollbar-thin space-y-1 pb-4">
           {sessions.length === 0 ? (
-            <p className="text-[10px] text-muted-foreground/40 text-center py-4">
+            <p className="text-[13px] text-muted-foreground/25 text-center py-8">
               Sin sesiones previas
             </p>
           ) : (
             sessions.map((session) => (
               <div
                 key={session.id}
-                className={`group w-full text-left px-2.5 py-2 rounded-lg transition-colors relative ${
+                className={`group w-full text-left rounded-xl transition-all relative ${
                   currentSessionId === session.id
-                    ? "bg-primary/10 border border-primary/20"
-                    : "hover:bg-white/[0.04]"
+                    ? "bg-white/[0.05] border-l-2 border-l-primary pl-4 pr-3 py-3"
+                    : "hover:bg-white/[0.03] pl-4.5 pr-3 py-3"
                 }`}
               >
                 <button
@@ -142,27 +142,21 @@ export function AgentSidebar({
                   onClick={() => onSessionClick(session)}
                   className="w-full text-left"
                 >
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-                    <span className="text-[11px] font-medium truncate flex-1">
-                      {session.title}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 mt-0.5 ml-5">
-                    <Clock className="h-2.5 w-2.5 text-muted-foreground/30" />
-                    <span className="text-[9px] text-muted-foreground/40">
-                      {formatSessionDate(session.updated_at)}
-                    </span>
-                  </div>
+                  <span className="text-[13px] font-medium truncate block text-foreground/80">
+                    {session.title}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground/30 mt-1 block">
+                    {formatSessionDate(session.updated_at)}
+                  </span>
                 </button>
                 {onDeleteSession && currentSessionId !== session.id && (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onDeleteSession(session); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-red-400 hover:bg-red-400/10 transition-all"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-muted-foreground/25 hover:text-red-400 hover:bg-red-400/10 transition-all"
                     title="Eliminar sesión"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 )}
               </div>
