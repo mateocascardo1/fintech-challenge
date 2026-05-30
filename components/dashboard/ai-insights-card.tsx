@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Zap,
   Loader2,
@@ -12,6 +12,7 @@ import {
   Sparkles,
   ShieldCheck,
   AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
@@ -95,6 +96,16 @@ export function AiInsightsCard({ isCalibrated = false }: { isCalibrated?: boolea
   const [envelope, setEnvelope] = useState<InsightsEnvelope | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleCard = useCallback((id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const fetchInsights = useCallback(async () => {
     const res = await fetch("/api/insights?format=envelope");
@@ -260,9 +271,15 @@ export function AiInsightsCard({ isCalibrated = false }: { isCalibrated?: boolea
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-3">
               Paso 1 — Asignación de capital
             </p>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {allocMoves.map((move, i) => (
-                <AllocMoveCard key={move.id} move={move} index={i} />
+                <AllocMoveCard
+                  key={move.id}
+                  move={move}
+                  index={i}
+                  isOpen={expanded.has(move.id)}
+                  onToggle={() => toggleCard(move.id)}
+                />
               ))}
             </div>
           </section>
@@ -277,9 +294,15 @@ export function AiInsightsCard({ isCalibrated = false }: { isCalibrated?: boolea
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-3">
               Paso 2 — Instrumentos sugeridos
             </p>
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {instrumentPicks.map((pick, i) => (
-                <InstrumentCard key={pick.id} pick={pick} index={i} />
+                <InstrumentCard
+                  key={pick.id}
+                  pick={pick}
+                  index={i}
+                  isOpen={expanded.has(pick.id)}
+                  onToggle={() => toggleCard(pick.id)}
+                />
               ))}
             </div>
           </section>
@@ -377,7 +400,17 @@ function EmptyState({
   );
 }
 
-function AllocMoveCard({ move, index }: { move: AllocMove; index: number }) {
+function AllocMoveCard({
+  move,
+  index,
+  isOpen,
+  onToggle,
+}: {
+  move: AllocMove;
+  index: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
   const m = move.metadata ?? {};
   const cls = ASSET_CLASS_LABELS[m.asset_class ?? ""] ?? {
     label: m.asset_class ?? "",
@@ -395,14 +428,22 @@ function AllocMoveCard({ move, index }: { move: AllocMove; index: number }) {
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.08, duration: 0.35 }}
-      className="rounded-xl border border-border/30 bg-white/[0.02] px-4 py-3.5"
+      className="rounded-xl border border-border/30 bg-white/[0.02]"
     >
-      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className={`h-2 w-2 rounded-full shrink-0 ${cls.dot}`} />
-          <span className="text-sm font-semibold truncate">{move.title}</span>
-          {exp && <FinancialTooltip title={exp.title} content={exp.content} side="right" />}
-        </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-4 py-3 cursor-pointer select-none text-left"
+      >
+        <span className={`h-2 w-2 rounded-full shrink-0 ${cls.dot}`} />
+        <span className="text-sm font-semibold truncate flex-1 min-w-0">{move.title}</span>
+        <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
+          {current}%
+          <MoveRight
+            className={`inline h-2.5 w-2.5 mx-0.5 text-muted-foreground/40 ${isDecrease ? "rotate-180" : ""}`}
+          />
+          {target}%
+        </span>
         <span
           className={`text-xs font-bold tabular-nums shrink-0 ${
             move.score_impact > 0 ? "text-primary" : "text-negative"
@@ -411,32 +452,65 @@ function AllocMoveCard({ move, index }: { move: AllocMove; index: number }) {
           {move.score_impact > 0 ? "+" : ""}
           {move.score_impact} pts
         </span>
-      </div>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-3">{move.body}</p>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] tabular-nums text-muted-foreground w-8 text-right">
-          {current}%
-        </span>
-        <div className="flex-1 h-2 rounded-full bg-muted/20 relative overflow-hidden">
-          <div
-            className={`absolute top-0 left-0 h-full rounded-full ${cls.dot} opacity-50`}
-            style={{ width: `${Math.min(current, 100)}%` }}
-          />
-          <div
-            className="absolute top-[-2px] h-[calc(100%+4px)] w-0.5 rounded-full bg-foreground/50"
-            style={{ left: `${Math.min(target, 100)}%` }}
-          />
-        </div>
-        <MoveRight
-          className={`h-3 w-3 text-muted-foreground/40 shrink-0 ${isDecrease ? "rotate-180" : ""}`}
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-muted-foreground/40 shrink-0 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
         />
-        <span className="text-[10px] tabular-nums font-medium w-8">{target}%</span>
-      </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-3.5 pt-0 space-y-3">
+              <div className="flex items-start gap-1.5">
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">{move.body}</p>
+                {exp && <FinancialTooltip title={exp.title} content={exp.content} side="right" />}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] tabular-nums text-muted-foreground w-8 text-right">
+                  {current}%
+                </span>
+                <div className="flex-1 h-2 rounded-full bg-muted/20 relative overflow-hidden">
+                  <div
+                    className={`absolute top-0 left-0 h-full rounded-full ${cls.dot} opacity-50`}
+                    style={{ width: `${Math.min(current, 100)}%` }}
+                  />
+                  <div
+                    className="absolute top-[-2px] h-[calc(100%+4px)] w-0.5 rounded-full bg-foreground/50"
+                    style={{ left: `${Math.min(target, 100)}%` }}
+                  />
+                </div>
+                <MoveRight
+                  className={`h-3 w-3 text-muted-foreground/40 shrink-0 ${isDecrease ? "rotate-180" : ""}`}
+                />
+                <span className="text-[10px] tabular-nums font-medium w-8">{target}%</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
 
-function InstrumentCard({ pick, index }: { pick: InstrumentPick; index: number }) {
+function InstrumentCard({
+  pick,
+  index,
+  isOpen,
+  onToggle,
+}: {
+  pick: InstrumentPick;
+  index: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
   const m = pick.metadata ?? {};
   const isBuy = m.action === "buy";
   const symbol = pick.related_symbol ?? "";
@@ -457,15 +531,19 @@ function InstrumentCard({ pick, index }: { pick: InstrumentPick; index: number }
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 + index * 0.07, duration: 0.35 }}
-      className={`rounded-xl border px-4 py-3 transition-colors hover:bg-white/[0.03] ${
+      className={`rounded-xl border transition-colors ${
         isHigh
           ? "border-l-2 border-l-yellow-400/50 border-border/30 bg-yellow-400/[0.03]"
           : "border-border/30 bg-white/[0.02]"
       }`}
     >
-      <div className="flex flex-wrap items-center gap-2 mb-2">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none text-left"
+      >
         <span
-          className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-[0.1em] px-2 py-0.5 rounded-full ${
+          className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-[0.1em] px-2 py-0.5 rounded-full shrink-0 ${
             isBuy ? "bg-primary/15 text-primary" : "bg-negative/15 text-negative"
           }`}
         >
@@ -476,37 +554,57 @@ function InstrumentCard({ pick, index }: { pick: InstrumentPick; index: number }
           )}
           {isBuy ? "COMPRAR" : "VENDER"}
         </span>
-        <span className="font-mono text-sm font-bold">{symbol}</span>
-        <span className="text-[8px] font-semibold tracking-wider text-muted-foreground/50 bg-muted/20 px-1.5 py-0.5 rounded">
+        <span className="font-mono text-sm font-bold shrink-0">{symbol}</span>
+        <span className="text-[8px] font-semibold tracking-wider text-muted-foreground/50 bg-muted/20 px-1.5 py-0.5 rounded shrink-0">
           {assetLabel}
         </span>
         {m.priority && (
-          <span className="text-[8px] text-muted-foreground/50 sm:inline">
+          <span className="text-[8px] text-muted-foreground/50 shrink-0">
             {PRIORITY_LABELS[m.priority] ?? m.priority}
           </span>
         )}
         <span
-          className={`ml-auto text-sm font-bold tabular-nums ${
+          className={`ml-auto text-sm font-bold tabular-nums shrink-0 ${
             pick.score_impact > 0 ? "text-primary" : "text-negative"
           }`}
         >
           +{pick.score_impact} pts
         </span>
-      </div>
-      {m.name && (
-        <p className="text-[11px] text-muted-foreground/60 mb-1">{m.name}</p>
-      )}
-      <div className="flex items-start gap-1.5">
-        <p className="text-xs text-foreground/80 leading-relaxed flex-1">{pick.body}</p>
-        {exp && (
-          <FinancialTooltip title={exp.title} content={exp.content} side="left" />
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-muted-foreground/40 shrink-0 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-3 pt-0 space-y-1.5">
+              {m.name && (
+                <p className="text-[11px] text-muted-foreground/60">{m.name}</p>
+              )}
+              <div className="flex items-start gap-1.5">
+                <p className="text-xs text-foreground/80 leading-relaxed flex-1">{pick.body}</p>
+                {exp && (
+                  <FinancialTooltip title={exp.title} content={exp.content} side="left" />
+                )}
+              </div>
+              {improvesLabel && (
+                <p className="text-[9px] text-muted-foreground/40 tracking-wide">
+                  Mejora: {improvesLabel}
+                </p>
+              )}
+            </div>
+          </motion.div>
         )}
-      </div>
-      {improvesLabel && (
-        <p className="text-[9px] text-muted-foreground/40 mt-2 tracking-wide">
-          Mejora: {improvesLabel}
-        </p>
-      )}
+      </AnimatePresence>
     </motion.div>
   );
 }
