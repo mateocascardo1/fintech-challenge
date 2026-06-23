@@ -28,7 +28,7 @@ export async function GET() {
       .join("\n");
 
     const result = await streamText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: anthropic("claude-sonnet-4-6"),
       prompt: `Sos un analista financiero escribiendo un resumen diario del mercado para inversores argentinos.
 
 Datos del mercado de hoy:

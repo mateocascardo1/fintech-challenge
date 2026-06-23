@@ -239,7 +239,7 @@ Generá diagnosis con exactamente 4 pilares. Para allocation_moves e instrument_
 Responder SOLO JSON.`;
 
   const result = await streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
+    model: anthropic("claude-sonnet-4-6"),
     prompt,
   });
 

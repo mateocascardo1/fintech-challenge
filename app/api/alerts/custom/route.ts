@@ -53,7 +53,7 @@ high = recomendaciones sólidas con datos conocidos. medium = parcialmente segur
 SOLO JSON, sin markdown ni explicaciones extra.`;
 
   const result = await generateText({
-    model: anthropic("claude-sonnet-4-20250514"),
+    model: anthropic("claude-sonnet-4-6"),
     prompt: aiPrompt,
   });
 

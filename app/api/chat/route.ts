@@ -91,7 +91,7 @@ REGLAS CRÍTICAS:
     const messages = await convertToModelMessages(uiMessages);
 
     const result = streamText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: anthropic("claude-sonnet-4-6"),
       system: systemPrompt,
       messages,
       tools: {
@@ -444,7 +444,7 @@ REGLAS CRÍTICAS:
     const messages = await convertToModelMessages(uiMessages);
 
     const result = streamText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: anthropic("claude-sonnet-4-6"),
       system: systemPrompt,
       messages,
       tools: {
@@ -659,7 +659,7 @@ async function handleAgentBuilderMode(userId: string, agentId: string, uiMessage
     const messages = await convertToModelMessages(uiMessages);
 
     const result = streamText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: anthropic("claude-sonnet-4-6"),
       system: systemPrompt,
       messages,
       tools: {
@@ -749,7 +749,7 @@ async function handleCustomAgentMode(userId: string, agentId: string, sessionId:
     }
 
     const result = streamText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: anthropic("claude-sonnet-4-6"),
       system: systemPrompt,
       messages,
       tools: createMarketTools(),

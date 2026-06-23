@@ -283,7 +283,7 @@ Sé directo como un private banker, no como un chatbot. No uses bullet points ni
 Solo el texto, sin títulos ni formato adicional.`;
 
   const result = streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
+    model: anthropic("claude-sonnet-4-6"),
     prompt,
   });
 

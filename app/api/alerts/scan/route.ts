@@ -68,7 +68,7 @@ SOLO JSON, sin texto adicional.`;
   let result;
   try {
     result = await generateText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: anthropic("claude-sonnet-4-6"),
       prompt,
     });
   } catch (e) {

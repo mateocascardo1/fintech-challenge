@@ -50,7 +50,7 @@ export async function POST(
     .join("\n\n");
 
   const result = await streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
+    model: anthropic("claude-sonnet-4-6"),
     prompt: `Resumí esta conversación en máximo 200 palabras, capturando los puntos clave, conclusiones, y datos importantes mencionados. El resumen será usado como contexto para una nueva sesión de chat.
 
 CONVERSACIÓN:
